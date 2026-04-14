@@ -15,3 +15,14 @@
 Thumbs.db
 
 !/[Aa]ssets/**/*.meta
+
+*.csproj
+*.sln
+*.user
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db

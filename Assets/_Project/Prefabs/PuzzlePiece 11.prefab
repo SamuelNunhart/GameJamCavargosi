@@ -101,5 +101,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d674c78dd8af8e844afb793f7635ba9d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  correctSlotIndex: 0
+  correctSlotIndex: 11
   pickupScale: 1.05

@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using TMPro;
 
@@ -10,6 +11,11 @@ public class PuzzleOpener : MonoBehaviour
     [SerializeField] private MonoBehaviour playerMovement;
     [SerializeField] private MonoBehaviour playerLook;
 
+    [Header("View Transition")]
+    [SerializeField] private Transform playerViewTransform;
+    [SerializeField] private Transform puzzleViewPoint;
+    [SerializeField] private float transitionDuration = 0.4f;
+
     [Header("Prompt UI")]
     [SerializeField] private GameObject promptRoot;
     [SerializeField] private TMP_Text promptText;
@@ -17,6 +23,10 @@ public class PuzzleOpener : MonoBehaviour
 
     private bool playerInRange;
     private bool puzzleOpen;
+    private bool isTransitioning;
+
+    private Vector3 savedViewPosition;
+    private Quaternion savedViewRotation;
 
     private void Start()
     {
@@ -29,12 +39,12 @@ public class PuzzleOpener : MonoBehaviour
 
     private void Update()
     {
-        if (!puzzleOpen && playerInRange && Input.GetKeyDown(KeyCode.E))
+        if (!puzzleOpen && !isTransitioning && playerInRange && Input.GetKeyDown(KeyCode.E))
         {
             OpenPuzzle();
         }
 
-        if (puzzleOpen && Input.GetKeyDown(KeyCode.Escape))
+        if (puzzleOpen && !isTransitioning && Input.GetKeyDown(KeyCode.Escape))
         {
             ClosePuzzle();
         }
@@ -93,10 +103,26 @@ public class PuzzleOpener : MonoBehaviour
 
     public void OpenPuzzle()
     {
+        if (puzzleOpen || isTransitioning)
+            return;
+
+        StartCoroutine(OpenPuzzleRoutine());
+    }
+
+    public void ClosePuzzle()
+    {
+        if (!puzzleOpen || isTransitioning)
+            return;
+
+        StartCoroutine(ClosePuzzleRoutine());
+    }
+
+    private IEnumerator OpenPuzzleRoutine()
+    {
+        isTransitioning = true;
         puzzleOpen = true;
 
-        if (puzzleCanvas != null)
-            puzzleCanvas.SetActive(true);
+        ShowPrompt(false);
 
         if (playerMovement != null)
             playerMovement.enabled = false;
@@ -104,18 +130,55 @@ public class PuzzleOpener : MonoBehaviour
         if (playerLook != null)
             playerLook.enabled = false;
 
-        ShowPrompt(false);
+        bool canMoveView = playerViewTransform != null && puzzleViewPoint != null && transitionDuration > 0f;
+
+        if (canMoveView)
+        {
+            savedViewPosition = playerViewTransform.position;
+            savedViewRotation = playerViewTransform.rotation;
+
+            yield return MoveView(
+                playerViewTransform,
+                savedViewPosition,
+                savedViewRotation,
+                puzzleViewPoint.position,
+                puzzleViewPoint.rotation,
+                transitionDuration
+            );
+        }
+
+        if (puzzleCanvas != null)
+            puzzleCanvas.SetActive(true);
 
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+
+        isTransitioning = false;
     }
 
-    public void ClosePuzzle()
+    private IEnumerator ClosePuzzleRoutine()
     {
-        puzzleOpen = false;
+        isTransitioning = true;
 
         if (puzzleCanvas != null)
             puzzleCanvas.SetActive(false);
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
+        bool canMoveView = playerViewTransform != null && puzzleViewPoint != null && transitionDuration > 0f;
+
+        if (canMoveView)
+        {
+            yield return MoveView(
+                playerViewTransform,
+                playerViewTransform.position,
+                playerViewTransform.rotation,
+                savedViewPosition,
+                savedViewRotation,
+                transitionDuration
+            );
+        }
 
         if (playerMovement != null)
             playerMovement.enabled = true;
@@ -123,10 +186,36 @@ public class PuzzleOpener : MonoBehaviour
         if (playerLook != null)
             playerLook.enabled = true;
 
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        puzzleOpen = false;
+        isTransitioning = false;
 
         if (playerInRange)
             ShowPrompt(true);
+    }
+
+    private IEnumerator MoveView(
+        Transform viewTransform,
+        Vector3 startPosition,
+        Quaternion startRotation,
+        Vector3 endPosition,
+        Quaternion endRotation,
+        float duration)
+    {
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            float t = elapsed / duration;
+            t = t * t * (3f - 2f * t); // smoothstep
+
+            viewTransform.position = Vector3.Lerp(startPosition, endPosition, t);
+            viewTransform.rotation = Quaternion.Slerp(startRotation, endRotation, t);
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        viewTransform.position = endPosition;
+        viewTransform.rotation = endRotation;
     }
 }

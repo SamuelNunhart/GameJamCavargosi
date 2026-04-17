@@ -18,12 +18,25 @@ public class PuzzlePieceUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
 
     private void Awake()
     {
-        rectTransform = (RectTransform)transform;
-        canvasGroup = GetComponent<CanvasGroup>();
+        CacheReferences();
+    }
+
+    private void CacheReferences()
+    {
+        if (rectTransform == null)
+            rectTransform = (RectTransform)transform;
+
+        if (canvasGroup == null)
+            canvasGroup = GetComponent<CanvasGroup>();
+
+        if (canvasGroup == null)
+            canvasGroup = gameObject.AddComponent<CanvasGroup>();
     }
 
     public void Setup(PuzzleManagerUI puzzleManager)
     {
+        CacheReferences();
+
         manager = puzzleManager;
         IsPlaced = false;
         canvasGroup.blocksRaycasts = true;
@@ -32,11 +45,14 @@ public class PuzzlePieceUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
 
     public void SetSize(Vector2 size)
     {
+        CacheReferences();
         rectTransform.sizeDelta = size;
     }
 
     public void SetSpawnState(Vector3 position, float zRotation)
     {
+        CacheReferences();
+
         IsPlaced = false;
         rectTransform.position = position;
         rectTransform.rotation = Quaternion.Euler(0f, 0f, zRotation);
@@ -46,6 +62,8 @@ public class PuzzlePieceUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
 
     public void LockToSlot(PuzzleSlotUI slot)
     {
+        CacheReferences();
+
         IsPlaced = true;
         rectTransform.position = slot.RectTransform.position;
         rectTransform.rotation = Quaternion.identity;
@@ -58,14 +76,11 @@ public class PuzzlePieceUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         if (IsPlaced || manager == null)
             return;
 
+        CacheReferences();
+
         canvasGroup.blocksRaycasts = false;
-
-        // Upright while held
         rectTransform.rotation = Quaternion.identity;
-
-        // Bring piece on top visually
         rectTransform.SetAsLastSibling();
-
         rectTransform.localScale = Vector3.one * pickupScale;
     }
 
@@ -74,6 +89,7 @@ public class PuzzlePieceUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         if (IsPlaced || manager == null)
             return;
 
+        CacheReferences();
         rectTransform.position = eventData.position;
     }
 
@@ -81,6 +97,8 @@ public class PuzzlePieceUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
     {
         if (IsPlaced || manager == null)
             return;
+
+        CacheReferences();
 
         canvasGroup.blocksRaycasts = true;
         rectTransform.localScale = Vector3.one;

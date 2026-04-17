@@ -20,7 +20,7 @@ MonoBehaviour:
   - speakerName: Ghost
     text: "You\u2019ve already said \u201Cone more reel\u201D 15 times today."
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 5e217ac021d493642a3c30b849a1078b, type: 3}
   - speakerName: Arthur
     text: What? Hello? Who is there?
     side: 1
@@ -32,7 +32,7 @@ MonoBehaviour:
   - speakerName: Ghost
     text: "NO, you\u2019re totally awake. Just\u2026 not living."
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: f45bac488afb92b40829e7cd47ff1a23, type: 3}
   - speakerName: Arthur
     text: What? What do you mean?
     side: 1
@@ -41,7 +41,7 @@ MonoBehaviour:
     text: "Look at you, Arthur\u2026 I know about every hour that you wasted from
       your life\u2026 And I know what it\u2019s costing you."
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 118fd27c7a456aa4093ebb3c8f00f04e, type: 3}
   - speakerName: Arthur
     text: "What? Costing me what? You mean reals? C\u2019mone, everyone does it\u2026
       Stop that philosophy. I want you to leave. How did you even get in here?"
@@ -51,4 +51,4 @@ MonoBehaviour:
     text: "Let me show you something, Arthur\u2026 Let me show you a version of your
       life lived in presence."
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: ea4865366d70af042855975a5bc7de24, type: 3}

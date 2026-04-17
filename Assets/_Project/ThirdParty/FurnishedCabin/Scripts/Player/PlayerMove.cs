@@ -18,6 +18,7 @@ public class PlayerMove : MonoBehaviour
 
     [Header("Camera")]
     [SerializeField] private Transform cameraHolder;
+    [SerializeField] private Transform playerCamera;
     [SerializeField] private float cameraCrouchOffset = 0.45f;
 
     private CharacterController charController;
@@ -30,6 +31,9 @@ public class PlayerMove : MonoBehaviour
     private void Awake()
     {
         charController = GetComponent<CharacterController>();
+
+        if (cameraHolder == null)
+            cameraHolder = playerCamera;
 
         standingHeight = charController.height;
         standingCenter = charController.center;

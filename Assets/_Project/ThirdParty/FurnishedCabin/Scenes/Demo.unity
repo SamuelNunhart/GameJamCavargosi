@@ -1413,7 +1413,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dialogue: {fileID: 11400000, guid: 1471cfab30d7bc54789f24d59a66cb8c, type: 2}
   playerTag: Player
-  oneTimeOnly: 0
 --- !u!65 &1458057366
 BoxCollider:
   m_ObjectHideFlags: 0

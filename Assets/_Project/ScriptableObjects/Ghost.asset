@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2846490e87135c94c80c2665f6defa8e, type: 3}
+  m_Name: Ghost
+  m_EditorClassIdentifier: 
+  lines:
+  - speakerName: Arthur
+    text: Okay, just one more reel. This one actually looks useful.
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: "You\u2019ve already said \u201Cone more reel\u201D 15 times today."
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Arthur
+    text: What? Hello? Who is there?
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Arthur
+    text: What is this? Am I dreaming? I must have already fell asleep with my phone.
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: "NO, you\u2019re totally awake. Just\u2026 not living."
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Arthur
+    text: What? What do you mean?
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: "Look at you, Arthur\u2026 I know about every hour that you wasted from
+      your life\u2026 And I know what it\u2019s costing you."
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Arthur
+    text: "What? Costing me what? You mean reals? C\u2019mone, everyone does it\u2026
+      Stop that philosophy. I want you to leave. How did you even get in here?"
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: "Let me show you something, Arthur\u2026 Let me show you a version of your
+      life lived in presence."
+    side: 0
+    voiceClip: {fileID: 0}

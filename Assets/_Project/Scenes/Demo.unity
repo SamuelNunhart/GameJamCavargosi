@@ -236,6 +236,12 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8327207350817553425, guid: 8f1148ac1b140654a88084148358bdac,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 1682549322, guid: fafd6c3df05b176408d07b9670eeff52,
+        type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -267,6 +273,12 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1809446869}
     m_Modifications:
+    - target: {fileID: 5203306589865587487, guid: e77cdc3d58ecdf648a2855462e6ec0da,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 835065874, guid: fafd6c3df05b176408d07b9670eeff52,
+        type: 3}
     - target: {fileID: 5983285907640687954, guid: e77cdc3d58ecdf648a2855462e6ec0da,
         type: 3}
       propertyPath: m_Pivot.x
@@ -609,6 +621,12 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7003823697878283212, guid: d2c323202a224d840be75e1335e39bf3,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: -387596905, guid: fafd6c3df05b176408d07b9670eeff52,
+        type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -627,6 +645,12 @@ PrefabInstance:
       propertyPath: m_Name
       value: PuzzlePiece 18
       objectReference: {fileID: 0}
+    - target: {fileID: 2925175890394289721, guid: 9b339675baf25d7469f7f281f3201296,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 886080885, guid: fafd6c3df05b176408d07b9670eeff52,
+        type: 3}
     - target: {fileID: 7082034410240683406, guid: 9b339675baf25d7469f7f281f3201296,
         type: 3}
       propertyPath: m_Pivot.x
@@ -869,6 +893,12 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1809446869}
     m_Modifications:
+    - target: {fileID: 232149376462658524, guid: 58c163eb71a67a547bed65bf9c9c9854,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 1146668903, guid: fafd6c3df05b176408d07b9670eeff52,
+        type: 3}
     - target: {fileID: 4099669120328799781, guid: 58c163eb71a67a547bed65bf9c9c9854,
         type: 3}
       propertyPath: m_Pivot.x
@@ -1110,6 +1140,12 @@ PrefabInstance:
       propertyPath: m_Name
       value: PuzzlePiece 4
       objectReference: {fileID: 0}
+    - target: {fileID: 9202062902540353362, guid: da90857157f3ed34aafd32a2fd600d47,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 67743254, guid: fafd6c3df05b176408d07b9670eeff52,
+        type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1228,6 +1264,12 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8211768910541268579, guid: 17f1fc7cb62c5bb4885451826624efc2,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: -1132328612, guid: fafd6c3df05b176408d07b9670eeff52,
+        type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1364,6 +1406,12 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3722603678392342535, guid: 57d864037b0f4fd4e854efd67fe9ade8,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 1659439194, guid: fafd6c3df05b176408d07b9670eeff52,
+        type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2379,6 +2427,12 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6609328586960337443, guid: d469cc1012f92f242803be1f2e7b2884,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 386408451, guid: fafd6c3df05b176408d07b9670eeff52,
+        type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2483,6 +2537,12 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1809446869}
     m_Modifications:
+    - target: {fileID: 1651766688781349450, guid: 9d463727914a8344e8fa799684ecb591,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: -605100728, guid: fafd6c3df05b176408d07b9670eeff52,
+        type: 3}
     - target: {fileID: 3270556705340510741, guid: 9d463727914a8344e8fa799684ecb591,
         type: 3}
       propertyPath: m_Name
@@ -2751,6 +2811,12 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2656913044680551734, guid: 9aa1d79fadc8cdb40a681e345b1c1e11,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: -1390191104, guid: fafd6c3df05b176408d07b9670eeff52,
+        type: 3}
     - target: {fileID: 5554077720655694440, guid: 9aa1d79fadc8cdb40a681e345b1c1e11,
         type: 3}
       propertyPath: m_Name
@@ -3338,6 +3404,12 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 9052645001432500214, guid: 2b682e4dbf6c9184ab10b11518293338,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: -1803855609, guid: fafd6c3df05b176408d07b9670eeff52,
+        type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -3351,6 +3423,12 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1809446869}
     m_Modifications:
+    - target: {fileID: 34678819042876628, guid: 2fd0bf916c7f43747ba17a2d4c48d509,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: -1264913685, guid: fafd6c3df05b176408d07b9670eeff52,
+        type: 3}
     - target: {fileID: 1559121513032897501, guid: 2fd0bf916c7f43747ba17a2d4c48d509,
         type: 3}
       propertyPath: correctSlotIndex
@@ -3479,6 +3557,12 @@ PrefabInstance:
       propertyPath: m_Name
       value: PuzzlePiece 1
       objectReference: {fileID: 0}
+    - target: {fileID: 3557044957532332194, guid: bf3c37db8136209479e375985e2e4af4,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 1767289534, guid: fafd6c3df05b176408d07b9670eeff52,
+        type: 3}
     - target: {fileID: 7792706029687315288, guid: bf3c37db8136209479e375985e2e4af4,
         type: 3}
       propertyPath: m_Pivot.x
@@ -3909,6 +3993,12 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8482098612418799691, guid: 57bbd2bcc41757e43a2205d9fea1dc70,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: -1100486218, guid: fafd6c3df05b176408d07b9670eeff52,
+        type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -4384,6 +4474,12 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7928117484889258681, guid: de575d838f124c24698bcf26a97a302a,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 862061190, guid: fafd6c3df05b176408d07b9670eeff52,
+        type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -4709,6 +4805,12 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6974280527880588742, guid: ecc4f51b2f3100b4faea726fe8186819,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: -220332339, guid: fafd6c3df05b176408d07b9670eeff52,
+        type: 3}
     - target: {fileID: 7731971070395255441, guid: ecc4f51b2f3100b4faea726fe8186819,
         type: 3}
       propertyPath: m_Name
@@ -4732,6 +4834,12 @@ PrefabInstance:
       propertyPath: m_Name
       value: PuzzlePiece 5
       objectReference: {fileID: 0}
+    - target: {fileID: 4727988988988816449, guid: b4aafc19334d9784fa3e79fa21f9a671,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 542081919, guid: fafd6c3df05b176408d07b9670eeff52,
+        type: 3}
     - target: {fileID: 5513247424889887945, guid: b4aafc19334d9784fa3e79fa21f9a671,
         type: 3}
       propertyPath: m_Pivot.x
@@ -4850,6 +4958,12 @@ PrefabInstance:
       propertyPath: m_Name
       value: PuzzlePiece 13
       objectReference: {fileID: 0}
+    - target: {fileID: 5619065416667234791, guid: efecee5eac2d5f74c9f6ef4b5eab7d48,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 258390502, guid: fafd6c3df05b176408d07b9670eeff52,
+        type: 3}
     - target: {fileID: 8887290823011123616, guid: efecee5eac2d5f74c9f6ef4b5eab7d48,
         type: 3}
       propertyPath: m_Pivot.x
@@ -5138,6 +5252,12 @@ PrefabInstance:
       propertyPath: m_Name
       value: PuzzlePiece 17
       objectReference: {fileID: 0}
+    - target: {fileID: 4717171046568491768, guid: fa03cf75b0a229b4b9323a271002085b,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: -840754674, guid: fafd6c3df05b176408d07b9670eeff52,
+        type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

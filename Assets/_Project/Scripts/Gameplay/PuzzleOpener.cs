@@ -23,8 +23,8 @@ public class PuzzleOpener : MonoBehaviour
         if (puzzleCanvas != null)
             puzzleCanvas.SetActive(false);
 
-        if (promptRoot != null)
-            promptRoot.SetActive(false);
+        if (DialogueUI.Instance == null)
+            HideLegacyPrompt();
     }
 
     private void Update()
@@ -62,11 +62,33 @@ public class PuzzleOpener : MonoBehaviour
 
     private void ShowPrompt(bool show)
     {
+        if (DialogueUI.Instance != null)
+        {
+            if (show && !DialogueUI.Instance.IsDialogueOpen)
+                DialogueUI.Instance.SetPromptVisible(true, promptMessage);
+            else
+                DialogueUI.Instance.SetPromptVisible(false);
+
+            HideLegacyPrompt();
+            return;
+        }
+
         if (promptRoot != null)
             promptRoot.SetActive(show);
 
         if (show && promptText != null)
             promptText.text = promptMessage;
+    }
+
+    private void OnDisable()
+    {
+        ShowPrompt(false);
+    }
+
+    private void HideLegacyPrompt()
+    {
+        if (DialogueUI.Instance == null && promptRoot != null)
+            promptRoot.SetActive(false);
     }
 
     public void OpenPuzzle()

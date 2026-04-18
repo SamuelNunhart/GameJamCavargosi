@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2846490e87135c94c80c2665f6defa8e, type: 3}
+  m_Name: Ghost_OpeningIntro_Reveal
+  m_EditorClassIdentifier: 
+  lines:
+  - speakerName: Arthur
+    text: What is this? Am I dreaming?
+    side: 1
+    voiceClip: {fileID: 8300000, guid: f39cf88771164e047893c470f69106dd, type: 3}
+  - speakerName: Arthur
+    text: I must've fallen asleep with my phone again...
+    side: 1
+    voiceClip: {fileID: 8300000, guid: ceec291928c902b4a99d2d3487b7c332, type: 3}
+  - speakerName: Ghost
+    text: "NO, you\u2019re totally awake."
+    side: 0
+    voiceClip: {fileID: 8300000, guid: dc7a108e2869d1b4dac30fe8d0bc08f5, type: 3}
+  - speakerName: Ghost
+    text: "Just\u2026 not living."
+    side: 0
+    voiceClip: {fileID: 8300000, guid: 6b4686010cc270c47bbaceaf9383058a, type: 3}
+  - speakerName: Arthur
+    text: What? What do you mean?
+    side: 1
+    voiceClip: {fileID: 8300000, guid: a08a5e976811256499bf4d808d7e4669, type: 3}
+  - speakerName: Ghost
+    text: "Look at you, Arthur\u2026"
+    side: 0
+    voiceClip: {fileID: 8300000, guid: e637ceb2f55436642a019b6cce02b8ac, type: 3}
+  - speakerName: Ghost
+    text: "I know about every hour that you wasted\u2026"
+    side: 0
+    voiceClip: {fileID: 8300000, guid: a92753a84ef4d03489ee6bf08b1ac26d, type: 3}
+  - speakerName: Ghost
+    text: And I know what it's costing you.
+    side: 0
+    voiceClip: {fileID: 8300000, guid: bb82b16fd44c53048b93db29da89e76a, type: 3}
+  - speakerName: Arthur
+    text: What? Costing me what? You mean reels? Come on, everyone does it...
+    side: 1
+    voiceClip: {fileID: 8300000, guid: 25cd5ede7d8c135468abe689da7ce7ea, type: 3}
+  - speakerName: Arthur
+    text: Anyways, I want you to leave.
+    side: 1
+    voiceClip: {fileID: 8300000, guid: 8b31a884f5e244548bdda47278891453, type: 3}
+  - speakerName: Arthur
+    text: How did you even get in here?
+    side: 1
+    voiceClip: {fileID: 8300000, guid: c92335d157113ac499ee2d2d69cfc576, type: 3}
+  - speakerName: Ghost
+    text: "Let me show you something, Arthur\u2026"
+    side: 0
+    voiceClip: {fileID: 8300000, guid: 4255f07d8d8ac644a8bd87315dc2d7c1, type: 3}
+  - speakerName: Ghost
+    text: Let me show you a version of your life lived in presence.
+    side: 0
+    voiceClip: {fileID: 8300000, guid: 1823456e87b7aa546b818d755b96e44d, type: 3}

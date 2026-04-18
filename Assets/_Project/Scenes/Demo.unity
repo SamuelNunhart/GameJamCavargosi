@@ -273,7 +273,7 @@ Transform:
   m_GameObject: {fileID: 43367228}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.56, y: 1.507, z: 4.94}
+  m_LocalPosition: {x: 0.56, y: 2.508273, z: 4.94}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -468,7 +468,7 @@ Transform:
   m_GameObject: {fileID: 102537824}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.505, y: 1.507, z: 4.94}
+  m_LocalPosition: {x: -1.505, y: 2.508273, z: 4.94}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -619,7 +619,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -3139,12 +3139,12 @@ GameObject:
   - component: {fileID: 770544287}
   - component: {fileID: 770544286}
   m_Layer: 0
-  m_Name: Cube
+  m_Name: Ghost
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!65 &770544286
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3224,12 +3224,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 770544285}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -19.709, y: 1.395, z: 17.41}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.07142067, y: 2.5082731, z: 4.6099424}
   m_LocalScale: {x: 0.05, y: 2.5, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1709980707}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &792901952 stripped
 GameObject:
@@ -5827,6 +5827,7 @@ GameObject:
   - component: {fileID: 1408991941}
   - component: {fileID: 1408991943}
   - component: {fileID: 1408991942}
+  - component: {fileID: 1408991944}
   m_Layer: 0
   m_Name: Black
   m_TagString: Untagged
@@ -5891,6 +5892,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1408991940}
   m_CullTransparentMesh: 1
+--- !u!225 &1408991944
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1408991940}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1001 &1417071433
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7009,6 +7022,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1709980707}
+  - component: {fileID: 1709980708}
   m_Layer: 0
   m_Name: StartGhostDialogue
   m_TagString: Untagged
@@ -7033,8 +7047,39 @@ Transform:
   - {fileID: 102537825}
   - {fileID: 43367229}
   - {fileID: 1514127639}
+  - {fileID: 770544289}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1709980708
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1709980706}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdfbf64540e223f47b5c9fed0b954acb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  introDialogueSegments:
+  - {fileID: 11400000, guid: 2c4f9622bfd14622bf43b00cd4d4d44b, type: 2}
+  - {fileID: 11400000, guid: 0db87327695c44cca11c062e40fe8d11, type: 2}
+  ghostRevealAfterSegmentIndex: 0
+  playerControlLocker: {fileID: 0}
+  fallbackBehavioursToDisable: []
+  gameplayCamera: {fileID: 2271036429879105432}
+  disturbancePause: 0.35
+  fadeOutDuration: 0.2
+  fadeInDuration: 0.25
+  ghostMoveDuration: 1.6
+  playOnStart: 1
+  introCamera: {fileID: 167691721}
+  ghostSpawnPoint: {fileID: 102537825}
+  ghostApproachPoint: {fileID: 43367229}
+  ghostObject: {fileID: 770544285}
+  blackoutCanvasGroup: {fileID: 1408991944}
+  blackoutGraphic: {fileID: 1408991942}
 --- !u!1 &1734890965
 GameObject:
   m_ObjectHideFlags: 0
@@ -8758,7 +8803,7 @@ PrefabInstance:
     - target: {fileID: 2271036430416539210, guid: d512ebcdf02532446b58dc05fc0f10d2,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.27699995
+      value: 0.292
       objectReference: {fileID: 0}
     - target: {fileID: 2271036430416539210, guid: d512ebcdf02532446b58dc05fc0f10d2,
         type: 3}
@@ -8814,6 +8859,26 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalPosition.y
       value: 1.309
+      objectReference: {fileID: 0}
+    - target: {fileID: 2271036430514701937, guid: d512ebcdf02532446b58dc05fc0f10d2,
+        type: 3}
+      propertyPath: m_BackGroundColor.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2271036430514701937, guid: d512ebcdf02532446b58dc05fc0f10d2,
+        type: 3}
+      propertyPath: m_BackGroundColor.b
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2271036430514701937, guid: d512ebcdf02532446b58dc05fc0f10d2,
+        type: 3}
+      propertyPath: m_BackGroundColor.g
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2271036430514701937, guid: d512ebcdf02532446b58dc05fc0f10d2,
+        type: 3}
+      propertyPath: m_BackGroundColor.r
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2271036430514701939, guid: d512ebcdf02532446b58dc05fc0f10d2,
         type: 3}
@@ -8890,6 +8955,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8decf0f1ddf210d45b3a28656cf18716, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!20 &2271036429879105432 stripped
+Camera:
+  m_CorrespondingSourceObject: {fileID: 2271036430514701937, guid: d512ebcdf02532446b58dc05fc0f10d2,
+    type: 3}
+  m_PrefabInstance: {fileID: 2271036429879105427}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -8902,5 +8973,4 @@ SceneRoots:
   - {fileID: 1258341157}
   - {fileID: 1734890966}
   - {fileID: 939795678}
-  - {fileID: 770544289}
   - {fileID: 1709980707}

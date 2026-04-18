@@ -16,36 +16,36 @@ MonoBehaviour:
   - speakerName: Ghost
     text: Get up, Arthur.
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: e1e490f709fea84449a1f571d87294b4, type: 3}
   - speakerName: Arthur
     text: Where are you, I can't see you.
     side: 1
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: e77b3b422f974b342a6d4913759855b6, type: 3}
   - speakerName: Ghost
     text: That's not important.
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: a895874883ca8ca4f875a8ea0621ce7e, type: 3}
   - speakerName: Ghost
     text: What matters... is that I can see you.
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: a67c6d152129fc94a937f40abb4f71cf, type: 3}
   - speakerName: Ghost
     text: Now look around...
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 7c40a349fd4d0774c82d50b3808584e3, type: 3}
   - speakerName: Arthur
     text: What do you mean? What am I supposed to see? I'm just in my room.
     side: 1
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 86909b775dad1a24ba238e54c80ad4ce, type: 3}
   - speakerName: Ghost
     text: You think nothing is happening only because you're not present.
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 25cbe33fa94da52428b900e977e9edf4, type: 3}
   - speakerName: Ghost
     text: Life doesn't pause when you look down on your screen.
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 4569f58f47b3a7b448efb8e5bd854af8, type: 3}
   - speakerName: Ghost
     text: Just look through your window.
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 2b7853740309bcf4c943c3dd31dd2464, type: 3}

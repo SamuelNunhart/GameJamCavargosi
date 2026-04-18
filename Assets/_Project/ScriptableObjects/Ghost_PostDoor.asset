@@ -13,19 +13,24 @@ MonoBehaviour:
   m_Name: Ghost_PostDoor
   m_EditorClassIdentifier: 
   lines:
-  - speakerName: Ghost
-    text: Good. Now look carefully, Arthur.
-    side: 0
-    voiceClip: {fileID: 0}
   - speakerName: Arthur
-    text: What is this supposed to show me?
+    text: "That is my family\u2026 They are all here\u2026"
     side: 1
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 3e678c0996d56c448a380af40dd43f1d, type: 3}
   - speakerName: Ghost
-    text: Everything you keep telling yourself you'll get back to.
+    text: "No, they aren\u2019t\u2026 "
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: eb6be728cd9de9b4ea248f8ba24531bb, type: 3}
   - speakerName: Ghost
-    text: Neglect doesn't disappear... it just waits behind closed doors.
+    text: "They only seem to be together\u2026 Each one of them is alone in their
+      own world scrolling\u2026 "
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 417e0fad29068ec4abff1e2f077c1297, type: 3}
+  - speakerName: Ghost
+    text: ' Just like you. Totally disconnected. '
+    side: 0
+    voiceClip: {fileID: 8300000, guid: 99a9d4801abb1aa41aa3039d76ac4d31, type: 3}
+  - speakerName: Ghost
+    text: "Wouldn\u2019t it be nice to connect them back together?"
+    side: 0
+    voiceClip: {fileID: 8300000, guid: e2a97397a23766f46be797b1a978603c, type: 3}

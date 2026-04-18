@@ -16,24 +16,25 @@ MonoBehaviour:
   - speakerName: Ghost
     text: You've already seen the world you've been missing.
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 928f37c1d0e4e774ba584824b819c139, type: 3}
   - speakerName: Ghost
     text: Now let's take a closer look at what you've been leaving behind.
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: b803ab53630c675449ffbed15a19ae8d, type: 3}
   - speakerName: Arthur
     text: And what is that?
     side: 1
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 8a39f61fd459a1e46af923a0f9bd820c, type: 3}
   - speakerName: Ghost
     text: Something you cared about.
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: d324d14c4da6a02489f7568c81d68e16, type: 3}
   - speakerName: Ghost
-    text: You used to paint. Not for anyone else, not only to post it online. You did it for yourself.
+    text: You used to paint. Not for anyone else, not only to post it online. You
+      did it for yourself.
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 76359b6a0bac5504b9683cd5f6324e53, type: 3}
   - speakerName: Ghost
     text: Just look at the unfinished painting in your room.
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 195a390bd3d0719468d2f8e7628a2e9b, type: 3}

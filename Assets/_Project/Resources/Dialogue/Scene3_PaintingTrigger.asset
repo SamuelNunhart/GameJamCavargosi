@@ -16,12 +16,12 @@ MonoBehaviour:
   - speakerName: Arthur
     text: Ahh, I was going to finish it...
     side: 1
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 1a90d301d447c0644ac8420992734610, type: 3}
   - speakerName: Ghost
     text: You were going to do a lot of things...
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 81532f3298771ab4d9f08cf93af1a452, type: 3}
   - speakerName: Ghost
     text: Look at the table...
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 49198caf52967bf4ba153680de4c123e, type: 3}

@@ -16,8 +16,8 @@ MonoBehaviour:
   - speakerName: Ghost
     text: There's real life happening out there.
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 187a1d48f274c024393ea7861868b7a1, type: 3}
   - speakerName: Ghost
     text: Can you see it all?
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 75eebe882d086b741ae27fd73e6cf0bc, type: 3}

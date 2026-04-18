@@ -14,38 +14,41 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   lines:
   - speakerName: Arthur
-    text: Ah, I'm so exhausted... I didn't even relize how much I was missing. You were right...
+    text: Ah, I'm so exhausted... I didn't even relize how much I was missing. You
+      were right...
     side: 1
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 42ec48e2ca064754599e3aabe38f8766, type: 3}
   - speakerName: Arthur
     text: Are you still there?
     side: 1
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 9ca1670eb1c22f743a7bbd1d1ef1af64, type: 3}
   - speakerName: Ghost
-    text: Now you know, what I wanted to show you. The real life. The real purpose of living.
+    text: Now you know, what I wanted to show you. The real life. The real purpose
+      of living.
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: b5b474cfe3cf8ba45afdeb6063223d02, type: 3}
   - speakerName: Arthur
     text: I have already wasted so much time...
     side: 1
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 58f6ac125038dca4085a58f7f91758dc, type: 3}
   - speakerName: Ghost
     text: You can't change what's already gone.
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 88473675f9ba1d4458257efd3f760a7f, type: 3}
   - speakerName: Ghost
     text: But you can choose what comes next.
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 741f280dd0d91284d928d84ae72f9e42, type: 3}
   - speakerName: Ghost
     text: The choice is on you, Arthur...
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 363ce653fd0ebbd4781ac171c3abbdab, type: 3}
   - speakerName: Ghost
-    text: And when you let it all go, you don't just learn how to live again, but you also remember how to dream...
+    text: And when you let it all go, you don't just learn how to live again, but
+      you also remember how to dream...
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 749ce4edc27f2694ba97e470076afc43, type: 3}
   - speakerName: Ghost
     text: Good night, Arthur. Sweet Dreams.
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 2755caef346c4f54cbf037ff6f4526c8, type: 3}

@@ -16,20 +16,21 @@ MonoBehaviour:
   - speakerName: Arthur
     text: Oh... my puzzles...
     side: 1
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: ea3ef0907788bde4393292e47ef5e8b8, type: 3}
   - speakerName: Ghost
     text: You used to focus on things you enjoyed... without interruption.
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 87322303b5aad4c4db012e754bde4a6c, type: 3}
   - speakerName: Ghost
-    text: But now, when notifications interrupt you, it's much harder to enjoy these little things.
+    text: But now, when notifications interrupt you, it's much harder to enjoy these
+      little things.
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: e6b4f32c9e6d79340a308746b4cdf052, type: 3}
   - speakerName: Arthur
     text: No... it's not that bad...
     side: 1
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 12e133a6f5745b747894ad496e1876a2, type: 3}
   - speakerName: Ghost
     text: Okay, then try it...
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 9dd57a19d15f23a4fb3f4dcfe59f6878, type: 3}

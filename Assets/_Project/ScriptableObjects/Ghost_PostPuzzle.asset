@@ -16,20 +16,20 @@ MonoBehaviour:
   - speakerName: Ghost
     text: It's not as easy as you expected, was it?
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: ea3cd454099d61f4387d4dcb92fb5225, type: 3}
   - speakerName: Ghost
     text: Did you enjoy it?
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: c941ed4becd387a4f93ae14c94600cb3, type: 3}
   - speakerName: Arthur
     text: No... I really couldn't focus. It kept pulling me away.
     side: 1
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 39b772bd4ec206e47855335f97f6f4f9, type: 3}
   - speakerName: Ghost
     text: That's the point. Distraction ruins everything.
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: d47935b0ecd393d4cb42e299b4b952c9, type: 3}
   - speakerName: Ghost
     text: Come. Let me show you something... Open the door.
     side: 0
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 8ed7368562e42cf4998661eadc9e9b60, type: 3}

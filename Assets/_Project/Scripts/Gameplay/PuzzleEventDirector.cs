@@ -5,6 +5,9 @@ using UnityEngine;
 
 public class PuzzleEventDirector : MonoBehaviour
 {
+    [Header("Interruption Handler")]
+    [SerializeField] private PhoneInterruptionHandler phoneHandler;
+
     [System.Serializable]
     private class PhoneEventStep
     {
@@ -36,14 +39,16 @@ public class PuzzleEventDirector : MonoBehaviour
     [Header("Temporary Phone Prompt")]
     [SerializeField] private GameObject phonePromptRoot;
     [SerializeField] private TMP_Text phonePromptText;
-    [SerializeField] private string phonePromptMessage = "Press F to put the phone down";
+    [SerializeField] private string phonePromptMessage = ""; // Empty by default for dynamic updates
     [SerializeField] private KeyCode completePhoneEventKey = KeyCode.F;
 
     private int nextPhoneEventIndex;
+    private int current3DInterruptionIndex = 0; // Added for 3D Phone Logic
     private bool phoneEventActive;
     private bool waitingForPhoneCompletion;
     private bool solvedHandled;
     private bool puzzleIntroPlayed;
+    private bool postPuzzleFlowCompleted;
     private bool postPuzzleFlowCompleted;
     private PhoneEventStep currentPhoneEvent;
     private Coroutine puzzleIntroRoutine;
@@ -54,6 +59,18 @@ public class PuzzleEventDirector : MonoBehaviour
     public bool HasPuzzleIntroDialogue => puzzleIntroDialogue != null;
 
     public event System.Action PostPuzzleSequenceCompleted;
+
+    // Added from custom 3D Phone logic
+    public void UpdatePromptMessage(string newMessage)
+    {
+        phonePromptMessage = newMessage;
+        
+        // If the prompt is currently visible, update the text on screen immediately
+        if (phonePromptRoot != null && phonePromptRoot.activeSelf)
+        {
+            phonePromptText.text = phonePromptMessage;
+        }
+    }
 
     private void Awake()
     {
@@ -97,6 +114,7 @@ public class PuzzleEventDirector : MonoBehaviour
     private void HandlePuzzleOpened()
     {
         PlayPuzzleIntroIfAssigned();
+        PlayPuzzleIntroIfAssigned();
     }
 
     private void HandleProgressThresholdReached(int placedCount)
@@ -132,6 +150,23 @@ public class PuzzleEventDirector : MonoBehaviour
         puzzleIntroRoutine = StartCoroutine(RunPuzzleIntroRoutine());
     }
 
+    public void PlayPuzzleIntroIfAssigned(System.Action onCompleted = null)
+    {
+        if (onCompleted != null)
+            PuzzleIntroCompletedCallbacks += onCompleted;
+
+        if (puzzleIntroPlayed || puzzleIntroDialogue == null)
+        {
+            CompletePendingPuzzleIntroCallbacks();
+            return;
+        }
+
+        if (puzzleIntroRoutine != null)
+            return;
+
+        puzzleIntroRoutine = StartCoroutine(RunPuzzleIntroRoutine());
+    }
+
     private IEnumerator RunPuzzleIntroRoutine()
     {
         puzzleIntroPlayed = true;
@@ -143,6 +178,9 @@ public class PuzzleEventDirector : MonoBehaviour
 
         if (puzzleManager != null && !phoneEventActive && !solvedHandled)
             puzzleManager.SetInputLocked(false);
+
+        puzzleIntroRoutine = null;
+        CompletePendingPuzzleIntroCallbacks();
 
         puzzleIntroRoutine = null;
         CompletePendingPuzzleIntroCallbacks();
@@ -158,6 +196,17 @@ public class PuzzleEventDirector : MonoBehaviour
         puzzleOpener.SetPhoneWorldVisible(true);
 
         yield return StartCoroutine(puzzleOpener.MoveToPhoneViewRoutine());
+
+        // --- NEW LOGIC START ---
+        if (phoneHandler != null)
+        {
+            // Trigger the current scenario
+            phoneHandler.TriggerInterruption(current3DInterruptionIndex);
+            
+            // Increase the counter so the next time this runs, it plays the next scenario!
+            current3DInterruptionIndex++; 
+        }
+        // --- NEW LOGIC END ---
 
         currentPhoneEvent = GetNextPhoneEvent();
 
@@ -212,6 +261,31 @@ public class PuzzleEventDirector : MonoBehaviour
         yield return PlayDialogueIfAssigned(postPuzzleDialogue, lockPlayerControlsDuringPostPuzzleDialogue);
 
         puzzleManager.SetInputLocked(false);
+
+        if (puzzleOpener != null && puzzleOpener.IsPuzzleOpen)
+        {
+            bool puzzleClosed = false;
+
+            void HandlePuzzleClosed()
+            {
+                puzzleClosed = true;
+            }
+
+            puzzleOpener.PuzzleClosed += HandlePuzzleClosed;
+            puzzleOpener.ClosePuzzle();
+
+            while (!puzzleClosed)
+                yield return null;
+
+            puzzleOpener.PuzzleClosed -= HandlePuzzleClosed;
+        }
+        else
+        {
+            puzzleOpener?.ClosePuzzle();
+        }
+
+        postPuzzleFlowCompleted = true;
+        PostPuzzleSequenceCompleted?.Invoke();
 
         if (puzzleOpener != null && puzzleOpener.IsPuzzleOpen)
         {
@@ -322,6 +396,9 @@ public class PuzzleEventDirector : MonoBehaviour
     {
         if (dialogue == null || DialogueUI.Instance == null)
             yield break;
+
+        while (DialogueUI.Instance != null && DialogueUI.Instance.IsDialogueOpen)
+            yield return null;
 
         while (DialogueUI.Instance != null && DialogueUI.Instance.IsDialogueOpen)
             yield return null;

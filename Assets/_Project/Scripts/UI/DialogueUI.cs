@@ -58,6 +58,7 @@ public class DialogueUI : MonoBehaviour
         }
 
         Instance = this;
+        EnsureVoiceSource();
 
         promptRectTransform = promptGroup != null ? promptGroup.transform as RectTransform : null;
         promptParentRectTransform = promptRectTransform != null ? promptRectTransform.parent as RectTransform : null;
@@ -205,12 +206,14 @@ public class DialogueUI : MonoBehaviour
 
         ApplySide(line.side);
 
-        if (voiceSource != null)
+        AudioSource activeVoiceSource = EnsureVoiceSource();
+
+        if (activeVoiceSource != null)
         {
-            voiceSource.Stop();
+            activeVoiceSource.Stop();
 
             if (line.voiceClip != null)
-                voiceSource.PlayOneShot(line.voiceClip);
+                activeVoiceSource.PlayOneShot(line.voiceClip);
         }
 
         if (typingCoroutine != null)
@@ -257,8 +260,7 @@ public class DialogueUI : MonoBehaviour
         if (typingCoroutine != null)
             StopCoroutine(typingCoroutine);
 
-        if (voiceSource != null)
-            voiceSource.Stop();
+        EnsureVoiceSource()?.Stop();
 
         DialogueData finishedDialogue = currentDialogue;
         currentDialogue = null;
@@ -402,5 +404,25 @@ public class DialogueUI : MonoBehaviour
 
         playerControlLocker?.ReleaseLock();
         controlsLockedByDialogue = false;
+    }
+
+    private AudioSource EnsureVoiceSource()
+    {
+        if (voiceSource != null)
+            return voiceSource;
+
+        voiceSource = GetComponent<AudioSource>();
+
+        if (voiceSource == null)
+            voiceSource = GetComponentInChildren<AudioSource>(true);
+
+        if (voiceSource == null)
+            voiceSource = gameObject.AddComponent<AudioSource>();
+
+        voiceSource.playOnAwake = false;
+        voiceSource.loop = false;
+        voiceSource.spatialBlend = 0f;
+
+        return voiceSource;
     }
 }

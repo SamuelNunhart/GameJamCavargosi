@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
@@ -8,6 +9,8 @@ using UnityEngine.UI;
 public class WindowSequenceController : MonoBehaviour
 {
     private const int HotspotCount = 7;
+    private static readonly Vector3[] PanoramaWorldCorners = new Vector3[4];
+    private static readonly Vector3[] PanoramaViewportWorldCorners = new Vector3[4];
 
     [Header("Interaction")]
     [SerializeField] private KeyCode interactKey = KeyCode.E;
@@ -33,10 +36,24 @@ public class WindowSequenceController : MonoBehaviour
     [SerializeField] private Color incompleteTargetColor = Color.white;
     [SerializeField] private Color completedTargetColor = new Color(0.6f, 1f, 0.6f, 1f);
 
+    [Header("Panorama Navigation")]
+    [SerializeField] private bool enablePanoramaScrolling = true;
+    [SerializeField] private KeyCode scrollLeftKey = KeyCode.LeftArrow;
+    [SerializeField] private KeyCode alternateScrollLeftKey = KeyCode.A;
+    [SerializeField] private KeyCode scrollRightKey = KeyCode.RightArrow;
+    [SerializeField] private KeyCode alternateScrollRightKey = KeyCode.D;
+    [SerializeField] private float panoramaScrollSpeed = 900f;
+    [SerializeField] [Range(0.05f, 1f)] private float panoramaButtonStepViewportFraction = 0.35f;
+
     [Header("Scene Progression")]
     [SerializeField] private DialogueData completionDialogue;
+    [SerializeField] private string completionDialogueResourcePath = "Dialogue/Scene3_AfterWindow";
     [SerializeField] private bool lockPlayerControlsDuringCompletionDialogue;
     [SerializeField] private UnityEvent onSequenceCompleted;
+
+    [Header("Testing")]
+    [SerializeField] private bool enableSkipShortcut = true;
+    [SerializeField] private KeyCode skipSequenceKey = KeyCode.BackQuote;
 
     [Header("Auto-Resolved Scene Objects")]
     [SerializeField] private Transform windowSequenceRoot;
@@ -61,16 +78,22 @@ public class WindowSequenceController : MonoBehaviour
     private bool sequenceOpen;
     private bool isTransitioning;
     private bool completionHandled;
+    private bool sequenceCompletionNotified;
     private bool playerControlLockHeld;
     private bool promptVisible;
     private int foundCount;
+    private int heldPanoramaScrollDirection;
     private string initialInstructionText;
+    private Vector2 initialPanoramaAnchoredPosition;
     private Vector3 savedViewPosition;
     private Quaternion savedViewRotation;
 
     public bool IsOpen => sequenceOpen;
     public bool IsCompleted => completionHandled;
+    public bool HasFinishedCompletionFlow => sequenceCompletionNotified;
     public bool IsInteractionEnabled => interactionEnabled;
+
+    public event Action SequenceCompleted;
 
     private void Reset()
     {
@@ -88,10 +111,14 @@ public class WindowSequenceController : MonoBehaviour
     {
         AutoAssignReferences();
         ConfigureTrigger();
+        AutoAssignCompletionDialogue();
 
         initialInstructionText = instructionText != null && !string.IsNullOrWhiteSpace(instructionText.text)
             ? instructionText.text
             : instructionMessage;
+        initialPanoramaAnchoredPosition = panoramaImage != null
+            ? panoramaImage.rectTransform.anchoredPosition
+            : Vector2.zero;
 
         RegisterHotspotListeners();
         ResetMinigameState();
@@ -121,6 +148,16 @@ public class WindowSequenceController : MonoBehaviour
             CloseSequence(false);
             return;
         }
+
+        if (sequenceOpen && !isTransitioning && !completionHandled && enableSkipShortcut && Input.GetKeyDown(skipSequenceKey))
+        {
+            DebugLog("Skip shortcut pressed. Completing window sequence for testing.");
+            SkipSequenceForTesting();
+            return;
+        }
+
+        if (sequenceOpen && !isTransitioning)
+            UpdatePanoramaScroll();
 
         RefreshPrompt();
     }
@@ -158,6 +195,7 @@ public class WindowSequenceController : MonoBehaviour
     private void OnDisable()
     {
         ShowPrompt(false);
+        heldPanoramaScrollDirection = 0;
 
         if (hideSeekCanvas != null)
             hideSeekCanvas.SetActive(false);
@@ -212,6 +250,56 @@ public class WindowSequenceController : MonoBehaviour
         RefreshPrompt();
     }
 
+    public void ScrollLeft()
+    {
+        ScrollPanoramaLeft();
+    }
+
+    public void ScrollRight()
+    {
+        ScrollPanoramaRight();
+    }
+
+    public void ScrollPanoramaLeft()
+    {
+        MovePanoramaHorizontally(GetPanoramaButtonStep());
+    }
+
+    public void ScrollPanoramaRight()
+    {
+        MovePanoramaHorizontally(-GetPanoramaButtonStep());
+    }
+
+    public void BeginScrollLeft()
+    {
+        BeginPanoramaScrollLeft();
+    }
+
+    public void BeginScrollRight()
+    {
+        BeginPanoramaScrollRight();
+    }
+
+    public void BeginPanoramaScrollLeft()
+    {
+        heldPanoramaScrollDirection = -1;
+    }
+
+    public void BeginPanoramaScrollRight()
+    {
+        heldPanoramaScrollDirection = 1;
+    }
+
+    public void EndScroll()
+    {
+        EndPanoramaScroll();
+    }
+
+    public void EndPanoramaScroll()
+    {
+        heldPanoramaScrollDirection = 0;
+    }
+
     private void HandleHotspotFound(int index)
     {
         if (!sequenceOpen || completionHandled)
@@ -220,19 +308,27 @@ public class WindowSequenceController : MonoBehaviour
         if (index < 0 || index >= HotspotCount || foundStates[index])
             return;
 
-        foundStates[index] = true;
-        foundCount++;
-
-        if (hotspotButtons[index] != null)
-            hotspotButtons[index].interactable = false;
-
-        if (targetImages[index] != null)
-            targetImages[index].color = completedTargetColor;
+        MarkHotspotAsFound(index);
 
         UpdateFoundCounter();
 
         if (foundCount >= HotspotCount)
             StartCoroutine(CompleteSequenceRoutine());
+    }
+
+    private void SkipSequenceForTesting()
+    {
+        if (!sequenceOpen || isTransitioning || completionHandled)
+            return;
+
+        for (int i = 0; i < HotspotCount; i++)
+        {
+            if (!foundStates[i])
+                MarkHotspotAsFound(i);
+        }
+
+        UpdateFoundCounter();
+        StartCoroutine(CompleteSequenceRoutine());
     }
 
     private IEnumerator OpenSequenceRoutine()
@@ -255,6 +351,7 @@ public class WindowSequenceController : MonoBehaviour
         if (hideSeekCanvas != null)
             hideSeekCanvas.SetActive(true);
 
+        ClampPanoramaToViewport();
         ApplyOpenCursorState();
         DebugLog("Window sequence opened.");
         isTransitioning = false;
@@ -271,6 +368,7 @@ public class WindowSequenceController : MonoBehaviour
         if (completionPanel != null)
             completionPanel.SetActive(false);
 
+        heldPanoramaScrollDirection = 0;
         RestoreCursorState();
         yield return MoveBackToSavedView();
 
@@ -283,6 +381,8 @@ public class WindowSequenceController : MonoBehaviour
         {
             yield return PlayCompletionDialogueIfAssigned();
             onSequenceCompleted?.Invoke();
+            sequenceCompletionNotified = true;
+            SequenceCompleted?.Invoke();
             ShowPrompt(false);
             DebugLog("Window sequence completed and close finished.");
         }
@@ -477,6 +577,8 @@ public class WindowSequenceController : MonoBehaviour
     {
         foundCount = 0;
         completionHandled = false;
+        sequenceCompletionNotified = false;
+        heldPanoramaScrollDirection = 0;
 
         for (int i = 0; i < HotspotCount; i++)
         {
@@ -491,6 +593,9 @@ public class WindowSequenceController : MonoBehaviour
 
         if (instructionText != null)
             instructionText.text = initialInstructionText;
+
+        if (panoramaImage != null)
+            panoramaImage.rectTransform.anchoredPosition = initialPanoramaAnchoredPosition;
 
         UpdateFoundCounter();
     }
@@ -511,6 +616,26 @@ public class WindowSequenceController : MonoBehaviour
             int hotspotIndex = i;
             hotspotButtons[i].onClick.AddListener(() => HandleHotspotFound(hotspotIndex));
         }
+    }
+
+    private void MarkHotspotAsFound(int index)
+    {
+        foundStates[index] = true;
+        foundCount++;
+
+        if (hotspotButtons[index] != null)
+            hotspotButtons[index].interactable = false;
+
+        if (targetImages[index] != null)
+            targetImages[index].color = completedTargetColor;
+    }
+
+    private void AutoAssignCompletionDialogue()
+    {
+        if (completionDialogue != null || string.IsNullOrWhiteSpace(completionDialogueResourcePath))
+            return;
+
+        completionDialogue = Resources.Load<DialogueData>(completionDialogueResourcePath);
     }
 
     private void AutoAssignReferences()
@@ -588,6 +713,131 @@ public class WindowSequenceController : MonoBehaviour
 
         if (playerLook == null)
             playerLook = FindBehaviourInScene("PlayerLook");
+    }
+
+    private void UpdatePanoramaScroll()
+    {
+        if (!enablePanoramaScrolling || panoramaContainer == null || panoramaImage == null)
+            return;
+
+        int scrollDirection = heldPanoramaScrollDirection;
+
+        if (Input.GetKey(scrollLeftKey) || Input.GetKey(alternateScrollLeftKey))
+            scrollDirection = -1;
+        else if (Input.GetKey(scrollRightKey) || Input.GetKey(alternateScrollRightKey))
+            scrollDirection = 1;
+
+        if (scrollDirection == 0)
+            return;
+
+        float deltaX = -scrollDirection * Mathf.Max(0f, panoramaScrollSpeed) * Time.unscaledDeltaTime;
+        MovePanoramaHorizontally(deltaX);
+    }
+
+    private void MovePanoramaHorizontally(float deltaX)
+    {
+        if (!sequenceOpen || !enablePanoramaScrolling || panoramaImage == null || panoramaContainer == null || Mathf.Approximately(deltaX, 0f))
+            return;
+
+        RectTransform panoramaRect = panoramaImage.rectTransform;
+        Vector2 anchoredPosition = panoramaRect.anchoredPosition;
+        anchoredPosition.x += deltaX;
+        panoramaRect.anchoredPosition = anchoredPosition;
+
+        ClampPanoramaToViewport();
+    }
+
+    private void ClampPanoramaToViewport()
+    {
+        if (panoramaContainer == null || panoramaImage == null)
+            return;
+
+        Canvas.ForceUpdateCanvases();
+
+        RectTransform viewportRect = ResolvePanoramaViewport();
+        if (viewportRect == null)
+            return;
+
+        RectTransform panoramaRect = panoramaImage.rectTransform;
+        GetHorizontalWorldBounds(panoramaRect, PanoramaWorldCorners, out float panoramaMinX, out float panoramaMaxX);
+        GetHorizontalWorldBounds(viewportRect, PanoramaViewportWorldCorners, out float viewportMinX, out float viewportMaxX);
+
+        float panoramaWidth = panoramaMaxX - panoramaMinX;
+        float viewportWidth = viewportMaxX - viewportMinX;
+        float worldDeltaX = 0f;
+
+        if (panoramaWidth <= viewportWidth)
+        {
+            float panoramaCenterX = (panoramaMinX + panoramaMaxX) * 0.5f;
+            float viewportCenterX = (viewportMinX + viewportMaxX) * 0.5f;
+            worldDeltaX = viewportCenterX - panoramaCenterX;
+        }
+        else
+        {
+            if (panoramaMinX > viewportMinX)
+                worldDeltaX = viewportMinX - panoramaMinX;
+            else if (panoramaMaxX < viewportMaxX)
+                worldDeltaX = viewportMaxX - panoramaMaxX;
+        }
+
+        if (Mathf.Approximately(worldDeltaX, 0f))
+            return;
+
+        Vector2 anchoredPosition = panoramaRect.anchoredPosition;
+        anchoredPosition.x += ConvertWorldDeltaToAnchoredDeltaX(panoramaRect, worldDeltaX);
+        panoramaRect.anchoredPosition = anchoredPosition;
+    }
+
+    private RectTransform ResolvePanoramaViewport()
+    {
+        if (panoramaContainer == null)
+            return hideSeekCanvas != null ? hideSeekCanvas.transform as RectTransform : null;
+
+        RectMask2D rectMask = panoramaContainer.GetComponentInParent<RectMask2D>(includeInactive: true);
+        if (rectMask != null)
+            return rectMask.transform as RectTransform;
+
+        Mask mask = panoramaContainer.GetComponentInParent<Mask>(includeInactive: true);
+        if (mask != null)
+            return mask.transform as RectTransform;
+
+        if (hideSeekCanvas != null)
+            return hideSeekCanvas.transform as RectTransform;
+
+        return panoramaContainer;
+    }
+
+    private static void GetHorizontalWorldBounds(RectTransform rectTransform, Vector3[] cornersBuffer, out float minX, out float maxX)
+    {
+        rectTransform.GetWorldCorners(cornersBuffer);
+
+        minX = float.PositiveInfinity;
+        maxX = float.NegativeInfinity;
+
+        for (int i = 0; i < cornersBuffer.Length; i++)
+        {
+            minX = Mathf.Min(minX, cornersBuffer[i].x);
+            maxX = Mathf.Max(maxX, cornersBuffer[i].x);
+        }
+    }
+
+    private static float ConvertWorldDeltaToAnchoredDeltaX(RectTransform rectTransform, float worldDeltaX)
+    {
+        if (rectTransform == null || rectTransform.parent == null)
+            return worldDeltaX;
+
+        Vector3 localDelta = rectTransform.parent.InverseTransformVector(new Vector3(worldDeltaX, 0f, 0f));
+        return localDelta.x;
+    }
+
+    private float GetPanoramaButtonStep()
+    {
+        if (panoramaContainer == null)
+            return 0f;
+
+        float viewportWidth = panoramaContainer.rect.width;
+        float viewportFraction = Mathf.Clamp01(panoramaButtonStepViewportFraction);
+        return viewportWidth * viewportFraction;
     }
 
     private void ConfigureTrigger()

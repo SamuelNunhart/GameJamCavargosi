@@ -12,12 +12,15 @@ public class DoorTriggerRotator : MonoBehaviour
     [Header("Trigger")]
     [SerializeField] private string playerTag = "Player";
     [SerializeField] private bool closeWhenPlayerLeaves;
+    [SerializeField] private bool interactionEnabled = true;
 
     private Quaternion closedRotation;
     private Quaternion openRotation;
     private int overlappingPlayerCount;
     private bool isOpen;
     private bool rotationsCached;
+
+    public bool IsInteractionEnabled => interactionEnabled;
 
     private void Reset()
     {
@@ -69,10 +72,24 @@ public class DoorTriggerRotator : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (!interactionEnabled)
+            return;
+
         if (!IsPlayerCollider(other))
             return;
 
         overlappingPlayerCount++;
+        OpenDoor();
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        if (!interactionEnabled || !IsPlayerCollider(other))
+            return;
+
+        if (overlappingPlayerCount == 0)
+            overlappingPlayerCount = 1;
+
         OpenDoor();
     }
 
@@ -106,6 +123,17 @@ public class DoorTriggerRotator : MonoBehaviour
     public void ToggleDoor()
     {
         isOpen = !isOpen;
+    }
+
+    public void SetInteractionEnabled(bool enabled)
+    {
+        interactionEnabled = enabled;
+
+        if (interactionEnabled)
+            return;
+
+        overlappingPlayerCount = 0;
+        CloseDoor();
     }
 
     private void CacheRotations()

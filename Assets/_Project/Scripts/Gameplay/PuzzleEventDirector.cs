@@ -49,6 +49,7 @@ public class PuzzleEventDirector : MonoBehaviour
     private bool solvedHandled;
     private bool puzzleIntroPlayed;
     private bool postPuzzleFlowCompleted;
+    private bool postPuzzleFlowCompleted;
     private PhoneEventStep currentPhoneEvent;
     private Coroutine puzzleIntroRoutine;
     private event System.Action PuzzleIntroCompletedCallbacks;
@@ -113,6 +114,7 @@ public class PuzzleEventDirector : MonoBehaviour
     private void HandlePuzzleOpened()
     {
         PlayPuzzleIntroIfAssigned();
+        PlayPuzzleIntroIfAssigned();
     }
 
     private void HandleProgressThresholdReached(int placedCount)
@@ -148,6 +150,23 @@ public class PuzzleEventDirector : MonoBehaviour
         puzzleIntroRoutine = StartCoroutine(RunPuzzleIntroRoutine());
     }
 
+    public void PlayPuzzleIntroIfAssigned(System.Action onCompleted = null)
+    {
+        if (onCompleted != null)
+            PuzzleIntroCompletedCallbacks += onCompleted;
+
+        if (puzzleIntroPlayed || puzzleIntroDialogue == null)
+        {
+            CompletePendingPuzzleIntroCallbacks();
+            return;
+        }
+
+        if (puzzleIntroRoutine != null)
+            return;
+
+        puzzleIntroRoutine = StartCoroutine(RunPuzzleIntroRoutine());
+    }
+
     private IEnumerator RunPuzzleIntroRoutine()
     {
         puzzleIntroPlayed = true;
@@ -159,6 +178,9 @@ public class PuzzleEventDirector : MonoBehaviour
 
         if (puzzleManager != null && !phoneEventActive && !solvedHandled)
             puzzleManager.SetInputLocked(false);
+
+        puzzleIntroRoutine = null;
+        CompletePendingPuzzleIntroCallbacks();
 
         puzzleIntroRoutine = null;
         CompletePendingPuzzleIntroCallbacks();
@@ -239,6 +261,31 @@ public class PuzzleEventDirector : MonoBehaviour
         yield return PlayDialogueIfAssigned(postPuzzleDialogue, lockPlayerControlsDuringPostPuzzleDialogue);
 
         puzzleManager.SetInputLocked(false);
+
+        if (puzzleOpener != null && puzzleOpener.IsPuzzleOpen)
+        {
+            bool puzzleClosed = false;
+
+            void HandlePuzzleClosed()
+            {
+                puzzleClosed = true;
+            }
+
+            puzzleOpener.PuzzleClosed += HandlePuzzleClosed;
+            puzzleOpener.ClosePuzzle();
+
+            while (!puzzleClosed)
+                yield return null;
+
+            puzzleOpener.PuzzleClosed -= HandlePuzzleClosed;
+        }
+        else
+        {
+            puzzleOpener?.ClosePuzzle();
+        }
+
+        postPuzzleFlowCompleted = true;
+        PostPuzzleSequenceCompleted?.Invoke();
 
         if (puzzleOpener != null && puzzleOpener.IsPuzzleOpen)
         {
@@ -349,6 +396,9 @@ public class PuzzleEventDirector : MonoBehaviour
     {
         if (dialogue == null || DialogueUI.Instance == null)
             yield break;
+
+        while (DialogueUI.Instance != null && DialogueUI.Instance.IsDialogueOpen)
+            yield return null;
 
         while (DialogueUI.Instance != null && DialogueUI.Instance.IsDialogueOpen)
             yield return null;

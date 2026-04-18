@@ -28,6 +28,7 @@ public class PuzzleOpener : MonoBehaviour
     [SerializeField] private TMP_Text promptText;
     [SerializeField] private string promptMessage = "Press E to inspect puzzle";
     [SerializeField] private float interactionDetectionTolerance = 0.75f;
+    [SerializeField] private bool interactionEnabled = true;
 
     private Collider triggerCollider;
     private bool playerInRange;
@@ -41,6 +42,7 @@ public class PuzzleOpener : MonoBehaviour
 
     public bool IsPuzzleOpen => puzzleOpen;
     public bool IsTransitioning => isTransitioning;
+    public bool IsInteractionEnabled => interactionEnabled;
 
     public event Action PuzzleOpened;
     public event Action PuzzleClosed;
@@ -156,7 +158,7 @@ public class PuzzleOpener : MonoBehaviour
 
     private bool CanInteractNow()
     {
-        return DialogueUI.Instance == null || !DialogueUI.Instance.IsDialogueOpen;
+        return interactionEnabled && (DialogueUI.Instance == null || !DialogueUI.Instance.IsDialogueOpen);
     }
 
     private void OnDisable()
@@ -174,10 +176,16 @@ public class PuzzleOpener : MonoBehaviour
 
     public void OpenPuzzle()
     {
-        if (puzzleOpen || isTransitioning)
+        if (!interactionEnabled || puzzleOpen || isTransitioning)
             return;
 
         StartCoroutine(OpenPuzzleRoutine());
+    }
+
+    public void SetInteractionEnabled(bool enabled)
+    {
+        interactionEnabled = enabled;
+        RefreshPrompt();
     }
 
     public void ClosePuzzle()

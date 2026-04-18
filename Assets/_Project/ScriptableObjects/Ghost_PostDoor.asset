@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2846490e87135c94c80c2665f6defa8e, type: 3}
+  m_Name: Ghost_PostDoor
+  m_EditorClassIdentifier: 
+  lines:
+  - speakerName: Arthur
+    text: "That is my family\u2026 They are all here\u2026"
+    side: 1
+    voiceClip: {fileID: 8300000, guid: 3e678c0996d56c448a380af40dd43f1d, type: 3}
+  - speakerName: Ghost
+    text: "No, they aren\u2019t\u2026 "
+    side: 0
+    voiceClip: {fileID: 8300000, guid: eb6be728cd9de9b4ea248f8ba24531bb, type: 3}
+  - speakerName: Ghost
+    text: "They only seem to be together\u2026 Each one of them is alone in their
+      own world scrolling\u2026 "
+    side: 0
+    voiceClip: {fileID: 8300000, guid: 417e0fad29068ec4abff1e2f077c1297, type: 3}
+  - speakerName: Ghost
+    text: ' Just like you. Totally disconnected. '
+    side: 0
+    voiceClip: {fileID: 8300000, guid: 99a9d4801abb1aa41aa3039d76ac4d31, type: 3}
+  - speakerName: Ghost
+    text: "Wouldn\u2019t it be nice to connect them back together?"
+    side: 0
+    voiceClip: {fileID: 8300000, guid: e2a97397a23766f46be797b1a978603c, type: 3}

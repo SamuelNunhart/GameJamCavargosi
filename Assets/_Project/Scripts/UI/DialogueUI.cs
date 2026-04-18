@@ -42,6 +42,7 @@ public class DialogueUI : MonoBehaviour
     private Transform promptAnchor;
     private Vector2 promptDefaultAnchoredPosition;
     private bool promptDefaultPositionCached;
+    private bool promptAnchorInView = true;
 
     public event Action<DialogueData> DialogueStarted;
     public event Action<DialogueData> DialogueEnded;
@@ -103,14 +104,18 @@ public class DialogueUI : MonoBehaviour
     public void SetPromptAnchor(Transform anchor)
     {
         promptAnchor = anchor;
+        promptAnchorInView = true;
         UpdatePromptAnchorPosition();
     }
 
     public void ClearPromptAnchor()
     {
         promptAnchor = null;
+        promptAnchorInView = true;
         RestorePromptDefaultPosition();
     }
+
+    public bool IsPromptAnchorInView => promptAnchor == null || promptAnchorInView;
 
     public bool StartDialogue(DialogueData dialogueData, Action finishedCallback = null)
     {
@@ -286,6 +291,27 @@ public class DialogueUI : MonoBehaviour
             return;
 
         Camera worldCamera = GetPromptWorldCamera();
+        if (worldCamera == null)
+        {
+            promptAnchorInView = false;
+            RestorePromptDefaultPosition();
+            return;
+        }
+
+        Vector3 viewportPoint = worldCamera.WorldToViewportPoint(promptAnchor.position);
+        bool inFrontOfCamera = viewportPoint.z > 0f;
+        bool insideViewport =
+            viewportPoint.x >= 0f && viewportPoint.x <= 1f &&
+            viewportPoint.y >= 0f && viewportPoint.y <= 1f;
+
+        promptAnchorInView = inFrontOfCamera && insideViewport;
+
+        if (!promptAnchorInView)
+        {
+            RestorePromptDefaultPosition();
+            return;
+        }
+
         Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(worldCamera, promptAnchor.position);
         Camera uiCamera = promptCanvas != null && promptCanvas.renderMode == RenderMode.ScreenSpaceOverlay
             ? null

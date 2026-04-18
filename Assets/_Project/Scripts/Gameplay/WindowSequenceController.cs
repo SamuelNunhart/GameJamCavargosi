@@ -14,6 +14,7 @@ public class WindowSequenceController : MonoBehaviour
     [SerializeField] private KeyCode cancelKey = KeyCode.Escape;
     [SerializeField] private string promptMessage = "Press E to look out the window";
     [SerializeField] private float transitionDuration = 0.35f;
+    [SerializeField] private bool enableDebugLogs = true;
 
     [Header("Player Control")]
     [SerializeField] private Transform playerViewTransform;
@@ -105,6 +106,7 @@ public class WindowSequenceController : MonoBehaviour
     {
         if (!completionHandled && !sequenceOpen && !isTransitioning && playerInRange && CanInteractNow() && Input.GetKeyDown(interactKey))
         {
+            DebugLog("Interact key pressed while in range. Opening window sequence.");
             OpenSequence();
             return;
         }
@@ -124,6 +126,7 @@ public class WindowSequenceController : MonoBehaviour
             return;
 
         playerInRange = true;
+        DebugLog($"Player entered trigger with collider '{other.name}'.");
         RefreshPrompt();
     }
 
@@ -133,6 +136,17 @@ public class WindowSequenceController : MonoBehaviour
             return;
 
         playerInRange = false;
+        DebugLog($"Player exited trigger with collider '{other.name}'.");
+        RefreshPrompt();
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        if (playerInRange || !IsPlayerCollider(other))
+            return;
+
+        playerInRange = true;
+        DebugLog($"Player detected via OnTriggerStay with collider '{other.name}'.");
         RefreshPrompt();
     }
 
@@ -155,7 +169,10 @@ public class WindowSequenceController : MonoBehaviour
     public void OpenSequence()
     {
         if (sequenceOpen || isTransitioning || completionHandled)
+        {
+            DebugLog($"OpenSequence ignored. sequenceOpen={sequenceOpen}, isTransitioning={isTransitioning}, completionHandled={completionHandled}");
             return;
+        }
 
         StartCoroutine(OpenSequenceRoutine());
     }
@@ -210,6 +227,7 @@ public class WindowSequenceController : MonoBehaviour
     {
         isTransitioning = true;
         sequenceOpen = true;
+        DebugLog("Opening window sequence.");
 
         ShowPrompt(false);
         AcquirePlayerControlLock();
@@ -226,12 +244,14 @@ public class WindowSequenceController : MonoBehaviour
             hideSeekCanvas.SetActive(true);
 
         ApplyOpenCursorState();
+        DebugLog("Window sequence opened.");
         isTransitioning = false;
     }
 
     private IEnumerator CloseSequenceRoutine(bool completed)
     {
         isTransitioning = true;
+        DebugLog($"Closing window sequence. completed={completed}");
 
         if (hideSeekCanvas != null)
             hideSeekCanvas.SetActive(false);
@@ -252,10 +272,12 @@ public class WindowSequenceController : MonoBehaviour
             yield return PlayCompletionDialogueIfAssigned();
             onSequenceCompleted?.Invoke();
             ShowPrompt(false);
+            DebugLog("Window sequence completed and close finished.");
         }
         else
         {
             RefreshPrompt();
+            DebugLog("Window sequence closed without completion.");
         }
     }
 
@@ -350,6 +372,7 @@ public class WindowSequenceController : MonoBehaviour
     private void RefreshPrompt()
     {
         bool shouldShowPrompt = !completionHandled && !sequenceOpen && !isTransitioning && playerInRange && CanInteractNow();
+        DebugLog($"RefreshPrompt => shouldShowPrompt={shouldShowPrompt}, playerInRange={playerInRange}, completionHandled={completionHandled}, sequenceOpen={sequenceOpen}, isTransitioning={isTransitioning}, canInteract={CanInteractNow()}");
         ShowPrompt(shouldShowPrompt);
     }
 
@@ -360,11 +383,6 @@ public class WindowSequenceController : MonoBehaviour
 
     private void ShowPrompt(bool show)
     {
-        if (promptVisible == show)
-            return;
-
-        promptVisible = show;
-
         if (DialogueUI.Instance != null)
         {
             if (show && windowPromptAnchor != null)
@@ -372,8 +390,20 @@ public class WindowSequenceController : MonoBehaviour
             else
                 DialogueUI.Instance.ClearPromptAnchor();
 
+            if (show && !DialogueUI.Instance.IsPromptAnchorInView)
+            {
+                DebugLog("Prompt anchor is off-screen. Falling back to default prompt position.");
+                DialogueUI.Instance.ClearPromptAnchor();
+            }
+
             DialogueUI.Instance.SetPromptVisible(show, promptMessage);
         }
+
+        if (promptVisible == show)
+            return;
+
+        promptVisible = show;
+        DebugLog($"Prompt visibility changed to {show}.");
     }
 
     private void ApplyOpenCursorState()
@@ -565,9 +595,69 @@ public class WindowSequenceController : MonoBehaviour
             return true;
 
         if (playerViewTransform == null)
+            return IsLikelyPlayerHierarchy(other.transform);
+
+        if (other.transform == playerViewTransform || other.transform.IsChildOf(playerViewTransform.root))
+            return true;
+
+        return IsLikelyPlayerHierarchy(other.transform);
+    }
+
+    private bool IsLikelyPlayerHierarchy(Transform candidate)
+    {
+        if (candidate == null)
             return false;
 
-        return other.transform == playerViewTransform || other.transform.IsChildOf(playerViewTransform.root);
+        Transform candidateRoot = candidate.root;
+
+        if (candidateRoot.CompareTag("Player"))
+            return true;
+
+        if (!string.IsNullOrEmpty(candidateRoot.name) && candidateRoot.name.Contains("Player"))
+            return true;
+
+        if (playerMovement != null && candidateRoot == playerMovement.transform.root)
+            return true;
+
+        if (playerLook != null && candidateRoot == playerLook.transform.root)
+            return true;
+
+        if (playerViewTransform != null && candidateRoot == playerViewTransform.root)
+            return true;
+
+        Rigidbody attachedRigidbody = candidate.GetComponentInParent<Rigidbody>();
+        if (attachedRigidbody != null)
+        {
+            Transform rigidbodyRoot = attachedRigidbody.transform.root;
+
+            if (rigidbodyRoot.CompareTag("Player"))
+                return true;
+
+            if (!string.IsNullOrEmpty(rigidbodyRoot.name) && rigidbodyRoot.name.Contains("Player"))
+                return true;
+        }
+
+        CharacterController characterController = candidate.GetComponentInParent<CharacterController>();
+        if (characterController != null)
+        {
+            Transform controllerRoot = characterController.transform.root;
+
+            if (controllerRoot.CompareTag("Player"))
+                return true;
+
+            if (!string.IsNullOrEmpty(controllerRoot.name) && controllerRoot.name.Contains("Player"))
+                return true;
+        }
+
+        return false;
+    }
+
+    private void DebugLog(string message)
+    {
+        if (!enableDebugLogs)
+            return;
+
+        Debug.Log($"[WindowSequenceController] {message}", this);
     }
 
     private static Transform FindChild(Transform root, string childName)

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -5,6 +6,8 @@ using UnityEngine.UI;
 
 public class OpeningGhostIntroController : MonoBehaviour
 {
+    private const float DefaultGhostFadeInDuration = 0.45f;
+
     [Header("Dialogue")]
     [SerializeField] private List<DialogueData> introDialogueSegments = new List<DialogueData>();
     [SerializeField] private int ghostRevealAfterSegmentIndex;
@@ -21,6 +24,7 @@ public class OpeningGhostIntroController : MonoBehaviour
     [SerializeField] private float fadeOutDuration = 0.2f;
     [SerializeField] private float fadeInDuration = 0.25f;
     [SerializeField] private float ghostMoveDuration = 1.6f;
+    [SerializeField] private float ghostFadeInDuration = 0.45f;
 
     [Header("Auto Run")]
     [SerializeField] private bool playOnStart = true;
@@ -52,10 +56,12 @@ public class OpeningGhostIntroController : MonoBehaviour
 
     private Coroutine introRoutine;
     private Coroutine ghostMoveRoutine;
+    private Coroutine ghostFadeRoutine;
     private Coroutine windowTriggerDialogueRoutine;
     private Coroutine sceneThreePaintingDialogueRoutine;
     private PlayerTriggerRelay windowDialogueTriggerRelay;
     private PlayerTriggerRelay sceneThreePaintingTriggerRelay;
+    private SpriteRenderer[] ghostSpriteRenderers = Array.Empty<SpriteRenderer>();
     private int fallbackLockCount;
     private bool sequenceFinished;
     private bool ghostRevealed;
@@ -77,6 +83,9 @@ public class OpeningGhostIntroController : MonoBehaviour
 
         if (ghostRevealAfterSegmentIndex < 0)
             ghostRevealAfterSegmentIndex = 0;
+
+        if (ghostFadeInDuration < 0f)
+            ghostFadeInDuration = 0f;
     }
 
     private void Awake()
@@ -128,6 +137,9 @@ public class OpeningGhostIntroController : MonoBehaviour
         if (ghostMoveRoutine != null)
             StopCoroutine(ghostMoveRoutine);
 
+        if (ghostFadeRoutine != null)
+            StopCoroutine(ghostFadeRoutine);
+
         if (windowTriggerDialogueRoutine != null)
             StopCoroutine(windowTriggerDialogueRoutine);
 
@@ -136,6 +148,7 @@ public class OpeningGhostIntroController : MonoBehaviour
 
         introRoutine = null;
         ghostMoveRoutine = null;
+        ghostFadeRoutine = null;
         windowTriggerDialogueRoutine = null;
         sceneThreePaintingDialogueRoutine = null;
         waitingForWindowDialogueTrigger = false;
@@ -171,7 +184,8 @@ public class OpeningGhostIntroController : MonoBehaviour
         if (ghostObject == null || ghostApproachPoint == null)
             return;
 
-        RevealGhostAtSpawnPoint();
+        if (!ghostRevealed)
+            RevealGhostAtSpawnPoint();
 
         if (ghostMoveRoutine != null)
             StopCoroutine(ghostMoveRoutine);
@@ -273,11 +287,12 @@ public class OpeningGhostIntroController : MonoBehaviour
         if (disturbancePause > 0f)
             yield return new WaitForSeconds(disturbancePause);
 
-        RevealGhostAtSpawnPoint();
+        RevealGhostAtSpawnPoint(startHidden: true);
+        StartGhostFadeIn();
         MoveGhostToApproachPoint();
     }
 
-    private void RevealGhostAtSpawnPoint()
+    private void RevealGhostAtSpawnPoint(bool startHidden = false)
     {
         if (ghostObject == null)
             return;
@@ -290,7 +305,9 @@ public class OpeningGhostIntroController : MonoBehaviour
             );
         }
 
+        StopGhostFadeRoutine();
         ghostObject.SetActive(true);
+        SetGhostAlpha(startHidden ? 0f : 1f);
         ghostRevealed = true;
     }
 
@@ -440,10 +457,82 @@ public class OpeningGhostIntroController : MonoBehaviour
 
     private void HideGhostImmediate()
     {
+        StopGhostFadeRoutine();
         ghostRevealed = false;
+        SetGhostAlpha(0f);
 
         if (ghostObject != null)
             ghostObject.SetActive(false);
+    }
+
+    private void CacheGhostRenderers()
+    {
+        if (ghostObject == null)
+        {
+            ghostSpriteRenderers = Array.Empty<SpriteRenderer>();
+            return;
+        }
+
+        ghostSpriteRenderers = ghostObject.GetComponentsInChildren<SpriteRenderer>(true);
+    }
+
+    private void StartGhostFadeIn()
+    {
+        if (ghostObject == null)
+            return;
+
+        StopGhostFadeRoutine();
+
+        ghostFadeRoutine = StartCoroutine(FadeGhostRoutine(GetGhostFadeInDuration()));
+    }
+
+    private void StopGhostFadeRoutine()
+    {
+        if (ghostFadeRoutine == null)
+            return;
+
+        StopCoroutine(ghostFadeRoutine);
+        ghostFadeRoutine = null;
+    }
+
+    private IEnumerator FadeGhostRoutine(float duration)
+    {
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            SetGhostAlpha(elapsed / duration);
+            yield return null;
+        }
+
+        SetGhostAlpha(1f);
+        ghostFadeRoutine = null;
+    }
+
+    private float GetGhostFadeInDuration()
+    {
+        return ghostFadeInDuration > 0f ? ghostFadeInDuration : DefaultGhostFadeInDuration;
+    }
+
+    private void SetGhostAlpha(float alpha)
+    {
+        alpha = Mathf.Clamp01(alpha);
+
+        if (ghostSpriteRenderers == null || ghostSpriteRenderers.Length == 0)
+            CacheGhostRenderers();
+
+        for (int i = 0; i < ghostSpriteRenderers.Length; i++)
+        {
+            SpriteRenderer spriteRenderer = ghostSpriteRenderers[i];
+
+            if (spriteRenderer == null)
+                continue;
+
+            Color color = spriteRenderer.color;
+            color.a = alpha;
+            spriteRenderer.color = color;
+        }
     }
 
     private void EnsureBlackoutReady()
@@ -540,6 +629,7 @@ public class OpeningGhostIntroController : MonoBehaviour
             }
         }
 
+        CacheGhostRenderers();
         AutoAssignSceneTwoReferences();
     }
 

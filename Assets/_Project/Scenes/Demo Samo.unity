@@ -4476,13 +4476,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 760314792}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: -2.376, y: 1.645, z: 1.468}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 146747391}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
 --- !u!1 &792901952 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4647871307584112395, guid: 20ec74de6449d204588ffa089f41f1eb,
@@ -6116,6 +6116,13 @@ MonoBehaviour:
   completionCloseDelay: 1
   incompleteTargetColor: {r: 1, g: 1, b: 1, a: 1}
   completedTargetColor: {r: 0.6, g: 1, b: 0.6, a: 1}
+  enablePanoramaScrolling: 1
+  scrollLeftKey: 276
+  alternateScrollLeftKey: 97
+  scrollRightKey: 275
+  alternateScrollRightKey: 100
+  panoramaScrollSpeed: 900
+  panoramaButtonStepViewportFraction: 0.35
   completionDialogue: {fileID: 0}
   completionDialogueResourcePath: Dialogue/Scene3_AfterWindow
   lockPlayerControlsDuringCompletionDialogue: 0
@@ -10464,10 +10471,11 @@ MonoBehaviour:
   playerControlLocker: {fileID: 0}
   fallbackBehavioursToDisable: []
   gameplayCamera: {fileID: 2271036429879105432}
-  disturbancePause: 0.5
-  fadeOutDuration: 0.5
-  fadeInDuration: 1
-  ghostMoveDuration: 3
+  disturbancePause: 1
+  fadeOutDuration: 1
+  fadeInDuration: 2
+  ghostMoveDuration: 6
+  ghostFadeInDuration: 3
   playOnStart: 1
   introCamera: {fileID: 167691721}
   ghostSpawnPoint: {fileID: 102537825}
@@ -12708,7 +12716,7 @@ PrefabInstance:
     - target: {fileID: 2271036430514701900, guid: d512ebcdf02532446b58dc05fc0f10d2,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.309
+      value: 1.687
       objectReference: {fileID: 0}
     - target: {fileID: 2271036430514701937, guid: d512ebcdf02532446b58dc05fc0f10d2,
         type: 3}
@@ -12824,8 +12832,8 @@ SceneRoots:
   - {fileID: 1734890966}
   - {fileID: 1709980707}
   - {fileID: 1221782528}
+  - {fileID: 146747391}
   - {fileID: 2079131842}
   - {fileID: 1546250647}
   - {fileID: 1509934278}
   - {fileID: 939795678}
-  - {fileID: 146747391}

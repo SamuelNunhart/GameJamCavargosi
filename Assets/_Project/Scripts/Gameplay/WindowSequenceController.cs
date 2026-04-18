@@ -34,6 +34,15 @@ public class WindowSequenceController : MonoBehaviour
     [SerializeField] private Color incompleteTargetColor = Color.white;
     [SerializeField] private Color completedTargetColor = new Color(0.6f, 1f, 0.6f, 1f);
 
+    [Header("Panorama Navigation")]
+    [SerializeField] private bool enablePanoramaScrolling = true;
+    [SerializeField] private KeyCode scrollLeftKey = KeyCode.LeftArrow;
+    [SerializeField] private KeyCode alternateScrollLeftKey = KeyCode.A;
+    [SerializeField] private KeyCode scrollRightKey = KeyCode.RightArrow;
+    [SerializeField] private KeyCode alternateScrollRightKey = KeyCode.D;
+    [SerializeField] private float panoramaScrollSpeed = 900f;
+    [SerializeField] [Range(0.05f, 1f)] private float panoramaButtonStepViewportFraction = 0.35f;
+
     [Header("Scene Progression")]
     [SerializeField] private DialogueData completionDialogue;
     [SerializeField] private string completionDialogueResourcePath = "Dialogue/Scene3_AfterWindow";
@@ -71,7 +80,9 @@ public class WindowSequenceController : MonoBehaviour
     private bool playerControlLockHeld;
     private bool promptVisible;
     private int foundCount;
+    private int heldPanoramaScrollDirection;
     private string initialInstructionText;
+    private Vector2 initialPanoramaAnchoredPosition;
     private Vector3 savedViewPosition;
     private Quaternion savedViewRotation;
 
@@ -103,6 +114,9 @@ public class WindowSequenceController : MonoBehaviour
         initialInstructionText = instructionText != null && !string.IsNullOrWhiteSpace(instructionText.text)
             ? instructionText.text
             : instructionMessage;
+        initialPanoramaAnchoredPosition = panoramaImage != null
+            ? panoramaImage.rectTransform.anchoredPosition
+            : Vector2.zero;
 
         RegisterHotspotListeners();
         ResetMinigameState();
@@ -140,6 +154,9 @@ public class WindowSequenceController : MonoBehaviour
             return;
         }
 
+        if (sequenceOpen && !isTransitioning)
+            UpdatePanoramaScroll();
+
         RefreshPrompt();
     }
 
@@ -176,6 +193,7 @@ public class WindowSequenceController : MonoBehaviour
     private void OnDisable()
     {
         ShowPrompt(false);
+        heldPanoramaScrollDirection = 0;
 
         if (hideSeekCanvas != null)
             hideSeekCanvas.SetActive(false);
@@ -230,6 +248,56 @@ public class WindowSequenceController : MonoBehaviour
         RefreshPrompt();
     }
 
+    public void ScrollLeft()
+    {
+        ScrollPanoramaLeft();
+    }
+
+    public void ScrollRight()
+    {
+        ScrollPanoramaRight();
+    }
+
+    public void ScrollPanoramaLeft()
+    {
+        MovePanoramaHorizontally(GetPanoramaButtonStep());
+    }
+
+    public void ScrollPanoramaRight()
+    {
+        MovePanoramaHorizontally(-GetPanoramaButtonStep());
+    }
+
+    public void BeginScrollLeft()
+    {
+        BeginPanoramaScrollLeft();
+    }
+
+    public void BeginScrollRight()
+    {
+        BeginPanoramaScrollRight();
+    }
+
+    public void BeginPanoramaScrollLeft()
+    {
+        heldPanoramaScrollDirection = -1;
+    }
+
+    public void BeginPanoramaScrollRight()
+    {
+        heldPanoramaScrollDirection = 1;
+    }
+
+    public void EndScroll()
+    {
+        EndPanoramaScroll();
+    }
+
+    public void EndPanoramaScroll()
+    {
+        heldPanoramaScrollDirection = 0;
+    }
+
     private void HandleHotspotFound(int index)
     {
         if (!sequenceOpen || completionHandled)
@@ -281,6 +349,7 @@ public class WindowSequenceController : MonoBehaviour
         if (hideSeekCanvas != null)
             hideSeekCanvas.SetActive(true);
 
+        ClampPanoramaToViewport();
         ApplyOpenCursorState();
         DebugLog("Window sequence opened.");
         isTransitioning = false;
@@ -297,6 +366,7 @@ public class WindowSequenceController : MonoBehaviour
         if (completionPanel != null)
             completionPanel.SetActive(false);
 
+        heldPanoramaScrollDirection = 0;
         RestoreCursorState();
         yield return MoveBackToSavedView();
 
@@ -506,6 +576,7 @@ public class WindowSequenceController : MonoBehaviour
         foundCount = 0;
         completionHandled = false;
         sequenceCompletionNotified = false;
+        heldPanoramaScrollDirection = 0;
 
         for (int i = 0; i < HotspotCount; i++)
         {
@@ -520,6 +591,9 @@ public class WindowSequenceController : MonoBehaviour
 
         if (instructionText != null)
             instructionText.text = initialInstructionText;
+
+        if (panoramaImage != null)
+            panoramaImage.rectTransform.anchoredPosition = initialPanoramaAnchoredPosition;
 
         UpdateFoundCounter();
     }
@@ -637,6 +711,76 @@ public class WindowSequenceController : MonoBehaviour
 
         if (playerLook == null)
             playerLook = FindBehaviourInScene("PlayerLook");
+    }
+
+    private void UpdatePanoramaScroll()
+    {
+        if (!enablePanoramaScrolling || panoramaContainer == null || panoramaImage == null)
+            return;
+
+        int scrollDirection = heldPanoramaScrollDirection;
+
+        if (Input.GetKey(scrollLeftKey) || Input.GetKey(alternateScrollLeftKey))
+            scrollDirection = -1;
+        else if (Input.GetKey(scrollRightKey) || Input.GetKey(alternateScrollRightKey))
+            scrollDirection = 1;
+
+        if (scrollDirection == 0)
+            return;
+
+        float deltaX = -scrollDirection * Mathf.Max(0f, panoramaScrollSpeed) * Time.unscaledDeltaTime;
+        MovePanoramaHorizontally(deltaX);
+    }
+
+    private void MovePanoramaHorizontally(float deltaX)
+    {
+        if (!sequenceOpen || !enablePanoramaScrolling || panoramaImage == null || panoramaContainer == null || Mathf.Approximately(deltaX, 0f))
+            return;
+
+        RectTransform panoramaRect = panoramaImage.rectTransform;
+        Vector2 anchoredPosition = panoramaRect.anchoredPosition;
+        anchoredPosition.x += deltaX;
+        panoramaRect.anchoredPosition = anchoredPosition;
+
+        ClampPanoramaToViewport();
+    }
+
+    private void ClampPanoramaToViewport()
+    {
+        if (panoramaContainer == null || panoramaImage == null)
+            return;
+
+        Canvas.ForceUpdateCanvases();
+
+        RectTransform panoramaRect = panoramaImage.rectTransform;
+        Vector2 anchoredPosition = panoramaRect.anchoredPosition;
+        Bounds contentBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(panoramaContainer, panoramaRect);
+        Rect viewportRect = panoramaContainer.rect;
+
+        if (contentBounds.size.x <= viewportRect.width)
+        {
+            anchoredPosition.x += viewportRect.center.x - contentBounds.center.x;
+        }
+        else
+        {
+            if (contentBounds.min.x > viewportRect.xMin)
+                anchoredPosition.x += viewportRect.xMin - contentBounds.min.x;
+
+            if (contentBounds.max.x < viewportRect.xMax)
+                anchoredPosition.x += viewportRect.xMax - contentBounds.max.x;
+        }
+
+        panoramaRect.anchoredPosition = anchoredPosition;
+    }
+
+    private float GetPanoramaButtonStep()
+    {
+        if (panoramaContainer == null)
+            return 0f;
+
+        float viewportWidth = panoramaContainer.rect.width;
+        float viewportFraction = Mathf.Clamp01(panoramaButtonStepViewportFraction);
+        return viewportWidth * viewportFraction;
     }
 
     private void ConfigureTrigger()

@@ -13,6 +13,7 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
     [SerializeField] private float transitionDuration = 0.35f;
     [SerializeField] private float interactionDetectionTolerance = 0.75f;
     [SerializeField] private bool enableDebugLogs;
+    [SerializeField] private bool interactionEnabled = true;
 
     [Header("Scene Progression")]
     [SerializeField] private DialogueData completionDialogue;
@@ -39,6 +40,8 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
     private bool playerControlLockHeld;
     private Vector3 savedViewPosition;
     private Quaternion savedViewRotation;
+
+    public bool IsInteractionEnabled => interactionEnabled;
 
     private void Reset()
     {
@@ -138,10 +141,16 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
 
     public void OpenSequence()
     {
-        if (completionHandled || sequenceOpen || isTransitioning)
+        if (!interactionEnabled || completionHandled || sequenceOpen || isTransitioning)
             return;
 
         StartCoroutine(OpenSequenceRoutine());
+    }
+
+    public void SetInteractionEnabled(bool enabled)
+    {
+        interactionEnabled = enabled;
+        RefreshPrompt();
     }
 
     public void CloseSequence(bool completed)
@@ -290,7 +299,7 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
 
     private bool CanInteractNow()
     {
-        return DialogueUI.Instance == null || !DialogueUI.Instance.IsDialogueOpen;
+        return interactionEnabled && (DialogueUI.Instance == null || !DialogueUI.Instance.IsDialogueOpen);
     }
 
     private void ShowPrompt(bool show)

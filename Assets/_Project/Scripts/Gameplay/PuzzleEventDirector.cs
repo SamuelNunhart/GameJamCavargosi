@@ -44,7 +44,12 @@ public class PuzzleEventDirector : MonoBehaviour
     private bool waitingForPhoneCompletion;
     private bool solvedHandled;
     private bool puzzleIntroPlayed;
+    private bool postPuzzleFlowCompleted;
     private PhoneEventStep currentPhoneEvent;
+
+    public bool HasCompletedPostPuzzleFlow => postPuzzleFlowCompleted;
+
+    public event System.Action PostPuzzleSequenceCompleted;
 
     private void Awake()
     {
@@ -186,7 +191,31 @@ public class PuzzleEventDirector : MonoBehaviour
         yield return PlayDialogueIfAssigned(postPuzzleDialogue, lockPlayerControlsDuringPostPuzzleDialogue);
 
         puzzleManager.SetInputLocked(false);
-        puzzleOpener.ClosePuzzle();
+
+        if (puzzleOpener != null && puzzleOpener.IsPuzzleOpen)
+        {
+            bool puzzleClosed = false;
+
+            void HandlePuzzleClosed()
+            {
+                puzzleClosed = true;
+            }
+
+            puzzleOpener.PuzzleClosed += HandlePuzzleClosed;
+            puzzleOpener.ClosePuzzle();
+
+            while (!puzzleClosed)
+                yield return null;
+
+            puzzleOpener.PuzzleClosed -= HandlePuzzleClosed;
+        }
+        else
+        {
+            puzzleOpener?.ClosePuzzle();
+        }
+
+        postPuzzleFlowCompleted = true;
+        PostPuzzleSequenceCompleted?.Invoke();
     }
 
     private PhoneEventStep GetNextPhoneEvent()

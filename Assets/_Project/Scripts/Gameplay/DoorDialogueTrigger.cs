@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 
@@ -17,6 +18,7 @@ public class DoorDialogueTrigger : MonoBehaviour
 
     [Header("Trigger")]
     [SerializeField] private string playerTag = "Player";
+    [SerializeField] private bool interactionEnabled = true;
 
     private Quaternion closedRotation;
     private Quaternion openRotation;
@@ -24,6 +26,11 @@ public class DoorDialogueTrigger : MonoBehaviour
     private bool playerInRange;
     private bool hasPlayed;
     private Coroutine waitForDoorRoutine;
+
+    public bool HasPlayedDialogue => hasPlayed;
+    public bool IsInteractionEnabled => interactionEnabled;
+
+    public event Action DialogueCompleted;
 
     private void Reset()
     {
@@ -101,9 +108,28 @@ public class DoorDialogueTrigger : MonoBehaviour
         }
     }
 
+    public void SetInteractionEnabled(bool enabled)
+    {
+        interactionEnabled = enabled;
+
+        if (interactionEnabled)
+        {
+            if (playerInRange)
+                TryStartWaitingForDialogue();
+
+            return;
+        }
+
+        if (waitForDoorRoutine != null)
+        {
+            StopCoroutine(waitForDoorRoutine);
+            waitForDoorRoutine = null;
+        }
+    }
+
     private void TryStartWaitingForDialogue()
     {
-        if (!playerInRange || hasPlayed || waitForDoorRoutine != null || dialogue == null)
+        if (!interactionEnabled || !playerInRange || hasPlayed || waitForDoorRoutine != null || dialogue == null)
             return;
 
         waitForDoorRoutine = StartCoroutine(WaitForDoorAndPlayDialogue());
@@ -111,7 +137,7 @@ public class DoorDialogueTrigger : MonoBehaviour
 
     private IEnumerator WaitForDoorAndPlayDialogue()
     {
-        while (playerInRange && !hasPlayed)
+        while (interactionEnabled && playerInRange && !hasPlayed)
         {
             if (DialogueUI.Instance == null || DialogueUI.Instance.IsDialogueOpen)
             {
@@ -140,7 +166,7 @@ public class DoorDialogueTrigger : MonoBehaviour
             bool started = DialogueUI.Instance.StartDialogue(
                 dialogue,
                 lockPlayerControlsDuringDialogue,
-                null
+                HandleDialogueCompleted
             );
 
             if (started)
@@ -153,6 +179,11 @@ public class DoorDialogueTrigger : MonoBehaviour
         }
 
         waitForDoorRoutine = null;
+    }
+
+    private void HandleDialogueCompleted()
+    {
+        DialogueCompleted?.Invoke();
     }
 
     private bool IsDoorOpenEnough()

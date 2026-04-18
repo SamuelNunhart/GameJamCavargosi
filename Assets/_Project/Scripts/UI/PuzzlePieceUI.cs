@@ -11,6 +11,7 @@ public class PuzzlePieceUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
     private RectTransform rectTransform;
     private CanvasGroup canvasGroup;
     private PuzzleManagerUI manager;
+    private bool inputEnabled = true;
 
     public int CorrectSlotIndex => correctSlotIndex;
     public RectTransform RectTransform => rectTransform;
@@ -39,8 +40,20 @@ public class PuzzlePieceUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
 
         manager = puzzleManager;
         IsPlaced = false;
+        inputEnabled = true;
         canvasGroup.blocksRaycasts = true;
         rectTransform.localScale = Vector3.one;
+    }
+
+    public void SetInputEnabled(bool value)
+    {
+        CacheReferences();
+
+        inputEnabled = value;
+        canvasGroup.blocksRaycasts = value;
+
+        if (!value)
+            rectTransform.localScale = Vector3.one;
     }
 
     public void SetSize(Vector2 size)
@@ -57,7 +70,7 @@ public class PuzzlePieceUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         rectTransform.position = position;
         rectTransform.rotation = Quaternion.Euler(0f, 0f, zRotation);
         rectTransform.localScale = Vector3.one;
-        canvasGroup.blocksRaycasts = true;
+        canvasGroup.blocksRaycasts = inputEnabled;
     }
 
     public void LockToSlot(PuzzleSlotUI slot)
@@ -68,12 +81,12 @@ public class PuzzlePieceUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         rectTransform.position = slot.RectTransform.position;
         rectTransform.rotation = Quaternion.identity;
         rectTransform.localScale = Vector3.one;
-        canvasGroup.blocksRaycasts = true;
+        canvasGroup.blocksRaycasts = inputEnabled;
     }
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        if (IsPlaced || manager == null)
+        if (IsPlaced || manager == null || !inputEnabled || manager.InputLocked)
             return;
 
         CacheReferences();
@@ -86,7 +99,7 @@ public class PuzzlePieceUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (IsPlaced || manager == null)
+        if (IsPlaced || manager == null || !inputEnabled || manager.InputLocked)
             return;
 
         CacheReferences();
@@ -95,12 +108,12 @@ public class PuzzlePieceUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        if (IsPlaced || manager == null)
+        if (IsPlaced || manager == null || !inputEnabled || manager.InputLocked)
             return;
 
         CacheReferences();
 
-        canvasGroup.blocksRaycasts = true;
+        canvasGroup.blocksRaycasts = inputEnabled;
         rectTransform.localScale = Vector3.one;
 
         manager.TrySnapPiece(this);

@@ -14,7 +14,11 @@ public class PuzzleOpener : MonoBehaviour
     [Header("View Transition")]
     [SerializeField] private Transform playerViewTransform;
     [SerializeField] private Transform puzzleViewPoint;
+    [SerializeField] private Transform phoneViewPoint;
     [SerializeField] private float transitionDuration = 0.4f;
+
+    [Header("World Objects")]
+    [SerializeField] private GameObject phoneWorldObject;
 
     [Header("Prompt UI")]
     [SerializeField] private GameObject promptRoot;
@@ -28,10 +32,16 @@ public class PuzzleOpener : MonoBehaviour
     private Vector3 savedViewPosition;
     private Quaternion savedViewRotation;
 
+    public bool IsPuzzleOpen => puzzleOpen;
+    public bool IsTransitioning => isTransitioning;
+
     private void Start()
     {
         if (puzzleCanvas != null)
             puzzleCanvas.SetActive(false);
+
+        if (phoneWorldObject != null)
+            phoneWorldObject.SetActive(false);
 
         if (DialogueUI.Instance == null)
             HideLegacyPrompt();
@@ -117,6 +127,62 @@ public class PuzzleOpener : MonoBehaviour
         StartCoroutine(ClosePuzzleRoutine());
     }
 
+    public void SetPuzzleCanvasVisible(bool visible)
+    {
+        if (puzzleCanvas != null)
+            puzzleCanvas.SetActive(visible);
+    }
+
+    public void SetPhoneWorldVisible(bool visible)
+    {
+        if (phoneWorldObject != null)
+            phoneWorldObject.SetActive(visible);
+    }
+
+    public IEnumerator MoveToPhoneViewRoutine()
+    {
+        if (isTransitioning)
+            yield break;
+
+        if (playerViewTransform == null || phoneViewPoint == null || transitionDuration <= 0f)
+            yield break;
+
+        isTransitioning = true;
+
+        yield return MoveView(
+            playerViewTransform,
+            playerViewTransform.position,
+            playerViewTransform.rotation,
+            phoneViewPoint.position,
+            phoneViewPoint.rotation,
+            transitionDuration
+        );
+
+        isTransitioning = false;
+    }
+
+    public IEnumerator MoveToPuzzleViewRoutine()
+    {
+        if (isTransitioning)
+            yield break;
+
+        if (playerViewTransform == null || puzzleViewPoint == null || transitionDuration <= 0f)
+            yield break;
+
+        isTransitioning = true;
+
+        yield return MoveView(
+            playerViewTransform,
+            playerViewTransform.position,
+            playerViewTransform.rotation,
+            puzzleViewPoint.position,
+            puzzleViewPoint.rotation,
+            transitionDuration
+        );
+
+        isTransitioning = false;
+    }
+
     private IEnumerator OpenPuzzleRoutine()
     {
         isTransitioning = true;
@@ -147,6 +213,9 @@ public class PuzzleOpener : MonoBehaviour
             );
         }
 
+        if (phoneWorldObject != null)
+            phoneWorldObject.SetActive(true);
+
         if (puzzleCanvas != null)
             puzzleCanvas.SetActive(true);
 
@@ -162,6 +231,9 @@ public class PuzzleOpener : MonoBehaviour
 
         if (puzzleCanvas != null)
             puzzleCanvas.SetActive(false);
+
+        if (phoneWorldObject != null)
+            phoneWorldObject.SetActive(false);
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
@@ -206,7 +278,7 @@ public class PuzzleOpener : MonoBehaviour
         while (elapsed < duration)
         {
             float t = elapsed / duration;
-            t = t * t * (3f - 2f * t); // smoothstep
+            t = t * t * (3f - 2f * t);
 
             viewTransform.position = Vector3.Lerp(startPosition, endPosition, t);
             viewTransform.rotation = Quaternion.Slerp(startRotation, endRotation, t);

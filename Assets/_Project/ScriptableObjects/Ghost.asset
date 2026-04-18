@@ -16,39 +16,43 @@ MonoBehaviour:
   - speakerName: Arthur
     text: Okay, just one more reel. This one actually looks useful.
     side: 1
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: b3b07c59315146f46804cbcc99db2f20, type: 3}
   - speakerName: Ghost
     text: "You\u2019ve already said \u201Cone more reel\u201D 15 times today."
     side: 0
-    voiceClip: {fileID: 8300000, guid: 517fcc96ca8d5174ea20e7f8241dfc46, type: 3}
+    voiceClip: {fileID: 8300000, guid: 92587bb2318929b4c8ee6b43f5934a89, type: 3}
   - speakerName: Arthur
     text: What? Hello? Who is there?
     side: 1
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: fe5f3b96b7ba3084389d05a82bdfa38f, type: 3}
   - speakerName: Arthur
-    text: What is this? Am I dreaming? I must have already fell asleep with my phone.
+    text: What is this? Am I dreaming?
     side: 1
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: f39cf88771164e047893c470f69106dd, type: 3}
+  - speakerName: Arthur
+    text: I must have already fell asleep with my phone.
+    side: 1
+    voiceClip: {fileID: 8300000, guid: ceec291928c902b4a99d2d3487b7c332, type: 3}
   - speakerName: Ghost
     text: "NO, you\u2019re totally awake. Just\u2026 not living."
     side: 0
-    voiceClip: {fileID: 8300000, guid: f48c909f666a21d46a92fa02311b8358, type: 3}
+    voiceClip: {fileID: 8300000, guid: 1b056bf22ed15b94d8d997a88e7bada9, type: 3}
   - speakerName: Arthur
     text: What? What do you mean?
     side: 1
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: a08a5e976811256499bf4d808d7e4669, type: 3}
   - speakerName: Ghost
     text: "Look at you, Arthur\u2026 I know about every hour that you wasted from
       your life\u2026 And I know what it\u2019s costing you."
     side: 0
-    voiceClip: {fileID: 8300000, guid: 9bb78814081437441a9d2faa43b39f44, type: 3}
+    voiceClip: {fileID: 8300000, guid: aa551386e1f7fa54daab32de5cc8c671, type: 3}
   - speakerName: Arthur
     text: "What? Costing me what? You mean reals? C\u2019mone, everyone does it\u2026
       Stop that philosophy. I want you to leave. How did you even get in here?"
     side: 1
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 25cd5ede7d8c135468abe689da7ce7ea, type: 3}
   - speakerName: Ghost
     text: "Let me show you something, Arthur\u2026 Let me show you a version of your
       life lived in presence."
     side: 0
-    voiceClip: {fileID: 8300000, guid: d98c147c7ef65334e92118dfad9d8109, type: 3}
+    voiceClip: {fileID: 8300000, guid: 7942cd69dda4e6244be47c124d2d1dd1, type: 3}

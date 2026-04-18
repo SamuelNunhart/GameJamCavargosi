@@ -33,11 +33,25 @@ public class OpeningGhostIntroController : MonoBehaviour
     [SerializeField] private CanvasGroup blackoutCanvasGroup;
     [SerializeField] private Graphic blackoutGraphic;
 
+    [Header("Scene 2 Progression")]
+    [SerializeField] private DialogueData sceneTwoIntroDialogue;
+    [SerializeField] private DialogueData sceneTwoWindowDialogue;
+    [SerializeField] private Collider windowDialogueTrigger;
+    [SerializeField] private WindowSequenceController gatedWindowSequence;
+    [SerializeField] private bool lockPlayerControlsDuringSceneTwoIntroDialogue;
+    [SerializeField] private bool lockPlayerControlsDuringSceneTwoWindowDialogue;
+    [SerializeField] private string sceneTwoIntroDialogueResourcePath = "Dialogue/Scene2_AfterIntro";
+    [SerializeField] private string sceneTwoWindowDialogueResourcePath = "Dialogue/Scene2_WindowTrigger";
+
     private Coroutine introRoutine;
     private Coroutine ghostMoveRoutine;
+    private Coroutine windowTriggerDialogueRoutine;
+    private PlayerTriggerRelay windowDialogueTriggerRelay;
     private int fallbackLockCount;
     private bool sequenceFinished;
     private bool ghostRevealed;
+    private bool waitingForWindowDialogueTrigger;
+    private bool windowDialogueTriggered;
 
     private void Reset()
     {
@@ -55,10 +69,14 @@ public class OpeningGhostIntroController : MonoBehaviour
     private void Awake()
     {
         AutoAssignSceneReferences();
+        EnsureWindowDialogueTriggerRelay();
         EnsureBlackoutReady();
         HideGhostImmediate();
         SetCameraState(introCamera, true);
         SetCameraState(gameplayCamera, false);
+
+        if (ShouldGateWindowSequence())
+            gatedWindowSequence.SetInteractionEnabled(false);
     }
 
     private void Start()
@@ -67,10 +85,18 @@ public class OpeningGhostIntroController : MonoBehaviour
             introRoutine = StartCoroutine(RunIntroSequence());
     }
 
+    private void OnEnable()
+    {
+        EnsureWindowDialogueTriggerRelay();
+        SubscribeToWindowDialogueTrigger();
+    }
+
     private void OnDisable()
     {
         if (!Application.isPlaying)
             return;
+
+        UnsubscribeFromWindowDialogueTrigger();
 
         if (introRoutine != null)
             StopCoroutine(introRoutine);
@@ -78,8 +104,16 @@ public class OpeningGhostIntroController : MonoBehaviour
         if (ghostMoveRoutine != null)
             StopCoroutine(ghostMoveRoutine);
 
+        if (windowTriggerDialogueRoutine != null)
+            StopCoroutine(windowTriggerDialogueRoutine);
+
         introRoutine = null;
         ghostMoveRoutine = null;
+        windowTriggerDialogueRoutine = null;
+        waitingForWindowDialogueTrigger = false;
+
+        if (!windowDialogueTriggered)
+            gatedWindowSequence?.SetInteractionEnabled(true);
 
         if (sequenceFinished)
             return;
@@ -153,20 +187,53 @@ public class OpeningGhostIntroController : MonoBehaviour
         yield return FadeFromBlack(fadeInDuration);
 
         ReleaseControlLock();
+
+        if (sceneTwoIntroDialogue != null)
+            yield return PlayDialogueSegment(sceneTwoIntroDialogue, lockPlayerControlsDuringSceneTwoIntroDialogue);
+
+        BeginWaitingForWindowDialogueTrigger();
         sequenceFinished = true;
         introRoutine = null;
     }
 
-    private IEnumerator PlayDialogueSegment(DialogueData dialogue)
+    private IEnumerator PlayDialogueSegment(DialogueData dialogue, bool lockPlayerControls = false)
     {
         bool finished = false;
-        bool started = DialogueUI.Instance.StartDialogue(dialogue, false, () => finished = true);
+        bool started = DialogueUI.Instance.StartDialogue(dialogue, lockPlayerControls, () => finished = true);
 
         if (!started)
             yield break;
 
         while (!finished)
             yield return null;
+    }
+
+    private void BeginWaitingForWindowDialogueTrigger()
+    {
+        EnsureWindowDialogueTriggerRelay();
+
+        if (sceneTwoWindowDialogue == null || windowDialogueTrigger == null || windowDialogueTriggerRelay == null)
+        {
+            gatedWindowSequence?.SetInteractionEnabled(true);
+            waitingForWindowDialogueTrigger = false;
+            return;
+        }
+
+        windowDialogueTriggerRelay.ResetTriggerState();
+
+        if (gatedWindowSequence != null)
+            gatedWindowSequence.SetInteractionEnabled(false);
+
+        waitingForWindowDialogueTrigger = true;
+    }
+
+    private IEnumerator PlayWindowDialogueAndUnlockSequence()
+    {
+        if (sceneTwoWindowDialogue != null)
+            yield return PlayDialogueSegment(sceneTwoWindowDialogue, lockPlayerControlsDuringSceneTwoWindowDialogue);
+
+        gatedWindowSequence?.SetInteractionEnabled(true);
+        windowTriggerDialogueRoutine = null;
     }
 
     private IEnumerator RunRevealBeat()
@@ -276,6 +343,7 @@ public class OpeningGhostIntroController : MonoBehaviour
         SetCameraState(introCamera, false);
         SetCameraState(gameplayCamera, true);
         ReleaseControlLock();
+        gatedWindowSequence?.SetInteractionEnabled(true);
         sequenceFinished = true;
         introRoutine = null;
         yield break;
@@ -425,10 +493,7 @@ public class OpeningGhostIntroController : MonoBehaviour
         }
 
         if (gameplayCamera == null && Camera.main != null && Camera.main != introCamera)
-        {
             gameplayCamera = Camera.main;
-            return;
-        }
 
         if (gameplayCamera == null)
         {
@@ -445,6 +510,8 @@ public class OpeningGhostIntroController : MonoBehaviour
                 }
             }
         }
+
+        AutoAssignSceneTwoReferences();
     }
 
     private void TryPopulateFallbackBehaviours()
@@ -466,5 +533,88 @@ public class OpeningGhostIntroController : MonoBehaviour
             if (typeName == "PlayerMove" || typeName == "PlayerLook" || typeName == "PlayerController")
                 fallbackBehavioursToDisable.Add(behaviour);
         }
+    }
+
+    private void AutoAssignSceneTwoReferences()
+    {
+        if (sceneTwoIntroDialogue == null && !string.IsNullOrWhiteSpace(sceneTwoIntroDialogueResourcePath))
+            sceneTwoIntroDialogue = Resources.Load<DialogueData>(sceneTwoIntroDialogueResourcePath);
+
+        if (sceneTwoWindowDialogue == null && !string.IsNullOrWhiteSpace(sceneTwoWindowDialogueResourcePath))
+            sceneTwoWindowDialogue = Resources.Load<DialogueData>(sceneTwoWindowDialogueResourcePath);
+
+        if (windowDialogueTrigger == null)
+        {
+            Transform triggerTransform = FindTransformInScene("WindowDialogueTrigger");
+            if (triggerTransform != null)
+                windowDialogueTrigger = triggerTransform.GetComponent<Collider>();
+        }
+
+        if (gatedWindowSequence == null)
+        {
+            WindowSequenceController[] windowSequences = FindObjectsOfType<WindowSequenceController>(true);
+            if (windowSequences.Length > 0)
+                gatedWindowSequence = windowSequences[0];
+        }
+    }
+
+    private void EnsureWindowDialogueTriggerRelay()
+    {
+        if (!Application.isPlaying || windowDialogueTrigger == null)
+            return;
+
+        windowDialogueTriggerRelay = windowDialogueTrigger.GetComponent<PlayerTriggerRelay>();
+
+        if (windowDialogueTriggerRelay == null)
+            windowDialogueTriggerRelay = windowDialogueTrigger.gameObject.AddComponent<PlayerTriggerRelay>();
+    }
+
+    private void SubscribeToWindowDialogueTrigger()
+    {
+        if (!Application.isPlaying || windowDialogueTriggerRelay == null)
+            return;
+
+        windowDialogueTriggerRelay.PlayerEntered -= HandleWindowDialogueTriggerEntered;
+        windowDialogueTriggerRelay.PlayerEntered += HandleWindowDialogueTriggerEntered;
+    }
+
+    private void UnsubscribeFromWindowDialogueTrigger()
+    {
+        if (!Application.isPlaying || windowDialogueTriggerRelay == null)
+            return;
+
+        windowDialogueTriggerRelay.PlayerEntered -= HandleWindowDialogueTriggerEntered;
+    }
+
+    private void HandleWindowDialogueTriggerEntered(Collider other)
+    {
+        if (!waitingForWindowDialogueTrigger || windowDialogueTriggered)
+            return;
+
+        windowDialogueTriggered = true;
+        waitingForWindowDialogueTrigger = false;
+        windowTriggerDialogueRoutine = StartCoroutine(PlayWindowDialogueAndUnlockSequence());
+    }
+
+    private bool ShouldGateWindowSequence()
+    {
+        return sceneTwoWindowDialogue != null && windowDialogueTrigger != null && gatedWindowSequence != null;
+    }
+
+    private static Transform FindTransformInScene(string targetName)
+    {
+        if (string.IsNullOrWhiteSpace(targetName))
+            return null;
+
+        Transform[] transforms = FindObjectsOfType<Transform>(true);
+        for (int i = 0; i < transforms.Length; i++)
+        {
+            Transform transformCandidate = transforms[i];
+
+            if (transformCandidate != null && transformCandidate.name == targetName)
+                return transformCandidate;
+        }
+
+        return null;
     }
 }

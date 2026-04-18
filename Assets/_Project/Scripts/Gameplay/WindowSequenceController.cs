@@ -15,6 +15,7 @@ public class WindowSequenceController : MonoBehaviour
     [SerializeField] private string promptMessage = "Press E to look out the window";
     [SerializeField] private float transitionDuration = 0.35f;
     [SerializeField] private bool enableDebugLogs = true;
+    [SerializeField] private bool interactionEnabled = true;
 
     [Header("Player Control")]
     [SerializeField] private Transform playerViewTransform;
@@ -68,6 +69,7 @@ public class WindowSequenceController : MonoBehaviour
 
     public bool IsOpen => sequenceOpen;
     public bool IsCompleted => completionHandled;
+    public bool IsInteractionEnabled => interactionEnabled;
 
     private void Reset()
     {
@@ -168,9 +170,9 @@ public class WindowSequenceController : MonoBehaviour
 
     public void OpenSequence()
     {
-        if (sequenceOpen || isTransitioning || completionHandled)
+        if (!interactionEnabled || sequenceOpen || isTransitioning || completionHandled)
         {
-            DebugLog($"OpenSequence ignored. sequenceOpen={sequenceOpen}, isTransitioning={isTransitioning}, completionHandled={completionHandled}");
+            DebugLog($"OpenSequence ignored. interactionEnabled={interactionEnabled}, sequenceOpen={sequenceOpen}, isTransitioning={isTransitioning}, completionHandled={completionHandled}");
             return;
         }
 
@@ -198,6 +200,12 @@ public class WindowSequenceController : MonoBehaviour
                 return;
             }
         }
+    }
+
+    public void SetInteractionEnabled(bool enabled)
+    {
+        interactionEnabled = enabled;
+        RefreshPrompt();
     }
 
     private void HandleHotspotFound(int index)
@@ -371,14 +379,14 @@ public class WindowSequenceController : MonoBehaviour
 
     private void RefreshPrompt()
     {
-        bool shouldShowPrompt = !completionHandled && !sequenceOpen && !isTransitioning && playerInRange && CanInteractNow();
+        bool shouldShowPrompt = interactionEnabled && !completionHandled && !sequenceOpen && !isTransitioning && playerInRange && CanInteractNow();
         DebugLog($"RefreshPrompt => shouldShowPrompt={shouldShowPrompt}, playerInRange={playerInRange}, completionHandled={completionHandled}, sequenceOpen={sequenceOpen}, isTransitioning={isTransitioning}, canInteract={CanInteractNow()}");
         ShowPrompt(shouldShowPrompt);
     }
 
     private bool CanInteractNow()
     {
-        return DialogueUI.Instance == null || !DialogueUI.Instance.IsDialogueOpen;
+        return interactionEnabled && (DialogueUI.Instance == null || !DialogueUI.Instance.IsDialogueOpen);
     }
 
     private void ShowPrompt(bool show)

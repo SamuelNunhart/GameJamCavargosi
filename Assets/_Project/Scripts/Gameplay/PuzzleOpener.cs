@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine;
 using TMPro;
 
+[RequireComponent(typeof(Collider))]
 public class PuzzleOpener : MonoBehaviour
 {
     [Header("Puzzle")]
@@ -26,10 +27,13 @@ public class PuzzleOpener : MonoBehaviour
     [SerializeField] private GameObject promptRoot;
     [SerializeField] private TMP_Text promptText;
     [SerializeField] private string promptMessage = "Press E to inspect puzzle";
+    [SerializeField] private float interactionDetectionTolerance = 0.75f;
 
+    private Collider triggerCollider;
     private bool playerInRange;
     private bool puzzleOpen;
     private bool isTransitioning;
+    private bool promptVisible;
 
     private Vector3 savedViewPosition;
     private Quaternion savedViewRotation;
@@ -40,6 +44,24 @@ public class PuzzleOpener : MonoBehaviour
 
     public event Action PuzzleOpened;
     public event Action PuzzleClosed;
+
+    private void Reset()
+    {
+        AutoAssignReferences();
+        ConfigureTrigger();
+    }
+
+    private void OnValidate()
+    {
+        AutoAssignReferences();
+        ConfigureTrigger();
+    }
+
+    private void Awake()
+    {
+        AutoAssignReferences();
+        ConfigureTrigger();
+    }
 
     private void Start()
     {
@@ -55,6 +77,9 @@ public class PuzzleOpener : MonoBehaviour
 
     private void Update()
     {
+        UpdatePlayerRangeState();
+        RefreshPrompt();
+
         if (DialogueUI.Instance != null && DialogueUI.Instance.IsDialogueOpen)
             return;
 
@@ -71,32 +96,37 @@ public class PuzzleOpener : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!other.CompareTag("Player"))
+        if (!IsPlayerCollider(other))
             return;
 
         playerInRange = true;
-        ShowPrompt(true);
+        RefreshPrompt();
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (!other.CompareTag("Player"))
+        if (!IsPlayerCollider(other))
             return;
 
         playerInRange = false;
+        RefreshPrompt();
+    }
 
-        if (!puzzleOpen)
-            ShowPrompt(false);
+    private void OnTriggerStay(Collider other)
+    {
+        if (playerInRange || !IsPlayerCollider(other))
+            return;
+
+        playerInRange = true;
+        RefreshPrompt();
     }
 
     private void ShowPrompt(bool show)
     {
         if (DialogueUI.Instance != null)
         {
-            if (show && !DialogueUI.Instance.IsDialogueOpen)
-                DialogueUI.Instance.SetPromptVisible(true, promptMessage);
-            else
-                DialogueUI.Instance.SetPromptVisible(false);
+            DialogueUI.Instance.ClearPromptAnchor();
+            DialogueUI.Instance.SetPromptVisible(this, show && !DialogueUI.Instance.IsDialogueOpen, promptMessage);
 
             HideLegacyPrompt();
             return;
@@ -109,9 +139,30 @@ public class PuzzleOpener : MonoBehaviour
             promptText.text = promptMessage;
     }
 
+    private void RefreshPrompt()
+    {
+        bool shouldShowPrompt = !puzzleOpen && !isTransitioning && playerInRange && CanInteractNow();
+        bool promptNeedsRefresh =
+            shouldShowPrompt &&
+            DialogueUI.Instance != null &&
+            !DialogueUI.Instance.IsPromptActiveFor(this, promptMessage);
+
+        if (promptVisible == shouldShowPrompt && !promptNeedsRefresh)
+            return;
+
+        ShowPrompt(shouldShowPrompt);
+        promptVisible = shouldShowPrompt;
+    }
+
+    private bool CanInteractNow()
+    {
+        return DialogueUI.Instance == null || !DialogueUI.Instance.IsDialogueOpen;
+    }
+
     private void OnDisable()
     {
         ShowPrompt(false);
+        promptVisible = false;
         ReleasePlayerControlLock();
     }
 
@@ -264,7 +315,7 @@ public class PuzzleOpener : MonoBehaviour
         isTransitioning = false;
 
         if (playerInRange)
-            ShowPrompt(true);
+            RefreshPrompt();
 
         PuzzleClosed?.Invoke();
     }
@@ -335,5 +386,177 @@ public class PuzzleOpener : MonoBehaviour
         }
 
         playerControlLockHeld = false;
+    }
+
+    private void UpdatePlayerRangeState()
+    {
+        bool detectedInRange = IsPlayerWithinInteractionZone();
+
+        if (playerInRange == detectedInRange)
+            return;
+
+        playerInRange = detectedInRange;
+    }
+
+    private bool IsPlayerWithinInteractionZone()
+    {
+        if (triggerCollider == null)
+            return false;
+
+        Transform playerReference = GetPlayerReferenceTransform();
+        if (playerReference == null)
+            return false;
+
+        Vector3 playerPosition = playerReference.position;
+        Vector3 closestPoint = triggerCollider.ClosestPoint(playerPosition);
+        float sqrDistance = (closestPoint - playerPosition).sqrMagnitude;
+        float tolerance = Mathf.Max(0f, interactionDetectionTolerance);
+
+        return sqrDistance <= tolerance * tolerance;
+    }
+
+    private Transform GetPlayerReferenceTransform()
+    {
+        if (playerMovement != null)
+            return playerMovement.transform;
+
+        if (playerLook != null)
+            return playerLook.transform.root;
+
+        if (playerViewTransform != null)
+            return playerViewTransform.root;
+
+        return Camera.main != null ? Camera.main.transform.root : null;
+    }
+
+    private void AutoAssignReferences()
+    {
+        triggerCollider = GetComponent<Collider>();
+
+        if (playerViewTransform == null && Camera.main != null)
+            playerViewTransform = Camera.main.transform;
+
+        if (playerViewTransform != null)
+        {
+            if (playerMovement == null)
+                playerMovement = FindBehaviourInParents(playerViewTransform, "PlayerMove");
+
+            if (playerLook == null)
+                playerLook = FindBehaviourInParents(playerViewTransform, "PlayerLook");
+        }
+
+        if (playerMovement == null)
+            playerMovement = FindBehaviourInScene("PlayerMove");
+
+        if (playerLook == null)
+            playerLook = FindBehaviourInScene("PlayerLook");
+    }
+
+    private void ConfigureTrigger()
+    {
+        if (triggerCollider == null)
+            triggerCollider = GetComponent<Collider>();
+
+        if (triggerCollider != null)
+            triggerCollider.isTrigger = true;
+    }
+
+    private bool IsPlayerCollider(Collider other)
+    {
+        if (other == null)
+            return false;
+
+        if (other.CompareTag("Player"))
+            return true;
+
+        if (playerViewTransform == null)
+            return IsLikelyPlayerHierarchy(other.transform);
+
+        if (other.transform == playerViewTransform || other.transform.IsChildOf(playerViewTransform.root))
+            return true;
+
+        return IsLikelyPlayerHierarchy(other.transform);
+    }
+
+    private bool IsLikelyPlayerHierarchy(Transform candidate)
+    {
+        if (candidate == null)
+            return false;
+
+        Transform candidateRoot = candidate.root;
+
+        if (candidateRoot.CompareTag("Player"))
+            return true;
+
+        if (!string.IsNullOrEmpty(candidateRoot.name) && candidateRoot.name.Contains("Player"))
+            return true;
+
+        if (playerMovement != null && candidateRoot == playerMovement.transform.root)
+            return true;
+
+        if (playerLook != null && candidateRoot == playerLook.transform.root)
+            return true;
+
+        if (playerViewTransform != null && candidateRoot == playerViewTransform.root)
+            return true;
+
+        Rigidbody attachedRigidbody = candidate.GetComponentInParent<Rigidbody>();
+        if (attachedRigidbody != null)
+        {
+            Transform rigidbodyRoot = attachedRigidbody.transform.root;
+
+            if (rigidbodyRoot.CompareTag("Player"))
+                return true;
+
+            if (!string.IsNullOrEmpty(rigidbodyRoot.name) && rigidbodyRoot.name.Contains("Player"))
+                return true;
+        }
+
+        CharacterController characterController = candidate.GetComponentInParent<CharacterController>();
+        if (characterController != null)
+        {
+            Transform controllerRoot = characterController.transform.root;
+
+            if (controllerRoot.CompareTag("Player"))
+                return true;
+
+            if (!string.IsNullOrEmpty(controllerRoot.name) && controllerRoot.name.Contains("Player"))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static MonoBehaviour FindBehaviourInParents(Transform start, string behaviourName)
+    {
+        if (start == null)
+            return null;
+
+        MonoBehaviour[] behaviours = start.GetComponentsInParent<MonoBehaviour>(true);
+
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            MonoBehaviour behaviour = behaviours[i];
+
+            if (behaviour != null && behaviour.GetType().Name == behaviourName)
+                return behaviour;
+        }
+
+        return null;
+    }
+
+    private static MonoBehaviour FindBehaviourInScene(string behaviourName)
+    {
+        MonoBehaviour[] behaviours = FindObjectsOfType<MonoBehaviour>(true);
+
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            MonoBehaviour behaviour = behaviours[i];
+
+            if (behaviour != null && behaviour.GetType().Name == behaviourName)
+                return behaviour;
+        }
+
+        return null;
     }
 }

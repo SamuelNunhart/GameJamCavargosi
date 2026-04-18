@@ -5,9 +5,11 @@ public class NPCInteractable : MonoBehaviour
 {
     [SerializeField] private DialogueData dialogue;
     [SerializeField] private string playerTag = "Player";
+    [SerializeField] private string promptMessage = "Press E";
 
     private bool playerInRange;
     private bool hasPlayed;
+    private bool promptVisible;
 
     private void Reset()
     {
@@ -17,6 +19,8 @@ public class NPCInteractable : MonoBehaviour
 
     private void Update()
     {
+        RefreshPrompt();
+
         if (!playerInRange || hasPlayed)
             return;
 
@@ -38,9 +42,7 @@ public class NPCInteractable : MonoBehaviour
             return;
 
         playerInRange = true;
-
-        if (!hasPlayed && DialogueUI.Instance != null && !DialogueUI.Instance.IsDialogueOpen)
-            DialogueUI.Instance.SetPromptVisible(true, "Press E");
+        RefreshPrompt();
     }
 
     private void OnTriggerExit(Collider other)
@@ -49,16 +51,38 @@ public class NPCInteractable : MonoBehaviour
             return;
 
         playerInRange = false;
-
-        if (DialogueUI.Instance != null)
-            DialogueUI.Instance.SetPromptVisible(false);
+        RefreshPrompt();
     }
 
     private void OnDialogueFinished()
     {
         hasPlayed = true;
+        RefreshPrompt();
+    }
 
+    private void OnDisable()
+    {
         if (DialogueUI.Instance != null)
-            DialogueUI.Instance.SetPromptVisible(false);
+            DialogueUI.Instance.SetPromptVisible(this, false);
+
+        promptVisible = false;
+    }
+
+    private void RefreshPrompt()
+    {
+        if (DialogueUI.Instance == null)
+        {
+            promptVisible = false;
+            return;
+        }
+
+        bool shouldShowPrompt = playerInRange && !hasPlayed && !DialogueUI.Instance.IsDialogueOpen;
+        bool promptNeedsRefresh = shouldShowPrompt && !DialogueUI.Instance.IsPromptActiveFor(this, promptMessage);
+
+        if (promptVisible == shouldShowPrompt && !promptNeedsRefresh)
+            return;
+
+        DialogueUI.Instance.SetPromptVisible(this, shouldShowPrompt, promptMessage);
+        promptVisible = shouldShowPrompt;
     }
 }

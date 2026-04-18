@@ -43,6 +43,8 @@ public class DialogueUI : MonoBehaviour
     private Vector2 promptDefaultAnchoredPosition;
     private bool promptDefaultPositionCached;
     private bool promptAnchorInView = true;
+    private UnityEngine.Object promptOwner;
+    private string currentPromptMessage = string.Empty;
 
     public event Action<DialogueData> DialogueStarted;
     public event Action<DialogueData> DialogueEnded;
@@ -90,14 +92,41 @@ public class DialogueUI : MonoBehaviour
         }
     }
 
+    public bool IsPromptVisible => promptGroup != null && promptGroup.alpha > 0.001f;
+
+    public bool IsPromptActiveFor(UnityEngine.Object owner, string message)
+    {
+        return owner != null &&
+               promptOwner == owner &&
+               IsPromptVisible &&
+               string.Equals(currentPromptMessage, message ?? "Press E", StringComparison.Ordinal);
+    }
+
     public void SetPromptVisible(bool visible, string message = "Press E")
     {
-        if (promptText != null)
-            promptText.text = message;
+        SetPromptVisible(null, visible, message);
+    }
 
-        if (!visible)
-            ClearPromptAnchor();
+    public void SetPromptVisible(UnityEngine.Object owner, bool visible, string message = "Press E")
+    {
+        if (visible)
+        {
+            promptOwner = owner;
+            currentPromptMessage = string.IsNullOrWhiteSpace(message) ? "Press E" : message;
 
+            if (promptText != null)
+                promptText.text = currentPromptMessage;
+
+            SetCanvasGroup(promptGroup, true);
+            return;
+        }
+
+        if (owner != null && promptOwner != null && promptOwner != owner)
+            return;
+
+        promptOwner = null;
+        currentPromptMessage = string.Empty;
+        ClearPromptAnchor();
         SetCanvasGroup(promptGroup, visible);
     }
 

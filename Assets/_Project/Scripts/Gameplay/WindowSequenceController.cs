@@ -14,6 +14,7 @@ public class WindowSequenceController : MonoBehaviour
     [SerializeField] private KeyCode cancelKey = KeyCode.Escape;
     [SerializeField] private string promptMessage = "Press E to look out the window";
     [SerializeField] private float transitionDuration = 0.35f;
+    [SerializeField] private float interactionDetectionTolerance = 0.75f;
     [SerializeField] private bool enableDebugLogs = true;
     [SerializeField] private bool interactionEnabled = true;
 
@@ -106,6 +107,8 @@ public class WindowSequenceController : MonoBehaviour
 
     private void Update()
     {
+        UpdatePlayerRangeState();
+
         if (!completionHandled && !sequenceOpen && !isTransitioning && playerInRange && CanInteractNow() && Input.GetKeyDown(interactKey))
         {
             DebugLog("Interact key pressed while in range. Opening window sequence.");
@@ -205,6 +208,7 @@ public class WindowSequenceController : MonoBehaviour
     public void SetInteractionEnabled(bool enabled)
     {
         interactionEnabled = enabled;
+        UpdatePlayerRangeState();
         RefreshPrompt();
     }
 
@@ -379,8 +383,19 @@ public class WindowSequenceController : MonoBehaviour
 
     private void RefreshPrompt()
     {
-        bool shouldShowPrompt = interactionEnabled && !completionHandled && !sequenceOpen && !isTransitioning && playerInRange && CanInteractNow();
-        DebugLog($"RefreshPrompt => shouldShowPrompt={shouldShowPrompt}, playerInRange={playerInRange}, completionHandled={completionHandled}, sequenceOpen={sequenceOpen}, isTransitioning={isTransitioning}, canInteract={CanInteractNow()}");
+        UpdatePlayerRangeState();
+        bool canInteract = CanInteractNow();
+        bool shouldShowPrompt = interactionEnabled && !completionHandled && !sequenceOpen && !isTransitioning && playerInRange && canInteract;
+        bool promptNeedsRefresh =
+            shouldShowPrompt &&
+            DialogueUI.Instance != null &&
+            !DialogueUI.Instance.IsPromptActiveFor(this, promptMessage);
+
+        DebugLog($"RefreshPrompt => shouldShowPrompt={shouldShowPrompt}, playerInRange={playerInRange}, completionHandled={completionHandled}, sequenceOpen={sequenceOpen}, isTransitioning={isTransitioning}, canInteract={canInteract}, promptNeedsRefresh={promptNeedsRefresh}");
+
+        if (promptVisible == shouldShowPrompt && !promptNeedsRefresh)
+            return;
+
         ShowPrompt(shouldShowPrompt);
     }
 
@@ -393,18 +408,8 @@ public class WindowSequenceController : MonoBehaviour
     {
         if (DialogueUI.Instance != null)
         {
-            if (show && windowPromptAnchor != null)
-                DialogueUI.Instance.SetPromptAnchor(windowPromptAnchor);
-            else
-                DialogueUI.Instance.ClearPromptAnchor();
-
-            if (show && !DialogueUI.Instance.IsPromptAnchorInView)
-            {
-                DebugLog("Prompt anchor is off-screen. Falling back to default prompt position.");
-                DialogueUI.Instance.ClearPromptAnchor();
-            }
-
-            DialogueUI.Instance.SetPromptVisible(show, promptMessage);
+            DialogueUI.Instance.ClearPromptAnchor();
+            DialogueUI.Instance.SetPromptVisible(this, show, promptMessage);
         }
 
         if (promptVisible == show)
@@ -592,6 +597,48 @@ public class WindowSequenceController : MonoBehaviour
 
         if (triggerCollider != null)
             triggerCollider.isTrigger = true;
+    }
+
+    private void UpdatePlayerRangeState()
+    {
+        bool detectedInRange = IsPlayerWithinInteractionZone();
+
+        if (playerInRange == detectedInRange)
+            return;
+
+        playerInRange = detectedInRange;
+        DebugLog($"Player range state updated by proximity check. playerInRange={playerInRange}");
+    }
+
+    private bool IsPlayerWithinInteractionZone()
+    {
+        if (triggerCollider == null)
+            return false;
+
+        Transform playerReference = GetPlayerReferenceTransform();
+        if (playerReference == null)
+            return false;
+
+        Vector3 playerPosition = playerReference.position;
+        Vector3 closestPoint = triggerCollider.ClosestPoint(playerPosition);
+        float sqrDistance = (closestPoint - playerPosition).sqrMagnitude;
+        float tolerance = Mathf.Max(0f, interactionDetectionTolerance);
+
+        return sqrDistance <= tolerance * tolerance;
+    }
+
+    private Transform GetPlayerReferenceTransform()
+    {
+        if (playerMovement != null)
+            return playerMovement.transform;
+
+        if (playerLook != null)
+            return playerLook.transform.root;
+
+        if (playerViewTransform != null)
+            return playerViewTransform.root;
+
+        return Camera.main != null ? Camera.main.transform.root : null;
     }
 
     private bool IsPlayerCollider(Collider other)

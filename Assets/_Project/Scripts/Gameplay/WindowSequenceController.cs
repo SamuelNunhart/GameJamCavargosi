@@ -9,6 +9,8 @@ using UnityEngine.UI;
 public class WindowSequenceController : MonoBehaviour
 {
     private const int HotspotCount = 7;
+    private static readonly Vector3[] PanoramaWorldCorners = new Vector3[4];
+    private static readonly Vector3[] PanoramaViewportWorldCorners = new Vector3[4];
 
     [Header("Interaction")]
     [SerializeField] private KeyCode interactKey = KeyCode.E;
@@ -752,25 +754,80 @@ public class WindowSequenceController : MonoBehaviour
 
         Canvas.ForceUpdateCanvases();
 
-        RectTransform panoramaRect = panoramaImage.rectTransform;
-        Vector2 anchoredPosition = panoramaRect.anchoredPosition;
-        Bounds contentBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(panoramaContainer, panoramaRect);
-        Rect viewportRect = panoramaContainer.rect;
+        RectTransform viewportRect = ResolvePanoramaViewport();
+        if (viewportRect == null)
+            return;
 
-        if (contentBounds.size.x <= viewportRect.width)
+        RectTransform panoramaRect = panoramaImage.rectTransform;
+        GetHorizontalWorldBounds(panoramaRect, PanoramaWorldCorners, out float panoramaMinX, out float panoramaMaxX);
+        GetHorizontalWorldBounds(viewportRect, PanoramaViewportWorldCorners, out float viewportMinX, out float viewportMaxX);
+
+        float panoramaWidth = panoramaMaxX - panoramaMinX;
+        float viewportWidth = viewportMaxX - viewportMinX;
+        float worldDeltaX = 0f;
+
+        if (panoramaWidth <= viewportWidth)
         {
-            anchoredPosition.x += viewportRect.center.x - contentBounds.center.x;
+            float panoramaCenterX = (panoramaMinX + panoramaMaxX) * 0.5f;
+            float viewportCenterX = (viewportMinX + viewportMaxX) * 0.5f;
+            worldDeltaX = viewportCenterX - panoramaCenterX;
         }
         else
         {
-            if (contentBounds.min.x > viewportRect.xMin)
-                anchoredPosition.x += viewportRect.xMin - contentBounds.min.x;
-
-            if (contentBounds.max.x < viewportRect.xMax)
-                anchoredPosition.x += viewportRect.xMax - contentBounds.max.x;
+            if (panoramaMinX > viewportMinX)
+                worldDeltaX = viewportMinX - panoramaMinX;
+            else if (panoramaMaxX < viewportMaxX)
+                worldDeltaX = viewportMaxX - panoramaMaxX;
         }
 
+        if (Mathf.Approximately(worldDeltaX, 0f))
+            return;
+
+        Vector2 anchoredPosition = panoramaRect.anchoredPosition;
+        anchoredPosition.x += ConvertWorldDeltaToAnchoredDeltaX(panoramaRect, worldDeltaX);
         panoramaRect.anchoredPosition = anchoredPosition;
+    }
+
+    private RectTransform ResolvePanoramaViewport()
+    {
+        if (panoramaContainer == null)
+            return hideSeekCanvas != null ? hideSeekCanvas.transform as RectTransform : null;
+
+        RectMask2D rectMask = panoramaContainer.GetComponentInParent<RectMask2D>(includeInactive: true);
+        if (rectMask != null)
+            return rectMask.transform as RectTransform;
+
+        Mask mask = panoramaContainer.GetComponentInParent<Mask>(includeInactive: true);
+        if (mask != null)
+            return mask.transform as RectTransform;
+
+        if (hideSeekCanvas != null)
+            return hideSeekCanvas.transform as RectTransform;
+
+        return panoramaContainer;
+    }
+
+    private static void GetHorizontalWorldBounds(RectTransform rectTransform, Vector3[] cornersBuffer, out float minX, out float maxX)
+    {
+        rectTransform.GetWorldCorners(cornersBuffer);
+
+        minX = float.PositiveInfinity;
+        maxX = float.NegativeInfinity;
+
+        for (int i = 0; i < cornersBuffer.Length; i++)
+        {
+            minX = Mathf.Min(minX, cornersBuffer[i].x);
+            maxX = Mathf.Max(maxX, cornersBuffer[i].x);
+        }
+    }
+
+    private static float ConvertWorldDeltaToAnchoredDeltaX(RectTransform rectTransform, float worldDeltaX)
+    {
+        if (rectTransform == null || rectTransform.parent == null)
+            return worldDeltaX;
+
+        Vector3 localDelta = rectTransform.parent.InverseTransformVector(new Vector3(worldDeltaX, 0f, 0f));
+        return localDelta.x;
     }
 
     private float GetPanoramaButtonStep()

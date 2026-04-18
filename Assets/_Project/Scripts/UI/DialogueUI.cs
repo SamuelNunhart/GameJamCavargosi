@@ -23,6 +23,9 @@ public class DialogueUI : MonoBehaviour
     [Header("Audio")]
     [SerializeField] private AudioSource voiceSource;
 
+    [Header("Control Lock")]
+    [SerializeField] private PlayerControlLocker playerControlLocker;
+
     public bool IsDialogueOpen { get; private set; }
 
     private DialogueData currentDialogue;
@@ -31,6 +34,10 @@ public class DialogueUI : MonoBehaviour
     private bool isTyping;
     private string fullCurrentText;
     private Action onDialogueFinished;
+    private bool controlsLockedByDialogue;
+
+    public event Action<DialogueData> DialogueStarted;
+    public event Action<DialogueData> DialogueEnded;
 
     private void Awake()
     {
@@ -44,6 +51,14 @@ public class DialogueUI : MonoBehaviour
 
         SetPromptVisible(false);
         SetDialogueVisible(false);
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
+
+        ReleasePlayerControlLock();
     }
 
     private void Update()
@@ -68,23 +83,43 @@ public class DialogueUI : MonoBehaviour
         SetCanvasGroup(promptGroup, visible);
     }
 
-    public void StartDialogue(DialogueData dialogueData, Action finishedCallback = null)
+    public bool StartDialogue(DialogueData dialogueData, Action finishedCallback = null)
     {
-        if (dialogueData == null || dialogueData.lines == null || dialogueData.lines.Length == 0)
+        return StartDialogue(new DialogueRequest(dialogueData, false, finishedCallback));
+    }
+
+    public bool StartDialogue(DialogueData dialogueData, bool lockPlayerControls, Action finishedCallback = null)
+    {
+        return StartDialogue(new DialogueRequest(dialogueData, lockPlayerControls, finishedCallback));
+    }
+
+    public bool StartDialogue(DialogueRequest request)
+    {
+        if (request == null || request.Dialogue == null || request.Dialogue.lines == null || request.Dialogue.lines.Length == 0)
         {
             Debug.LogWarning("No dialogue lines assigned.");
-            return;
+            return false;
         }
 
-        currentDialogue = dialogueData;
+        if (IsDialogueOpen)
+        {
+            Debug.LogWarning("Cannot start a new dialogue while another one is already open.");
+            return false;
+        }
+
+        currentDialogue = request.Dialogue;
         currentLineIndex = 0;
-        onDialogueFinished = finishedCallback;
+        onDialogueFinished = request.OnFinished;
         IsDialogueOpen = true;
+
+        TryAcquirePlayerControlLock(request.LockPlayerControls);
 
         SetPromptVisible(false);
         SetDialogueVisible(true);
 
+        DialogueStarted?.Invoke(currentDialogue);
         ShowLine(currentDialogue.lines[currentLineIndex]);
+        return true;
     }
 
     private void AdvanceDialogue()
@@ -162,6 +197,7 @@ public class DialogueUI : MonoBehaviour
         if (voiceSource != null)
             voiceSource.Stop();
 
+        DialogueData finishedDialogue = currentDialogue;
         currentDialogue = null;
         currentLineIndex = 0;
         isTyping = false;
@@ -169,10 +205,12 @@ public class DialogueUI : MonoBehaviour
         IsDialogueOpen = false;
 
         SetDialogueVisible(false);
+        ReleasePlayerControlLock();
 
         Action callback = onDialogueFinished;
         onDialogueFinished = null;
         callback?.Invoke();
+        DialogueEnded?.Invoke(finishedDialogue);
     }
 
     private void ApplySide(DialogueSpeakerSide side)
@@ -211,5 +249,31 @@ public class DialogueUI : MonoBehaviour
         group.alpha = visible ? 1f : 0f;
         group.interactable = visible;
         group.blocksRaycasts = visible;
+    }
+
+    private void TryAcquirePlayerControlLock(bool shouldLock)
+    {
+        controlsLockedByDialogue = false;
+
+        if (!shouldLock)
+            return;
+
+        if (playerControlLocker == null)
+        {
+            Debug.LogWarning("Dialogue requested a player control lock, but no PlayerControlLocker is assigned.");
+            return;
+        }
+
+        playerControlLocker.AcquireLock();
+        controlsLockedByDialogue = true;
+    }
+
+    private void ReleasePlayerControlLock()
+    {
+        if (!controlsLockedByDialogue)
+            return;
+
+        playerControlLocker?.ReleaseLock();
+        controlsLockedByDialogue = false;
     }
 }

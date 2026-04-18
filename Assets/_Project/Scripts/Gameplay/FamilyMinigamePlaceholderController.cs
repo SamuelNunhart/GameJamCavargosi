@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.UI;
 
 [RequireComponent(typeof(Collider))]
 public class FamilyMinigamePlaceholderController : MonoBehaviour
@@ -21,6 +22,12 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
     [SerializeField] private bool lockPlayerControlsDuringCompletionDialogue;
     [SerializeField] private UnityEvent onSequenceCompleted;
 
+    [Header("Ending Presentation")]
+    [SerializeField] private bool playEndingFadeAfterCompletionDialogue;
+    [SerializeField] private float endingFadeDuration = 2.5f;
+    [SerializeField] private Sprite endingImage;
+    [SerializeField] private Color endingImageColor = Color.white;
+
     [Header("Player Control")]
     [SerializeField] private Transform playerViewTransform;
     [SerializeField] private PlayerControlLocker playerControlLocker;
@@ -40,6 +47,9 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
     private bool playerControlLockHeld;
     private Vector3 savedViewPosition;
     private Quaternion savedViewRotation;
+    private Canvas endingOverlayCanvas;
+    private Image endingBlackoutImage;
+    private Image endingPresentationImage;
 
     public bool IsInteractionEnabled => interactionEnabled;
 
@@ -130,6 +140,7 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
 
         ShowPrompt(false);
         promptVisible = false;
+        HideEndingOverlayImmediate();
 
         if (sequenceOpen && playerViewTransform != null)
             playerViewTransform.SetPositionAndRotation(savedViewPosition, savedViewRotation);
@@ -204,6 +215,7 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
         if (completed)
         {
             yield return PlayCompletionDialogueIfAssigned();
+            yield return PlayEndingPresentationIfEnabled();
             onSequenceCompleted?.Invoke();
             ShowPrompt(false);
             DebugLog("Family minigame placeholder completed.");
@@ -232,6 +244,43 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
 
         while (!finished)
             yield return null;
+    }
+
+    private IEnumerator PlayEndingPresentationIfEnabled()
+    {
+        if (!playEndingFadeAfterCompletionDialogue)
+            yield break;
+
+        AcquirePlayerControlLock();
+        EnsureEndingOverlay();
+
+        if (endingBlackoutImage == null)
+            yield break;
+
+        SetEndingBlackoutAlpha(0f);
+        SetEndingImageVisible(false);
+
+        float duration = Mathf.Max(0f, endingFadeDuration);
+
+        if (duration <= 0f)
+        {
+            SetEndingBlackoutAlpha(1f);
+            SetEndingImageVisible(endingImage != null);
+            yield break;
+        }
+
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            SetEndingBlackoutAlpha(t);
+            yield return null;
+        }
+
+        SetEndingBlackoutAlpha(1f);
+        SetEndingImageVisible(endingImage != null);
     }
 
     private IEnumerator MoveToView(Transform targetView)
@@ -399,6 +448,75 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
             if (controlLockers.Length > 0)
                 playerControlLocker = controlLockers[0];
         }
+    }
+
+    private void EnsureEndingOverlay()
+    {
+        if (endingOverlayCanvas != null && endingBlackoutImage != null && endingPresentationImage != null)
+            return;
+
+        GameObject overlayRoot = new GameObject("EndingOverlay", typeof(Canvas), typeof(GraphicRaycaster));
+        overlayRoot.hideFlags = HideFlags.DontSave;
+
+        endingOverlayCanvas = overlayRoot.GetComponent<Canvas>();
+        endingOverlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        endingOverlayCanvas.sortingOrder = short.MaxValue;
+
+        GameObject blackoutObject = new GameObject("Blackout", typeof(RectTransform), typeof(Image));
+        blackoutObject.transform.SetParent(overlayRoot.transform, false);
+        StretchFullScreen(blackoutObject.GetComponent<RectTransform>());
+
+        endingBlackoutImage = blackoutObject.GetComponent<Image>();
+        endingBlackoutImage.color = new Color(0f, 0f, 0f, 0f);
+        endingBlackoutImage.raycastTarget = true;
+
+        GameObject imageObject = new GameObject("EndingImage", typeof(RectTransform), typeof(Image));
+        imageObject.transform.SetParent(overlayRoot.transform, false);
+        StretchFullScreen(imageObject.GetComponent<RectTransform>());
+
+        endingPresentationImage = imageObject.GetComponent<Image>();
+        endingPresentationImage.preserveAspect = true;
+        endingPresentationImage.raycastTarget = false;
+        SetEndingImageVisible(endingImage != null);
+    }
+
+    private void HideEndingOverlayImmediate()
+    {
+        SetEndingBlackoutAlpha(0f);
+        SetEndingImageVisible(false);
+    }
+
+    private void SetEndingBlackoutAlpha(float alpha)
+    {
+        if (endingBlackoutImage == null)
+            return;
+
+        Color color = endingBlackoutImage.color;
+        color.a = Mathf.Clamp01(alpha);
+        endingBlackoutImage.color = color;
+    }
+
+    private void SetEndingImageVisible(bool visible)
+    {
+        if (endingPresentationImage == null)
+            return;
+
+        endingPresentationImage.sprite = endingImage;
+        endingPresentationImage.color = endingImageColor;
+        endingPresentationImage.enabled = visible && endingImage != null;
+    }
+
+    private static void StretchFullScreen(RectTransform rectTransform)
+    {
+        if (rectTransform == null)
+            return;
+
+        rectTransform.anchorMin = Vector2.zero;
+        rectTransform.anchorMax = Vector2.one;
+        rectTransform.offsetMin = Vector2.zero;
+        rectTransform.offsetMax = Vector2.zero;
+        rectTransform.anchoredPosition = Vector2.zero;
+        rectTransform.localScale = Vector3.one;
     }
 
     private void ConfigureTrigger()

@@ -2201,6 +2201,10 @@ MonoBehaviour:
   onSequenceCompleted:
     m_PersistentCalls:
       m_Calls: []
+  playEndingFadeAfterCompletionDialogue: 1
+  endingFadeDuration: 2.5
+  endingImage: {fileID: 0}
+  endingImageColor: {r: 1, g: 1, b: 1, a: 1}
   playerViewTransform: {fileID: 1429301928}
   playerControlLocker: {fileID: 0}
   playerMovement: {fileID: 2271036429879105431}
@@ -5393,6 +5397,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 939795689}
+    - targetCorrespondingSourceObject: {fileID: -6497544467051754862, guid: 20ec74de6449d204588ffa089f41f1eb,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 939795692}
     - targetCorrespondingSourceObject: {fileID: 5418391755230851744, guid: 20ec74de6449d204588ffa089f41f1eb,
         type: 3}
       insertIndex: -1
@@ -5632,6 +5640,28 @@ MonoBehaviour:
   playerTag: Player
   closeWhenPlayerLeaves: 0
   interactionEnabled: 1
+--- !u!64 &939795692
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 55337633}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: -989500015150538513, guid: 20ec74de6449d204588ffa089f41f1eb, type: 3}
 --- !u!1 &975024106
 GameObject:
   m_ObjectHideFlags: 0
@@ -10553,11 +10583,13 @@ MonoBehaviour:
   sceneThreePaintingDialogue: {fileID: 11400000, guid: 6b6b0d3f659244cba4d748755d2c8625,
     type: 2}
   sceneThreePaintingTrigger: {fileID: 599336890}
+  sceneThreePuzzleDialogueTrigger: {fileID: 721989736}
   gatedPuzzleOpener: {fileID: 939795681}
   puzzleEventDirector: {fileID: 1463469170}
   lockPlayerControlsDuringSceneThreePaintingDialogue: 0
   sceneThreePaintingDialogueResourcePath: Dialogue/Scene3_PaintingTrigger
   sceneThreePaintingTriggerObjectName: PaintingDialogueTrigger
+  sceneThreePuzzleDialogueTriggerObjectName: PuzzleDialogueTrigger
   gatedDoorTriggerRotator: {fileID: 939795689}
   gatedDoorDialogueTrigger: {fileID: 1387794573}
   gatedFamilyMinigame: {fileID: 395306794}

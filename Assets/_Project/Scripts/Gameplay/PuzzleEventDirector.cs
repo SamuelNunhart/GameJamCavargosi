@@ -49,7 +49,6 @@ public class PuzzleEventDirector : MonoBehaviour
     private bool solvedHandled;
     private bool puzzleIntroPlayed;
     private bool postPuzzleFlowCompleted;
-    private bool postPuzzleFlowCompleted;
     private PhoneEventStep currentPhoneEvent;
     private Coroutine puzzleIntroRoutine;
     private event System.Action PuzzleIntroCompletedCallbacks;
@@ -131,23 +130,6 @@ public class PuzzleEventDirector : MonoBehaviour
             return;
 
         StartCoroutine(HandleSolvedRoutine());
-    }
-
-    public void PlayPuzzleIntroIfAssigned(System.Action onCompleted = null)
-    {
-        if (onCompleted != null)
-            PuzzleIntroCompletedCallbacks += onCompleted;
-
-        if (puzzleIntroPlayed || puzzleIntroDialogue == null)
-        {
-            CompletePendingPuzzleIntroCallbacks();
-            return;
-        }
-
-        if (puzzleIntroRoutine != null)
-            return;
-
-        puzzleIntroRoutine = StartCoroutine(RunPuzzleIntroRoutine());
     }
 
     public void PlayPuzzleIntroIfAssigned(System.Action onCompleted = null)

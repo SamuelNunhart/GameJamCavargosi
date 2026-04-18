@@ -100,6 +100,7 @@ public class OpeningGhostIntroController : MonoBehaviour
     private bool dialogueAdvanceLockedByIntroPhoneBeat;
     private Vector3 introPhoneInitialPosition;
     private Quaternion introPhoneInitialRotation;
+    private GameObject cachedIntroPhonePoseSource;
 
     public bool HasCompletedPaintingDialogue => sceneThreePaintingDialogueCompleted;
 
@@ -732,10 +733,56 @@ public class OpeningGhostIntroController : MonoBehaviour
         if (phoneEndPoint == null)
             phoneEndPoint = transform.Find("PhoneEndPoint");
 
+        GameObject sceneIntroPhoneObject = FindSceneIntroPhoneObject();
+
+        if (sceneIntroPhoneObject != null &&
+            (introPhoneObject == null ||
+             (gatedPuzzleOpener != null && introPhoneObject == gatedPuzzleOpener.PhoneWorldObject)))
+        {
+            introPhoneObject = sceneIntroPhoneObject;
+        }
+
         if (introPhoneObject == null && gatedPuzzleOpener != null)
             introPhoneObject = gatedPuzzleOpener.PhoneWorldObject;
 
         CacheIntroPhonePose();
+    }
+
+    private GameObject FindSceneIntroPhoneObject()
+    {
+        Transform namedPhoneTransform = transform.Find("phone2k_InBed");
+
+        if (namedPhoneTransform != null)
+            return namedPhoneTransform.gameObject;
+
+        for (int i = 0; i < transform.childCount; i++)
+        {
+            Transform child = transform.GetChild(i);
+
+            if (child == null)
+                continue;
+
+            string childName = child.name;
+
+            if (string.IsNullOrWhiteSpace(childName))
+                continue;
+
+            string normalizedName = childName.ToLowerInvariant();
+
+            if (!normalizedName.Contains("phone") ||
+                normalizedName.Contains("endpoint") ||
+                normalizedName.Contains("viewpoint") ||
+                normalizedName.Contains("prompt") ||
+                normalizedName.Contains("text"))
+            {
+                continue;
+            }
+
+            if (child.GetComponentInChildren<Renderer>(true) != null)
+                return child.gameObject;
+        }
+
+        return null;
     }
 
     private void TryPopulateFallbackBehaviours()
@@ -939,13 +986,17 @@ public class OpeningGhostIntroController : MonoBehaviour
 
     private void CacheIntroPhonePose()
     {
-        if (introPhoneObject == null || introPhonePoseCached)
+        if (introPhoneObject == null)
+            return;
+
+        if (introPhonePoseCached && cachedIntroPhonePoseSource == introPhoneObject)
             return;
 
         Transform phoneTransform = introPhoneObject.transform;
         introPhoneInitialPosition = phoneTransform.position;
         introPhoneInitialRotation = phoneTransform.rotation;
         introPhonePoseCached = true;
+        cachedIntroPhonePoseSource = introPhoneObject;
     }
 
     private void RestoreIntroPhonePose()

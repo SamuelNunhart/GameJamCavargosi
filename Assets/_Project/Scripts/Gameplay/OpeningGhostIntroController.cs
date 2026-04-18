@@ -43,15 +43,28 @@ public class OpeningGhostIntroController : MonoBehaviour
     [SerializeField] private string sceneTwoIntroDialogueResourcePath = "Dialogue/Scene2_AfterIntro";
     [SerializeField] private string sceneTwoWindowDialogueResourcePath = "Dialogue/Scene2_WindowTrigger";
 
+    [Header("Scene 3 Progression")]
+    [SerializeField] private DialogueData sceneThreePaintingDialogue;
+    [SerializeField] private Collider sceneThreePaintingTrigger;
+    [SerializeField] private bool lockPlayerControlsDuringSceneThreePaintingDialogue;
+    [SerializeField] private string sceneThreePaintingDialogueResourcePath = "Dialogue/Scene3_PaintingTrigger";
+    [SerializeField] private string sceneThreePaintingTriggerObjectName = "PaintingDialogueTrigger";
+
     private Coroutine introRoutine;
     private Coroutine ghostMoveRoutine;
     private Coroutine windowTriggerDialogueRoutine;
+    private Coroutine sceneThreePaintingDialogueRoutine;
     private PlayerTriggerRelay windowDialogueTriggerRelay;
+    private PlayerTriggerRelay sceneThreePaintingTriggerRelay;
     private int fallbackLockCount;
     private bool sequenceFinished;
     private bool ghostRevealed;
     private bool waitingForWindowDialogueTrigger;
+    private bool waitingForSceneThreePaintingTrigger;
     private bool windowDialogueTriggered;
+    private bool sceneThreeCompletionHandled;
+    private bool sceneThreePaintingDialogueTriggered;
+    private bool sceneThreeMissingTriggerLogged;
 
     private void Reset()
     {
@@ -70,6 +83,7 @@ public class OpeningGhostIntroController : MonoBehaviour
     {
         AutoAssignSceneReferences();
         EnsureWindowDialogueTriggerRelay();
+        EnsureSceneThreePaintingTriggerRelay();
         EnsureBlackoutReady();
         HideGhostImmediate();
         SetCameraState(introCamera, true);
@@ -88,7 +102,15 @@ public class OpeningGhostIntroController : MonoBehaviour
     private void OnEnable()
     {
         EnsureWindowDialogueTriggerRelay();
+        EnsureSceneThreePaintingTriggerRelay();
         SubscribeToWindowDialogueTrigger();
+        SubscribeToSceneThreePaintingTrigger();
+        SubscribeToWindowSequenceCompletion();
+
+        if (gatedWindowSequence != null &&
+            gatedWindowSequence.HasFinishedCompletionFlow &&
+            !sceneThreeCompletionHandled)
+            HandleWindowSequenceCompleted();
     }
 
     private void OnDisable()
@@ -97,6 +119,8 @@ public class OpeningGhostIntroController : MonoBehaviour
             return;
 
         UnsubscribeFromWindowDialogueTrigger();
+        UnsubscribeFromSceneThreePaintingTrigger();
+        UnsubscribeFromWindowSequenceCompletion();
 
         if (introRoutine != null)
             StopCoroutine(introRoutine);
@@ -107,10 +131,15 @@ public class OpeningGhostIntroController : MonoBehaviour
         if (windowTriggerDialogueRoutine != null)
             StopCoroutine(windowTriggerDialogueRoutine);
 
+        if (sceneThreePaintingDialogueRoutine != null)
+            StopCoroutine(sceneThreePaintingDialogueRoutine);
+
         introRoutine = null;
         ghostMoveRoutine = null;
         windowTriggerDialogueRoutine = null;
+        sceneThreePaintingDialogueRoutine = null;
         waitingForWindowDialogueTrigger = false;
+        waitingForSceneThreePaintingTrigger = false;
 
         if (!windowDialogueTriggered)
             gatedWindowSequence?.SetInteractionEnabled(true);
@@ -556,6 +585,21 @@ public class OpeningGhostIntroController : MonoBehaviour
             if (windowSequences.Length > 0)
                 gatedWindowSequence = windowSequences[0];
         }
+
+        AutoAssignSceneThreeReferences();
+    }
+
+    private void AutoAssignSceneThreeReferences()
+    {
+        if (sceneThreePaintingDialogue == null && !string.IsNullOrWhiteSpace(sceneThreePaintingDialogueResourcePath))
+            sceneThreePaintingDialogue = Resources.Load<DialogueData>(sceneThreePaintingDialogueResourcePath);
+
+        if (sceneThreePaintingTrigger == null && !string.IsNullOrWhiteSpace(sceneThreePaintingTriggerObjectName))
+        {
+            Transform triggerTransform = FindTransformInScene(sceneThreePaintingTriggerObjectName);
+            if (triggerTransform != null)
+                sceneThreePaintingTrigger = triggerTransform.GetComponent<Collider>();
+        }
     }
 
     private void EnsureWindowDialogueTriggerRelay()
@@ -586,6 +630,51 @@ public class OpeningGhostIntroController : MonoBehaviour
         windowDialogueTriggerRelay.PlayerEntered -= HandleWindowDialogueTriggerEntered;
     }
 
+    private void EnsureSceneThreePaintingTriggerRelay()
+    {
+        if (!Application.isPlaying || sceneThreePaintingTrigger == null)
+            return;
+
+        sceneThreePaintingTriggerRelay = sceneThreePaintingTrigger.GetComponent<PlayerTriggerRelay>();
+
+        if (sceneThreePaintingTriggerRelay == null)
+            sceneThreePaintingTriggerRelay = sceneThreePaintingTrigger.gameObject.AddComponent<PlayerTriggerRelay>();
+    }
+
+    private void SubscribeToSceneThreePaintingTrigger()
+    {
+        if (!Application.isPlaying || sceneThreePaintingTriggerRelay == null)
+            return;
+
+        sceneThreePaintingTriggerRelay.PlayerEntered -= HandleSceneThreePaintingTriggerEntered;
+        sceneThreePaintingTriggerRelay.PlayerEntered += HandleSceneThreePaintingTriggerEntered;
+    }
+
+    private void UnsubscribeFromSceneThreePaintingTrigger()
+    {
+        if (!Application.isPlaying || sceneThreePaintingTriggerRelay == null)
+            return;
+
+        sceneThreePaintingTriggerRelay.PlayerEntered -= HandleSceneThreePaintingTriggerEntered;
+    }
+
+    private void SubscribeToWindowSequenceCompletion()
+    {
+        if (!Application.isPlaying || gatedWindowSequence == null)
+            return;
+
+        gatedWindowSequence.SequenceCompleted -= HandleWindowSequenceCompleted;
+        gatedWindowSequence.SequenceCompleted += HandleWindowSequenceCompleted;
+    }
+
+    private void UnsubscribeFromWindowSequenceCompletion()
+    {
+        if (!Application.isPlaying || gatedWindowSequence == null)
+            return;
+
+        gatedWindowSequence.SequenceCompleted -= HandleWindowSequenceCompleted;
+    }
+
     private void HandleWindowDialogueTriggerEntered(Collider other)
     {
         if (!waitingForWindowDialogueTrigger || windowDialogueTriggered)
@@ -594,6 +683,62 @@ public class OpeningGhostIntroController : MonoBehaviour
         windowDialogueTriggered = true;
         waitingForWindowDialogueTrigger = false;
         windowTriggerDialogueRoutine = StartCoroutine(PlayWindowDialogueAndUnlockSequence());
+    }
+
+    private void HandleWindowSequenceCompleted()
+    {
+        if (sceneThreeCompletionHandled)
+            return;
+
+        sceneThreeCompletionHandled = true;
+        BeginWaitingForSceneThreePaintingTrigger();
+    }
+
+    private void BeginWaitingForSceneThreePaintingTrigger()
+    {
+        EnsureSceneThreePaintingTriggerRelay();
+
+        if (sceneThreePaintingDialogue == null ||
+            sceneThreePaintingTrigger == null ||
+            sceneThreePaintingTriggerRelay == null)
+        {
+            waitingForSceneThreePaintingTrigger = false;
+
+            if (!sceneThreeMissingTriggerLogged && sceneThreePaintingDialogue != null)
+            {
+                Debug.LogWarning(
+                    "OpeningGhostIntroController could not find a Scene 3 painting trigger. " +
+                    "Create or assign a trigger collider named 'PaintingDialogueTrigger' near the unfinished painting.",
+                    this
+                );
+                sceneThreeMissingTriggerLogged = true;
+            }
+
+            return;
+        }
+
+        sceneThreePaintingTriggerRelay.ResetTriggerState();
+        waitingForSceneThreePaintingTrigger = true;
+    }
+
+    private void HandleSceneThreePaintingTriggerEntered(Collider other)
+    {
+        if (!waitingForSceneThreePaintingTrigger || sceneThreePaintingDialogueTriggered)
+            return;
+
+        sceneThreePaintingDialogueTriggered = true;
+        waitingForSceneThreePaintingTrigger = false;
+        sceneThreePaintingDialogueRoutine = StartCoroutine(PlaySceneThreePaintingDialogueRoutine());
+    }
+
+    private IEnumerator PlaySceneThreePaintingDialogueRoutine()
+    {
+        yield return PlayDialogueSegment(
+            sceneThreePaintingDialogue,
+            lockPlayerControlsDuringSceneThreePaintingDialogue
+        );
+
+        sceneThreePaintingDialogueRoutine = null;
     }
 
     private bool ShouldGateWindowSequence()

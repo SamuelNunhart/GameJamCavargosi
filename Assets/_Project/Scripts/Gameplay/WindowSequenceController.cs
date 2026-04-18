@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
@@ -35,8 +36,13 @@ public class WindowSequenceController : MonoBehaviour
 
     [Header("Scene Progression")]
     [SerializeField] private DialogueData completionDialogue;
+    [SerializeField] private string completionDialogueResourcePath = "Dialogue/Scene3_AfterWindow";
     [SerializeField] private bool lockPlayerControlsDuringCompletionDialogue;
     [SerializeField] private UnityEvent onSequenceCompleted;
+
+    [Header("Testing")]
+    [SerializeField] private bool enableSkipShortcut = true;
+    [SerializeField] private KeyCode skipSequenceKey = KeyCode.BackQuote;
 
     [Header("Auto-Resolved Scene Objects")]
     [SerializeField] private Transform windowSequenceRoot;
@@ -61,6 +67,7 @@ public class WindowSequenceController : MonoBehaviour
     private bool sequenceOpen;
     private bool isTransitioning;
     private bool completionHandled;
+    private bool sequenceCompletionNotified;
     private bool playerControlLockHeld;
     private bool promptVisible;
     private int foundCount;
@@ -70,7 +77,10 @@ public class WindowSequenceController : MonoBehaviour
 
     public bool IsOpen => sequenceOpen;
     public bool IsCompleted => completionHandled;
+    public bool HasFinishedCompletionFlow => sequenceCompletionNotified;
     public bool IsInteractionEnabled => interactionEnabled;
+
+    public event Action SequenceCompleted;
 
     private void Reset()
     {
@@ -88,6 +98,7 @@ public class WindowSequenceController : MonoBehaviour
     {
         AutoAssignReferences();
         ConfigureTrigger();
+        AutoAssignCompletionDialogue();
 
         initialInstructionText = instructionText != null && !string.IsNullOrWhiteSpace(instructionText.text)
             ? instructionText.text
@@ -119,6 +130,13 @@ public class WindowSequenceController : MonoBehaviour
         if (sequenceOpen && !isTransitioning && Input.GetKeyDown(cancelKey))
         {
             CloseSequence(false);
+            return;
+        }
+
+        if (sequenceOpen && !isTransitioning && !completionHandled && enableSkipShortcut && Input.GetKeyDown(skipSequenceKey))
+        {
+            DebugLog("Skip shortcut pressed. Completing window sequence for testing.");
+            SkipSequenceForTesting();
             return;
         }
 
@@ -220,19 +238,27 @@ public class WindowSequenceController : MonoBehaviour
         if (index < 0 || index >= HotspotCount || foundStates[index])
             return;
 
-        foundStates[index] = true;
-        foundCount++;
-
-        if (hotspotButtons[index] != null)
-            hotspotButtons[index].interactable = false;
-
-        if (targetImages[index] != null)
-            targetImages[index].color = completedTargetColor;
+        MarkHotspotAsFound(index);
 
         UpdateFoundCounter();
 
         if (foundCount >= HotspotCount)
             StartCoroutine(CompleteSequenceRoutine());
+    }
+
+    private void SkipSequenceForTesting()
+    {
+        if (!sequenceOpen || isTransitioning || completionHandled)
+            return;
+
+        for (int i = 0; i < HotspotCount; i++)
+        {
+            if (!foundStates[i])
+                MarkHotspotAsFound(i);
+        }
+
+        UpdateFoundCounter();
+        StartCoroutine(CompleteSequenceRoutine());
     }
 
     private IEnumerator OpenSequenceRoutine()
@@ -283,6 +309,8 @@ public class WindowSequenceController : MonoBehaviour
         {
             yield return PlayCompletionDialogueIfAssigned();
             onSequenceCompleted?.Invoke();
+            sequenceCompletionNotified = true;
+            SequenceCompleted?.Invoke();
             ShowPrompt(false);
             DebugLog("Window sequence completed and close finished.");
         }
@@ -477,6 +505,7 @@ public class WindowSequenceController : MonoBehaviour
     {
         foundCount = 0;
         completionHandled = false;
+        sequenceCompletionNotified = false;
 
         for (int i = 0; i < HotspotCount; i++)
         {
@@ -511,6 +540,26 @@ public class WindowSequenceController : MonoBehaviour
             int hotspotIndex = i;
             hotspotButtons[i].onClick.AddListener(() => HandleHotspotFound(hotspotIndex));
         }
+    }
+
+    private void MarkHotspotAsFound(int index)
+    {
+        foundStates[index] = true;
+        foundCount++;
+
+        if (hotspotButtons[index] != null)
+            hotspotButtons[index].interactable = false;
+
+        if (targetImages[index] != null)
+            targetImages[index].color = completedTargetColor;
+    }
+
+    private void AutoAssignCompletionDialogue()
+    {
+        if (completionDialogue != null || string.IsNullOrWhiteSpace(completionDialogueResourcePath))
+            return;
+
+        completionDialogue = Resources.Load<DialogueData>(completionDialogueResourcePath);
     }
 
     private void AutoAssignReferences()

@@ -9,6 +9,7 @@ public class PlayerLook : MonoBehaviour
     [Header("Look Settings")]
     [SerializeField] private float mouseSensitivity = 500f;
     [SerializeField] private Transform playerBody;
+    [SerializeField] private bool invertY = false;
 
     private float xRotation = 0f;
     private bool cursorIsLocked = true;
@@ -21,7 +22,11 @@ public class PlayerLook : MonoBehaviour
     private void Update()
     {
         HandleCursorLock();
-        CameraRotation();
+
+        if (cursorIsLocked)
+        {
+            CameraRotation();
+        }
     }
 
     private void HandleCursorLock()
@@ -40,22 +45,19 @@ public class PlayerLook : MonoBehaviour
     private void SetCursorState(bool locked)
     {
         cursorIsLocked = locked;
-
         Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
         Cursor.visible = !locked;
     }
 
     private void CameraRotation()
     {
-        if (!cursorIsLocked)
-        {
+        if (playerBody == null)
             return;
-        }
 
-        float mouseX = Input.GetAxis(mouseXInputName) * mouseSensitivity * Time.deltaTime;
-        float mouseY = Input.GetAxis(mouseYInputName) * mouseSensitivity * Time.deltaTime;
+        float mouseX = Input.GetAxisRaw(mouseXInputName) * mouseSensitivity * Time.deltaTime;
+        float mouseY = Input.GetAxisRaw(mouseYInputName) * mouseSensitivity * Time.deltaTime;
 
-        xRotation -= mouseY;
+        xRotation += invertY ? mouseY : -mouseY;
         xRotation = Mathf.Clamp(xRotation, -90f, 90f);
 
         transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);

@@ -7810,6 +7810,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1387794569}
+  - component: {fileID: 1387794573}
   - component: {fileID: 1387794572}
   - component: {fileID: 1387794571}
   - component: {fileID: 1387794570}
@@ -7906,6 +7907,26 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1387794568}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1387794573
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1387794568}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c1a4a4e90354804b82f607b95af8f79, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dialogue: {fileID: 11400000, guid: 7f3bca80974c4f4d92cd5f1a6d8bba11, type: 2}
+  lockPlayerControlsDuringDialogue: 0
+  doorTransform: {fileID: 939795682}
+  openRotationEuler: {x: 0, y: 0, z: -90}
+  useLocalRotation: 1
+  openAngleTolerance: 1
+  startDelayAfterDoorOpens: 0.1
+  playerTag: Player
 --- !u!1 &1406508175
 GameObject:
   m_ObjectHideFlags: 0

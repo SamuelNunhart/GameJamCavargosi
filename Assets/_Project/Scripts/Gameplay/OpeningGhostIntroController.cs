@@ -50,11 +50,13 @@ public class OpeningGhostIntroController : MonoBehaviour
     [Header("Scene 3 Progression")]
     [SerializeField] private DialogueData sceneThreePaintingDialogue;
     [SerializeField] private Collider sceneThreePaintingTrigger;
+    [SerializeField] private Collider sceneThreePuzzleDialogueTrigger;
     [SerializeField] private PuzzleOpener gatedPuzzleOpener;
     [SerializeField] private PuzzleEventDirector puzzleEventDirector;
     [SerializeField] private bool lockPlayerControlsDuringSceneThreePaintingDialogue;
     [SerializeField] private string sceneThreePaintingDialogueResourcePath = "Dialogue/Scene3_PaintingTrigger";
     [SerializeField] private string sceneThreePaintingTriggerObjectName = "PaintingDialogueTrigger";
+    [SerializeField] private string sceneThreePuzzleDialogueTriggerObjectName = "PuzzleDialogueTrigger";
 
     [Header("Scene 4 Progression")]
     [SerializeField] private DoorTriggerRotator gatedDoorTriggerRotator;
@@ -68,16 +70,19 @@ public class OpeningGhostIntroController : MonoBehaviour
     private Coroutine sceneThreePaintingDialogueRoutine;
     private PlayerTriggerRelay windowDialogueTriggerRelay;
     private PlayerTriggerRelay sceneThreePaintingTriggerRelay;
+    private PlayerTriggerRelay sceneThreePuzzleDialogueTriggerRelay;
     private SpriteRenderer[] ghostSpriteRenderers = Array.Empty<SpriteRenderer>();
     private int fallbackLockCount;
     private bool sequenceFinished;
     private bool ghostRevealed;
     private bool waitingForWindowDialogueTrigger;
     private bool waitingForSceneThreePaintingTrigger;
+    private bool waitingForSceneThreePuzzleDialogueTrigger;
     private bool windowDialogueTriggered;
     private bool sceneThreeCompletionHandled;
     private bool sceneThreePaintingDialogueTriggered;
     private bool sceneThreePaintingDialogueCompleted;
+    private bool sceneThreePuzzleDialogueTriggered;
     private bool sceneThreeMissingTriggerLogged;
     private bool sceneFourDoorUnlocked;
     private bool sceneFourFamilyUnlocked;
@@ -107,6 +112,7 @@ public class OpeningGhostIntroController : MonoBehaviour
         AutoAssignSceneReferences();
         EnsureWindowDialogueTriggerRelay();
         EnsureSceneThreePaintingTriggerRelay();
+        EnsureSceneThreePuzzleDialogueTriggerRelay();
         EnsureBlackoutReady();
         HideGhostImmediate();
         SetCameraState(introCamera, true);
@@ -135,8 +141,10 @@ public class OpeningGhostIntroController : MonoBehaviour
     {
         EnsureWindowDialogueTriggerRelay();
         EnsureSceneThreePaintingTriggerRelay();
+        EnsureSceneThreePuzzleDialogueTriggerRelay();
         SubscribeToWindowDialogueTrigger();
         SubscribeToSceneThreePaintingTrigger();
+        SubscribeToSceneThreePuzzleDialogueTrigger();
         SubscribeToWindowSequenceCompletion();
         SubscribeToPuzzleSequenceCompletion();
         SubscribeToDoorDialogueCompletion();
@@ -147,7 +155,7 @@ public class OpeningGhostIntroController : MonoBehaviour
             HandleWindowSequenceCompleted();
 
         if (sceneThreePaintingDialogueCompleted)
-            UnlockPuzzleSequence();
+            ContinueSceneThreeToPuzzleSequence();
 
         if (puzzleEventDirector != null && puzzleEventDirector.HasCompletedPostPuzzleFlow)
             UnlockDoorSequence();
@@ -163,6 +171,7 @@ public class OpeningGhostIntroController : MonoBehaviour
 
         UnsubscribeFromWindowDialogueTrigger();
         UnsubscribeFromSceneThreePaintingTrigger();
+        UnsubscribeFromSceneThreePuzzleDialogueTrigger();
         UnsubscribeFromWindowSequenceCompletion();
         UnsubscribeFromPuzzleSequenceCompletion();
         UnsubscribeFromDoorDialogueCompletion();
@@ -189,6 +198,10 @@ public class OpeningGhostIntroController : MonoBehaviour
         sceneThreePaintingDialogueRoutine = null;
         waitingForWindowDialogueTrigger = false;
         waitingForSceneThreePaintingTrigger = false;
+        waitingForSceneThreePuzzleDialogueTrigger = false;
+
+        if (puzzleEventDirector == null || !puzzleEventDirector.HasPlayedPuzzleIntro)
+            sceneThreePuzzleDialogueTriggered = false;
 
         if (!windowDialogueTriggered)
             gatedWindowSequence?.SetInteractionEnabled(true);
@@ -727,6 +740,16 @@ public class OpeningGhostIntroController : MonoBehaviour
                 sceneThreePaintingTrigger = triggerTransform.GetComponent<Collider>();
         }
 
+        if (sceneThreePuzzleDialogueTrigger == null)
+        {
+            string triggerObjectName = string.IsNullOrWhiteSpace(sceneThreePuzzleDialogueTriggerObjectName)
+                ? "PuzzleDialogueTrigger"
+                : sceneThreePuzzleDialogueTriggerObjectName;
+            Transform triggerTransform = FindTransformInScene(triggerObjectName);
+            if (triggerTransform != null)
+                sceneThreePuzzleDialogueTrigger = triggerTransform.GetComponent<Collider>();
+        }
+
         AutoAssignSceneFourReferences();
     }
 
@@ -822,6 +845,34 @@ public class OpeningGhostIntroController : MonoBehaviour
             return;
 
         sceneThreePaintingTriggerRelay.PlayerEntered -= HandleSceneThreePaintingTriggerEntered;
+    }
+
+    private void EnsureSceneThreePuzzleDialogueTriggerRelay()
+    {
+        if (!Application.isPlaying || sceneThreePuzzleDialogueTrigger == null)
+            return;
+
+        sceneThreePuzzleDialogueTriggerRelay = sceneThreePuzzleDialogueTrigger.GetComponent<PlayerTriggerRelay>();
+
+        if (sceneThreePuzzleDialogueTriggerRelay == null)
+            sceneThreePuzzleDialogueTriggerRelay = sceneThreePuzzleDialogueTrigger.gameObject.AddComponent<PlayerTriggerRelay>();
+    }
+
+    private void SubscribeToSceneThreePuzzleDialogueTrigger()
+    {
+        if (!Application.isPlaying || sceneThreePuzzleDialogueTriggerRelay == null)
+            return;
+
+        sceneThreePuzzleDialogueTriggerRelay.PlayerEntered -= HandleSceneThreePuzzleDialogueTriggerEntered;
+        sceneThreePuzzleDialogueTriggerRelay.PlayerEntered += HandleSceneThreePuzzleDialogueTriggerEntered;
+    }
+
+    private void UnsubscribeFromSceneThreePuzzleDialogueTrigger()
+    {
+        if (!Application.isPlaying || sceneThreePuzzleDialogueTriggerRelay == null)
+            return;
+
+        sceneThreePuzzleDialogueTriggerRelay.PlayerEntered -= HandleSceneThreePuzzleDialogueTriggerEntered;
     }
 
     private void SubscribeToWindowSequenceCompletion()
@@ -958,13 +1009,62 @@ public class OpeningGhostIntroController : MonoBehaviour
             return;
 
         sceneThreePaintingDialogueCompleted = true;
-        UnlockPuzzleSequence();
+        ContinueSceneThreeToPuzzleSequence();
         PaintingDialogueCompleted?.Invoke();
+    }
+
+    private void ContinueSceneThreeToPuzzleSequence()
+    {
+        if (ShouldUseSeparatePuzzleDialogueTrigger())
+        {
+            BeginWaitingForSceneThreePuzzleDialogueTrigger();
+            return;
+        }
+
+        UnlockPuzzleSequence();
     }
 
     private void UnlockPuzzleSequence()
     {
         gatedPuzzleOpener?.SetInteractionEnabled(true);
+    }
+
+    private void BeginWaitingForSceneThreePuzzleDialogueTrigger()
+    {
+        if (puzzleEventDirector != null && puzzleEventDirector.HasPlayedPuzzleIntro)
+        {
+            UnlockPuzzleSequence();
+            return;
+        }
+
+        EnsureSceneThreePuzzleDialogueTriggerRelay();
+
+        if (sceneThreePuzzleDialogueTrigger == null || sceneThreePuzzleDialogueTriggerRelay == null)
+        {
+            UnlockPuzzleSequence();
+            return;
+        }
+
+        sceneThreePuzzleDialogueTriggered = false;
+        sceneThreePuzzleDialogueTriggerRelay.ResetTriggerState();
+        waitingForSceneThreePuzzleDialogueTrigger = true;
+    }
+
+    private void HandleSceneThreePuzzleDialogueTriggerEntered(Collider other)
+    {
+        if (!waitingForSceneThreePuzzleDialogueTrigger || sceneThreePuzzleDialogueTriggered)
+            return;
+
+        sceneThreePuzzleDialogueTriggered = true;
+        waitingForSceneThreePuzzleDialogueTrigger = false;
+
+        if (puzzleEventDirector != null)
+        {
+            puzzleEventDirector.PlayPuzzleIntroIfAssigned(UnlockPuzzleSequence);
+            return;
+        }
+
+        UnlockPuzzleSequence();
     }
 
     private void UnlockDoorSequence()
@@ -999,6 +1099,13 @@ public class OpeningGhostIntroController : MonoBehaviour
     private bool ShouldGatePuzzleSequence()
     {
         return sceneThreePaintingDialogue != null && sceneThreePaintingTrigger != null && gatedPuzzleOpener != null;
+    }
+
+    private bool ShouldUseSeparatePuzzleDialogueTrigger()
+    {
+        return sceneThreePuzzleDialogueTrigger != null &&
+            puzzleEventDirector != null &&
+            puzzleEventDirector.HasPuzzleIntroDialogue;
     }
 
     private bool ShouldGateDoorSequence()

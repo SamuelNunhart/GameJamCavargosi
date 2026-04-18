@@ -46,8 +46,12 @@ public class PuzzleEventDirector : MonoBehaviour
     private bool puzzleIntroPlayed;
     private bool postPuzzleFlowCompleted;
     private PhoneEventStep currentPhoneEvent;
+    private Coroutine puzzleIntroRoutine;
+    private event System.Action PuzzleIntroCompletedCallbacks;
 
     public bool HasCompletedPostPuzzleFlow => postPuzzleFlowCompleted;
+    public bool HasPlayedPuzzleIntro => puzzleIntroPlayed;
+    public bool HasPuzzleIntroDialogue => puzzleIntroDialogue != null;
 
     public event System.Action PostPuzzleSequenceCompleted;
 
@@ -92,10 +96,7 @@ public class PuzzleEventDirector : MonoBehaviour
 
     private void HandlePuzzleOpened()
     {
-        if (puzzleIntroPlayed || puzzleIntroDialogue == null)
-            return;
-
-        StartCoroutine(RunPuzzleIntroRoutine());
+        PlayPuzzleIntroIfAssigned();
     }
 
     private void HandleProgressThresholdReached(int placedCount)
@@ -114,6 +115,23 @@ public class PuzzleEventDirector : MonoBehaviour
         StartCoroutine(HandleSolvedRoutine());
     }
 
+    public void PlayPuzzleIntroIfAssigned(System.Action onCompleted = null)
+    {
+        if (onCompleted != null)
+            PuzzleIntroCompletedCallbacks += onCompleted;
+
+        if (puzzleIntroPlayed || puzzleIntroDialogue == null)
+        {
+            CompletePendingPuzzleIntroCallbacks();
+            return;
+        }
+
+        if (puzzleIntroRoutine != null)
+            return;
+
+        puzzleIntroRoutine = StartCoroutine(RunPuzzleIntroRoutine());
+    }
+
     private IEnumerator RunPuzzleIntroRoutine()
     {
         puzzleIntroPlayed = true;
@@ -125,6 +143,9 @@ public class PuzzleEventDirector : MonoBehaviour
 
         if (puzzleManager != null && !phoneEventActive && !solvedHandled)
             puzzleManager.SetInputLocked(false);
+
+        puzzleIntroRoutine = null;
+        CompletePendingPuzzleIntroCallbacks();
     }
 
     private IEnumerator RunPhoneEventRoutine()
@@ -302,6 +323,9 @@ public class PuzzleEventDirector : MonoBehaviour
         if (dialogue == null || DialogueUI.Instance == null)
             yield break;
 
+        while (DialogueUI.Instance != null && DialogueUI.Instance.IsDialogueOpen)
+            yield return null;
+
         bool finished = false;
         bool started = DialogueUI.Instance.StartDialogue(
             dialogue,
@@ -314,5 +338,12 @@ public class PuzzleEventDirector : MonoBehaviour
 
         while (!finished)
             yield return null;
+    }
+
+    private void CompletePendingPuzzleIntroCallbacks()
+    {
+        System.Action callbacks = PuzzleIntroCompletedCallbacks;
+        PuzzleIntroCompletedCallbacks = null;
+        callbacks?.Invoke();
     }
 }

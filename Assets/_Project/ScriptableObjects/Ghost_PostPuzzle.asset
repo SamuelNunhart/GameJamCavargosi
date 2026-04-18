@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2846490e87135c94c80c2665f6defa8e, type: 3}
+  m_Name: Ghost_PostPuzzle
+  m_EditorClassIdentifier: 
+  lines:
+  - speakerName: Ghost
+    text: It's not as easy as you expected, was it?
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: Did you enjoy it?
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Arthur
+    text: No... I really couldn't focus. It kept pulling me away.
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: That's the point. Distraction ruins everything.
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: Come. Let me show you something... Open the door.
+    side: 0
+    voiceClip: {fileID: 0}

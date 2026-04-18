@@ -3580,6 +3580,7 @@ MonoBehaviour:
   puzzleCanvas: {fileID: 701693287}
   playerMovement: {fileID: 2271036429879105431}
   playerLook: {fileID: 2271036429879105430}
+  playerControlLocker: {fileID: 0}
   playerViewTransform: {fileID: 1429301928}
   puzzleViewPoint: {fileID: 2108594383}
   phoneViewPoint: {fileID: 270813630}
@@ -5847,10 +5848,6 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 1458057365}
-    - targetCorrespondingSourceObject: {fileID: 913845681951795218, guid: 2435736d6adca23458edd7c80c901e3e,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1458057370}
   m_SourcePrefab: {fileID: 100100000, guid: 2435736d6adca23458edd7c80c901e3e, type: 3}
 --- !u!1 &1458057364 stripped
 GameObject:
@@ -5899,28 +5896,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1458057363}
   m_PrefabAsset: {fileID: 0}
---- !u!64 &1458057370
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1458057364}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
 --- !u!1 &1459987753 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5418391755230851744, guid: 20ec74de6449d204588ffa089f41f1eb,
@@ -5995,10 +5970,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   puzzleManager: {fileID: 210838833}
   puzzleOpener: {fileID: 939795681}
+  puzzleIntroDialogue: {fileID: 11400000, guid: af5427fb5ee375041b1e5372bb711c96,
+    type: 2}
+  lockPlayerControlsDuringPuzzleIntro: 0
+  postPuzzleDialogue: {fileID: 11400000, guid: 28e6078c54e5fc847be19d5af15e39bb, type: 2}
+  lockPlayerControlsDuringPostPuzzleDialogue: 0
   victoryRoot: {fileID: 0}
   victoryText: {fileID: 0}
   victoryMessage: Puzzle Complete
   solvedCloseDelay: 2.5
+  phoneEvents: []
   phoneEventPanels: []
   phonePromptRoot: {fileID: 1455240813}
   phonePromptText: {fileID: 1870467064}
@@ -7965,6 +7946,7 @@ MonoBehaviour:
   continueHintText: {fileID: 541930201}
   charactersPerSecond: 40
   voiceSource: {fileID: 744408586}
+  playerControlLocker: {fileID: 0}
 --- !u!1 &2108594381
 GameObject:
   m_ObjectHideFlags: 0

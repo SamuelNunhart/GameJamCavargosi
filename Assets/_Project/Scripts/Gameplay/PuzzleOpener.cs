@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using TMPro;
@@ -10,6 +11,7 @@ public class PuzzleOpener : MonoBehaviour
     [Header("Player Control")]
     [SerializeField] private MonoBehaviour playerMovement;
     [SerializeField] private MonoBehaviour playerLook;
+    [SerializeField] private PlayerControlLocker playerControlLocker;
 
     [Header("View Transition")]
     [SerializeField] private Transform playerViewTransform;
@@ -31,9 +33,13 @@ public class PuzzleOpener : MonoBehaviour
 
     private Vector3 savedViewPosition;
     private Quaternion savedViewRotation;
+    private bool playerControlLockHeld;
 
     public bool IsPuzzleOpen => puzzleOpen;
     public bool IsTransitioning => isTransitioning;
+
+    public event Action PuzzleOpened;
+    public event Action PuzzleClosed;
 
     private void Start()
     {
@@ -49,6 +55,9 @@ public class PuzzleOpener : MonoBehaviour
 
     private void Update()
     {
+        if (DialogueUI.Instance != null && DialogueUI.Instance.IsDialogueOpen)
+            return;
+
         if (!puzzleOpen && !isTransitioning && playerInRange && Input.GetKeyDown(KeyCode.E))
         {
             OpenPuzzle();
@@ -103,6 +112,7 @@ public class PuzzleOpener : MonoBehaviour
     private void OnDisable()
     {
         ShowPrompt(false);
+        ReleasePlayerControlLock();
     }
 
     private void HideLegacyPrompt()
@@ -189,12 +199,7 @@ public class PuzzleOpener : MonoBehaviour
         puzzleOpen = true;
 
         ShowPrompt(false);
-
-        if (playerMovement != null)
-            playerMovement.enabled = false;
-
-        if (playerLook != null)
-            playerLook.enabled = false;
+        AcquirePlayerControlLock();
 
         bool canMoveView = playerViewTransform != null && puzzleViewPoint != null && transitionDuration > 0f;
 
@@ -223,6 +228,7 @@ public class PuzzleOpener : MonoBehaviour
         Cursor.visible = true;
 
         isTransitioning = false;
+        PuzzleOpened?.Invoke();
     }
 
     private IEnumerator ClosePuzzleRoutine()
@@ -252,17 +258,15 @@ public class PuzzleOpener : MonoBehaviour
             );
         }
 
-        if (playerMovement != null)
-            playerMovement.enabled = true;
-
-        if (playerLook != null)
-            playerLook.enabled = true;
+        ReleasePlayerControlLock();
 
         puzzleOpen = false;
         isTransitioning = false;
 
         if (playerInRange)
             ShowPrompt(true);
+
+        PuzzleClosed?.Invoke();
     }
 
     private IEnumerator MoveView(
@@ -289,5 +293,47 @@ public class PuzzleOpener : MonoBehaviour
 
         viewTransform.position = endPosition;
         viewTransform.rotation = endRotation;
+    }
+
+    private void AcquirePlayerControlLock()
+    {
+        if (playerControlLockHeld)
+            return;
+
+        if (playerControlLocker != null)
+        {
+            playerControlLocker.AcquireLock();
+        }
+        else
+        {
+            if (playerMovement != null)
+                playerMovement.enabled = false;
+
+            if (playerLook != null)
+                playerLook.enabled = false;
+        }
+
+        playerControlLockHeld = true;
+    }
+
+    private void ReleasePlayerControlLock()
+    {
+        if (!playerControlLockHeld)
+            return;
+
+        if (playerControlLocker != null)
+        {
+            playerControlLocker.ReleaseLock();
+        }
+        else
+        {
+            if (playerMovement != null)
+                playerMovement.enabled = true;
+
+            if (playerLook != null)
+                playerLook.enabled = true;
+        }
+
+        playerControlLockHeld = false;
     }
 }

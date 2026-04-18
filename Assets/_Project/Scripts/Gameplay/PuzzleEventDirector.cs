@@ -5,9 +5,23 @@ using UnityEngine;
 
 public class PuzzleEventDirector : MonoBehaviour
 {
+    [System.Serializable]
+    private class PhoneEventStep
+    {
+        public GameObject panel;
+        public DialogueData dialogue;
+        public bool lockPlayerControlsDuringDialogue;
+    }
+
     [Header("References")]
     [SerializeField] private PuzzleManagerUI puzzleManager;
     [SerializeField] private PuzzleOpener puzzleOpener;
+
+    [Header("Ghost Dialogue Beats")]
+    [SerializeField] private DialogueData puzzleIntroDialogue;
+    [SerializeField] private bool lockPlayerControlsDuringPuzzleIntro;
+    [SerializeField] private DialogueData postPuzzleDialogue;
+    [SerializeField] private bool lockPlayerControlsDuringPostPuzzleDialogue;
 
     [Header("Solved Popup")]
     [SerializeField] private GameObject victoryRoot;
@@ -16,6 +30,7 @@ public class PuzzleEventDirector : MonoBehaviour
     [SerializeField] private float solvedCloseDelay = 2.5f;
 
     [Header("Phone Event Panels")]
+    [SerializeField] private List<PhoneEventStep> phoneEvents = new List<PhoneEventStep>();
     [SerializeField] private List<GameObject> phoneEventPanels = new List<GameObject>();
 
     [Header("Temporary Phone Prompt")]
@@ -28,7 +43,8 @@ public class PuzzleEventDirector : MonoBehaviour
     private bool phoneEventActive;
     private bool waitingForPhoneCompletion;
     private bool solvedHandled;
-    private GameObject currentPhonePanel;
+    private bool puzzleIntroPlayed;
+    private PhoneEventStep currentPhoneEvent;
 
     private void Awake()
     {
@@ -44,6 +60,9 @@ public class PuzzleEventDirector : MonoBehaviour
             puzzleManager.ProgressThresholdReached += HandleProgressThresholdReached;
             puzzleManager.PuzzleSolved += HandlePuzzleSolved;
         }
+
+        if (puzzleOpener != null)
+            puzzleOpener.PuzzleOpened += HandlePuzzleOpened;
     }
 
     private void OnDisable()
@@ -53,6 +72,9 @@ public class PuzzleEventDirector : MonoBehaviour
             puzzleManager.ProgressThresholdReached -= HandleProgressThresholdReached;
             puzzleManager.PuzzleSolved -= HandlePuzzleSolved;
         }
+
+        if (puzzleOpener != null)
+            puzzleOpener.PuzzleOpened -= HandlePuzzleOpened;
     }
 
     private void Update()
@@ -61,6 +83,14 @@ public class PuzzleEventDirector : MonoBehaviour
         {
             CompleteCurrentPhoneEvent();
         }
+    }
+
+    private void HandlePuzzleOpened()
+    {
+        if (puzzleIntroPlayed || puzzleIntroDialogue == null)
+            return;
+
+        StartCoroutine(RunPuzzleIntroRoutine());
     }
 
     private void HandleProgressThresholdReached(int placedCount)
@@ -79,6 +109,19 @@ public class PuzzleEventDirector : MonoBehaviour
         StartCoroutine(HandleSolvedRoutine());
     }
 
+    private IEnumerator RunPuzzleIntroRoutine()
+    {
+        puzzleIntroPlayed = true;
+
+        if (puzzleManager != null)
+            puzzleManager.SetInputLocked(true);
+
+        yield return PlayDialogueIfAssigned(puzzleIntroDialogue, lockPlayerControlsDuringPuzzleIntro);
+
+        if (puzzleManager != null && !phoneEventActive && !solvedHandled)
+            puzzleManager.SetInputLocked(false);
+    }
+
     private IEnumerator RunPhoneEventRoutine()
     {
         phoneEventActive = true;
@@ -90,10 +133,15 @@ public class PuzzleEventDirector : MonoBehaviour
 
         yield return StartCoroutine(puzzleOpener.MoveToPhoneViewRoutine());
 
-        currentPhonePanel = GetNextPhonePanel();
+        currentPhoneEvent = GetNextPhoneEvent();
 
-        if (currentPhonePanel != null)
-            currentPhonePanel.SetActive(true);
+        if (currentPhoneEvent != null && currentPhoneEvent.panel != null)
+            currentPhoneEvent.panel.SetActive(true);
+
+        yield return PlayDialogueIfAssigned(
+            currentPhoneEvent != null ? currentPhoneEvent.dialogue : null,
+            currentPhoneEvent != null && currentPhoneEvent.lockPlayerControlsDuringDialogue
+        );
 
         ShowPhonePrompt();
 
@@ -104,10 +152,10 @@ public class PuzzleEventDirector : MonoBehaviour
 
         HidePhonePrompt();
 
-        if (currentPhonePanel != null)
-            currentPhonePanel.SetActive(false);
+        if (currentPhoneEvent != null && currentPhoneEvent.panel != null)
+            currentPhoneEvent.panel.SetActive(false);
 
-        currentPhonePanel = null;
+        currentPhoneEvent = null;
 
         yield return StartCoroutine(puzzleOpener.MoveToPuzzleViewRoutine());
 
@@ -123,24 +171,48 @@ public class PuzzleEventDirector : MonoBehaviour
 
         puzzleManager.SetInputLocked(true);
 
-        ShowVictory();
+        bool hasVictoryUI = victoryRoot != null || victoryText != null;
 
-        yield return new WaitForSeconds(solvedCloseDelay);
+        if (hasVictoryUI)
+        {
+            ShowVictory();
 
-        HideVictory();
+            if (solvedCloseDelay > 0f)
+                yield return new WaitForSeconds(solvedCloseDelay);
+
+            HideVictory();
+        }
+
+        yield return PlayDialogueIfAssigned(postPuzzleDialogue, lockPlayerControlsDuringPostPuzzleDialogue);
 
         puzzleManager.SetInputLocked(false);
         puzzleOpener.ClosePuzzle();
     }
 
-    private GameObject GetNextPhonePanel()
+    private PhoneEventStep GetNextPhoneEvent()
     {
+        if (phoneEvents.Count > 0)
+        {
+            if (nextPhoneEventIndex < 0 || nextPhoneEventIndex >= phoneEvents.Count)
+                return null;
+
+            PhoneEventStep configuredEvent = phoneEvents[nextPhoneEventIndex];
+            nextPhoneEventIndex++;
+            return configuredEvent;
+        }
+
         if (nextPhoneEventIndex < 0 || nextPhoneEventIndex >= phoneEventPanels.Count)
             return null;
 
-        GameObject panel = phoneEventPanels[nextPhoneEventIndex];
+        GameObject legacyPanel = phoneEventPanels[nextPhoneEventIndex];
         nextPhoneEventIndex++;
-        return panel;
+
+        return new PhoneEventStep
+        {
+            panel = legacyPanel,
+            dialogue = null,
+            lockPlayerControlsDuringDialogue = false
+        };
     }
 
     public void CompleteCurrentPhoneEvent()
@@ -183,10 +255,35 @@ public class PuzzleEventDirector : MonoBehaviour
 
     private void HideAllPhonePanels()
     {
-        foreach (GameObject panel in phoneEventPanels)
+        foreach (PhoneEventStep phoneEvent in phoneEvents)
         {
-            if (panel != null)
-                panel.SetActive(false);
+            if (phoneEvent != null && phoneEvent.panel != null)
+                phoneEvent.panel.SetActive(false);
         }
+
+        foreach (GameObject legacyPanel in phoneEventPanels)
+        {
+            if (legacyPanel != null)
+                legacyPanel.SetActive(false);
+        }
+    }
+
+    private IEnumerator PlayDialogueIfAssigned(DialogueData dialogue, bool lockPlayerControls)
+    {
+        if (dialogue == null || DialogueUI.Instance == null)
+            yield break;
+
+        bool finished = false;
+        bool started = DialogueUI.Instance.StartDialogue(
+            dialogue,
+            lockPlayerControls,
+            () => finished = true
+        );
+
+        if (!started)
+            yield break;
+
+        while (!finished)
+            yield return null;
     }
 }

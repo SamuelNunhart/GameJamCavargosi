@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
@@ -22,13 +23,28 @@ public class PuzzleManagerUI : MonoBehaviour
     [SerializeField] private List<PuzzlePieceUI> pieces = new List<PuzzlePieceUI>();
     [SerializeField] private float snapDistance = 55f;
 
+    [Header("Progress Events")]
+    [SerializeField] private List<int> progressThresholds = new List<int> { 5, 10, 15 };
+
     [Header("Solved")]
     [SerializeField] private UnityEvent onPuzzleSolved;
 
     private GridLayoutGroup boardGrid;
     private readonly List<PuzzleSlotUI> slots = new List<PuzzleSlotUI>();
+    private readonly HashSet<int> triggeredThresholds = new HashSet<int>();
+
     private Vector2 cellSize;
     private int placedCount;
+    private bool inputLocked;
+    private bool isSolved;
+
+    public int PlacedCount => placedCount;
+    public bool InputLocked => inputLocked;
+    public bool IsSolved => isSolved;
+
+    public event Action<int> PiecePlaced;
+    public event Action<int> ProgressThresholdReached;
+    public event Action PuzzleSolved;
 
     private void Awake()
     {
@@ -107,6 +123,9 @@ public class PuzzleManagerUI : MonoBehaviour
     public void ScatterPieces()
     {
         placedCount = 0;
+        inputLocked = false;
+        isSolved = false;
+        triggeredThresholds.Clear();
 
         foreach (PuzzleSlotUI slot in slots)
         {
@@ -122,16 +141,33 @@ public class PuzzleManagerUI : MonoBehaviour
 
             piece.Setup(this);
             piece.SetSize(cellSize);
+            piece.SetInputEnabled(true);
 
             Vector3 spawnPos = GetRandomSpawnPositionOutsideBoard(halfPieceSize);
-            float randomRotation = Random.Range(-spawnRotationRange, spawnRotationRange);
+            float randomRotation = UnityEngine.Random.Range(-spawnRotationRange, spawnRotationRange);
 
             piece.SetSpawnState(spawnPos, randomRotation);
         }
     }
 
+    public void SetInputLocked(bool locked)
+    {
+        inputLocked = locked;
+
+        foreach (PuzzlePieceUI piece in pieces)
+        {
+            if (piece == null)
+                continue;
+
+            piece.SetInputEnabled(!locked);
+        }
+    }
+
     public void TrySnapPiece(PuzzlePieceUI piece)
     {
+        if (inputLocked || isSolved)
+            return;
+
         int targetIndex = piece.CorrectSlotIndex;
 
         if (targetIndex < 0 || targetIndex >= slots.Count)
@@ -153,10 +189,20 @@ public class PuzzleManagerUI : MonoBehaviour
             piece.LockToSlot(targetSlot);
 
             placedCount++;
+            PiecePlaced?.Invoke(placedCount);
 
-            if (placedCount >= pieces.Count)
+            if (!isSolved && progressThresholds.Contains(placedCount) && !triggeredThresholds.Contains(placedCount) && placedCount < pieces.Count)
             {
+                triggeredThresholds.Add(placedCount);
+                ProgressThresholdReached?.Invoke(placedCount);
+            }
+
+            if (!isSolved && placedCount >= pieces.Count)
+            {
+                isSolved = true;
                 Debug.Log("Puzzle solved.");
+
+                PuzzleSolved?.Invoke();
                 onPuzzleSolved?.Invoke();
             }
         }
@@ -174,8 +220,8 @@ public class PuzzleManagerUI : MonoBehaviour
 
         for (int i = 0; i < 100; i++)
         {
-            float x = Random.Range(minX, maxX);
-            float y = Random.Range(minY, maxY);
+            float x = UnityEngine.Random.Range(minX, maxX);
+            float y = UnityEngine.Random.Range(minY, maxY);
             Vector2 point = new Vector2(x, y);
 
             if (!boardRect.Contains(point))
@@ -184,9 +230,8 @@ public class PuzzleManagerUI : MonoBehaviour
             }
         }
 
-        // Fallback
-        float fallbackX = Random.Range(minX, maxX);
-        float fallbackY = Random.Range(minY, maxY);
+        float fallbackX = UnityEngine.Random.Range(minX, maxX);
+        float fallbackY = UnityEngine.Random.Range(minY, maxY);
         return new Vector3(fallbackX, fallbackY, 0f);
     }
 

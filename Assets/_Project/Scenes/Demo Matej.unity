@@ -5417,6 +5417,7 @@ MonoBehaviour:
   promptText: {fileID: 1963706851}
   promptMessage: Press E to inspect puzzle
   interactionDetectionTolerance: 0.75
+  interactionEnabled: 1
 --- !u!4 &939795682 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1344604610958702863, guid: 20ec74de6449d204588ffa089f41f1eb,
@@ -5463,6 +5464,7 @@ MonoBehaviour:
   rotationSpeedDegreesPerSecond: 180
   playerTag: Player
   closeWhenPlayerLeaves: 0
+  interactionEnabled: 1
 --- !u!1 &975024106
 GameObject:
   m_ObjectHideFlags: 0
@@ -6003,11 +6005,21 @@ MonoBehaviour:
   completionCloseDelay: 1
   incompleteTargetColor: {r: 1, g: 1, b: 1, a: 1}
   completedTargetColor: {r: 0.6, g: 1, b: 0.6, a: 1}
+  enablePanoramaScrolling: 1
+  scrollLeftKey: 276
+  alternateScrollLeftKey: 97
+  scrollRightKey: 275
+  alternateScrollRightKey: 100
+  panoramaScrollSpeed: 900
+  panoramaButtonStepViewportFraction: 0.35
   completionDialogue: {fileID: 0}
+  completionDialogueResourcePath: Dialogue/Scene3_AfterWindow
   lockPlayerControlsDuringCompletionDialogue: 0
   onSequenceCompleted:
     m_PersistentCalls:
       m_Calls: []
+  enableSkipShortcut: 1
+  skipSequenceKey: 96
   windowSequenceRoot: {fileID: 1221782528}
   windowPromptAnchor: {fileID: 126961100}
   windowViewAnchor: {fileID: 1319231262}
@@ -7733,17 +7745,17 @@ PrefabInstance:
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: -262.152
+      value: -260.218
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: -35.988
+      value: -35.975
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 48.093
+      value: 47.904
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
@@ -10695,6 +10707,7 @@ MonoBehaviour:
   fadeOutDuration: 0.5
   fadeInDuration: 1
   ghostMoveDuration: 3
+  ghostFadeInDuration: 0.45
   playOnStart: 1
   introCamera: {fileID: 167691721}
   ghostSpawnPoint: {fileID: 102537825}
@@ -10712,6 +10725,19 @@ MonoBehaviour:
   lockPlayerControlsDuringSceneTwoWindowDialogue: 0
   sceneTwoIntroDialogueResourcePath: Dialogue/Scene2_AfterIntro
   sceneTwoWindowDialogueResourcePath: Dialogue/Scene2_WindowTrigger
+  sceneThreePaintingDialogue: {fileID: 11400000, guid: 6b6b0d3f659244cba4d748755d2c8625,
+    type: 2}
+  sceneThreePaintingTrigger: {fileID: 0}
+  sceneThreePuzzleDialogueTrigger: {fileID: 0}
+  gatedPuzzleOpener: {fileID: 939795681}
+  puzzleEventDirector: {fileID: 1463469170}
+  lockPlayerControlsDuringSceneThreePaintingDialogue: 0
+  sceneThreePaintingDialogueResourcePath: Dialogue/Scene3_PaintingTrigger
+  sceneThreePaintingTriggerObjectName: PaintingDialogueTrigger
+  sceneThreePuzzleDialogueTriggerObjectName: PuzzleDialogueTrigger
+  gatedDoorTriggerRotator: {fileID: 939795689}
+  gatedDoorDialogueTrigger: {fileID: 0}
+  gatedFamilyMinigame: {fileID: 0}
 --- !u!1 &1734890965
 GameObject:
   m_ObjectHideFlags: 0

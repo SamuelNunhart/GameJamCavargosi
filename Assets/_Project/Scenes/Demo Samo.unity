@@ -2391,6 +2391,12 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 70948873267775455, guid: 20ec74de6449d204588ffa089f41f1eb, type: 3}
+--- !u!4 &448202715 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
+    type: 3}
+  m_PrefabInstance: {fileID: 1262883096}
+  m_PrefabAsset: {fileID: 0}
 --- !u!224 &450881325 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 8887290823011123616, guid: efecee5eac2d5f74c9f6ef4b5eab7d48,
@@ -3689,6 +3695,37 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 2212009239438826721, guid: 20ec74de6449d204588ffa089f41f1eb, type: 3}
+--- !u!1 &656942293
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 656942294}
+  m_Layer: 0
+  m_Name: PhoneEndPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &656942294
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 656942293}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: 5.3409996, y: 1.57, z: 4.6400003}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1709980707}
+  m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
 --- !u!1 &683332962
 GameObject:
   m_ObjectHideFlags: 0
@@ -5344,10 +5381,6 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 939795689}
-    - targetCorrespondingSourceObject: {fileID: -6497544467051754862, guid: 20ec74de6449d204588ffa089f41f1eb,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 939795692}
     - targetCorrespondingSourceObject: {fileID: 5418391755230851744, guid: 20ec74de6449d204588ffa089f41f1eb,
         type: 3}
       insertIndex: -1
@@ -5587,28 +5620,6 @@ MonoBehaviour:
   playerTag: Player
   closeWhenPlayerLeaves: 0
   interactionEnabled: 1
---- !u!64 &939795692
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 55337633}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: -989500015150538513, guid: 20ec74de6449d204588ffa089f41f1eb, type: 3}
 --- !u!1 &975024106
 GameObject:
   m_ObjectHideFlags: 0
@@ -7270,6 +7281,94 @@ Transform:
   - {fileID: 700848415}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1262883096
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1709980707}
+    m_Modifications:
+    - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 5.358
+      objectReference: {fileID: 0}
+    - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 2.274
+      objectReference: {fileID: 0}
+    - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 4.632
+      objectReference: {fileID: 0}
+    - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -90
+      objectReference: {fileID: 0}
+    - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
+        type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3535473601529558972, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
+        type: 3}
+      propertyPath: m_Name
+      value: phone2k_InBed
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3, type: 3}
 --- !u!1 &1285888939 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7225210252388563839, guid: 20ec74de6449d204588ffa089f41f1eb,
@@ -8709,6 +8808,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 17103dadb5265fe4ca2fa54f5b6041ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  phoneHandler: {fileID: 0}
   puzzleManager: {fileID: 210838833}
   puzzleOpener: {fileID: 939795681}
   puzzleIntroDialogue: {fileID: 11400000, guid: af5427fb5ee375041b1e5372bb711c96,
@@ -10054,6 +10154,12 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 57bbd2bcc41757e43a2205d9fea1dc70, type: 3}
+--- !u!1 &1598672155 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3535473601529558972, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
+    type: 3}
+  m_PrefabInstance: {fileID: 1262883096}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1604185854 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -516098083770646512, guid: 20ec74de6449d204588ffa089f41f1eb,
@@ -10412,6 +10518,8 @@ Transform:
   - {fileID: 43367229}
   - {fileID: 1514127639}
   - {fileID: 1298931908}
+  - {fileID: 448202715}
+  - {fileID: 656942294}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1709980708
@@ -10443,8 +10551,14 @@ MonoBehaviour:
   ghostSpawnPoint: {fileID: 102537825}
   ghostApproachPoint: {fileID: 43367229}
   ghostObject: {fileID: 1298931906}
+  introPhoneObject: {fileID: 1598672155}
+  phoneEndPoint: {fileID: 656942294}
   blackoutCanvasGroup: {fileID: 1408991944}
   blackoutGraphic: {fileID: 1408991942}
+  phonePullDownTriggerSegmentIndex: 0
+  phonePullDownTriggerLineIndex: 1
+  phonePullDownDuration: 3.5
+  phonePullDownStartDelay: 0.2
   sceneTwoIntroDialogue: {fileID: 11400000, guid: 6a2cbd4d6fd9404aa0f7f7f26272d2ad,
     type: 2}
   sceneTwoWindowDialogue: {fileID: 11400000, guid: 9b5dfd5083bc4de2ba660f24e6c15a6d,

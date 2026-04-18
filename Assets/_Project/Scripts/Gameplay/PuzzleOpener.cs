@@ -43,6 +43,7 @@ public class PuzzleOpener : MonoBehaviour
     public bool IsPuzzleOpen => puzzleOpen;
     public bool IsTransitioning => isTransitioning;
     public bool IsInteractionEnabled => interactionEnabled;
+    public GameObject PhoneWorldObject => phoneWorldObject;
 
     public event Action PuzzleOpened;
     public event Action PuzzleClosed;

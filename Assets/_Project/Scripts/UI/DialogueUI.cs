@@ -27,6 +27,10 @@ public class DialogueUI : MonoBehaviour
     [SerializeField] private PlayerControlLocker playerControlLocker;
 
     public bool IsDialogueOpen { get; private set; }
+    public DialogueData CurrentDialogue => currentDialogue;
+    public int CurrentLineIndex => currentLineIndex;
+    public bool IsTypingCurrentLine => isTyping;
+    public bool IsAdvanceInputLocked => advanceInputLockCount > 0;
 
     private DialogueData currentDialogue;
     private int currentLineIndex;
@@ -45,6 +49,7 @@ public class DialogueUI : MonoBehaviour
     private bool promptAnchorInView = true;
     private UnityEngine.Object promptOwner;
     private string currentPromptMessage = string.Empty;
+    private int advanceInputLockCount;
 
     public event Action<DialogueData> DialogueStarted;
     public event Action<DialogueData> DialogueEnded;
@@ -82,6 +87,9 @@ public class DialogueUI : MonoBehaviour
         UpdatePromptAnchorPosition();
 
         if (!IsDialogueOpen)
+            return;
+
+        if (advanceInputLockCount > 0)
             return;
 
         if (Input.GetKeyDown(KeyCode.E))
@@ -186,6 +194,17 @@ public class DialogueUI : MonoBehaviour
         return true;
     }
 
+    public void AcquireAdvanceInputLock()
+    {
+        advanceInputLockCount++;
+    }
+
+    public void ReleaseAdvanceInputLock()
+    {
+        if (advanceInputLockCount > 0)
+            advanceInputLockCount--;
+    }
+
     private void AdvanceDialogue()
     {
         currentLineIndex++;
@@ -268,6 +287,7 @@ public class DialogueUI : MonoBehaviour
         isTyping = false;
         fullCurrentText = string.Empty;
         IsDialogueOpen = false;
+        advanceInputLockCount = 0;
 
         SetDialogueVisible(false);
         ReleasePlayerControlLock();

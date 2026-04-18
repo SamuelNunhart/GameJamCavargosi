@@ -7,6 +7,7 @@ using UnityEngine.UI;
 public class OpeningGhostIntroController : MonoBehaviour
 {
     private const float DefaultGhostFadeInDuration = 0.45f;
+    private const float DefaultPhonePullDownDuration = 0.3f;
 
     [Header("Dialogue")]
     [SerializeField] private List<DialogueData> introDialogueSegments = new List<DialogueData>();
@@ -34,8 +35,16 @@ public class OpeningGhostIntroController : MonoBehaviour
     [SerializeField] private Transform ghostSpawnPoint;
     [SerializeField] private Transform ghostApproachPoint;
     [SerializeField] private GameObject ghostObject;
+    [SerializeField] private GameObject introPhoneObject;
+    [SerializeField] private Transform phoneEndPoint;
     [SerializeField] private CanvasGroup blackoutCanvasGroup;
     [SerializeField] private Graphic blackoutGraphic;
+
+    [Header("Intro Phone Beat")]
+    [SerializeField] private int phonePullDownTriggerSegmentIndex;
+    [SerializeField] private int phonePullDownTriggerLineIndex = 1;
+    [SerializeField] private float phonePullDownDuration = DefaultPhonePullDownDuration;
+    [SerializeField] private float phonePullDownStartDelay = 0.05f;
 
     [Header("Scene 2 Progression")]
     [SerializeField] private DialogueData sceneTwoIntroDialogue;
@@ -86,6 +95,11 @@ public class OpeningGhostIntroController : MonoBehaviour
     private bool sceneThreeMissingTriggerLogged;
     private bool sceneFourDoorUnlocked;
     private bool sceneFourFamilyUnlocked;
+    private bool introPhonePoseCached;
+    private bool introPhoneBeatCompleted;
+    private bool dialogueAdvanceLockedByIntroPhoneBeat;
+    private Vector3 introPhoneInitialPosition;
+    private Quaternion introPhoneInitialRotation;
 
     public bool HasCompletedPaintingDialogue => sceneThreePaintingDialogueCompleted;
 
@@ -103,8 +117,20 @@ public class OpeningGhostIntroController : MonoBehaviour
         if (ghostRevealAfterSegmentIndex < 0)
             ghostRevealAfterSegmentIndex = 0;
 
+        if (phonePullDownTriggerSegmentIndex < 0)
+            phonePullDownTriggerSegmentIndex = 0;
+
+        if (phonePullDownTriggerLineIndex < 0)
+            phonePullDownTriggerLineIndex = 0;
+
         if (ghostFadeInDuration < 0f)
             ghostFadeInDuration = 0f;
+
+        if (phonePullDownDuration <= 0f)
+            phonePullDownDuration = DefaultPhonePullDownDuration;
+
+        if (phonePullDownStartDelay < 0f)
+            phonePullDownStartDelay = 0f;
     }
 
     private void Awake()
@@ -199,6 +225,7 @@ public class OpeningGhostIntroController : MonoBehaviour
         waitingForWindowDialogueTrigger = false;
         waitingForSceneThreePaintingTrigger = false;
         waitingForSceneThreePuzzleDialogueTrigger = false;
+        HideIntroPhoneImmediate();
 
         if (puzzleEventDirector == null || !puzzleEventDirector.HasPlayedPuzzleIntro)
             sceneThreePuzzleDialogueTriggered = false;
@@ -245,6 +272,8 @@ public class OpeningGhostIntroController : MonoBehaviour
     private IEnumerator RunIntroSequence()
     {
         AcquireControlLock();
+        yield return null;
+        PrepareIntroPhoneForSequence();
 
         if (DialogueUI.Instance == null)
         {
@@ -260,7 +289,7 @@ public class OpeningGhostIntroController : MonoBehaviour
             DialogueData segment = introDialogueSegments[i];
 
             if (segment != null)
-                yield return PlayDialogueSegment(segment);
+                yield return PlayDialogueSegment(segment, false, i == phonePullDownTriggerSegmentIndex);
 
             if (!revealTriggered && i >= ghostRevealAfterSegmentIndex)
             {
@@ -274,6 +303,7 @@ public class OpeningGhostIntroController : MonoBehaviour
 
         yield return FadeToBlack(fadeOutDuration);
         HideGhostImmediate();
+        HideIntroPhoneImmediate();
         SetCameraState(introCamera, false);
         SetCameraState(gameplayCamera, true);
         yield return FadeFromBlack(fadeInDuration);
@@ -288,7 +318,10 @@ public class OpeningGhostIntroController : MonoBehaviour
         introRoutine = null;
     }
 
-    private IEnumerator PlayDialogueSegment(DialogueData dialogue, bool lockPlayerControls = false)
+    private IEnumerator PlayDialogueSegment(
+        DialogueData dialogue,
+        bool lockPlayerControls = false,
+        bool allowIntroPhoneBeat = false)
     {
         bool finished = false;
         bool started = DialogueUI.Instance.StartDialogue(dialogue, lockPlayerControls, () => finished = true);
@@ -296,8 +329,18 @@ public class OpeningGhostIntroController : MonoBehaviour
         if (!started)
             yield break;
 
+        bool introPhoneBeatHandled = !allowIntroPhoneBeat || !ShouldRunIntroPhoneBeatFor(dialogue);
+
         while (!finished)
+        {
+            if (!introPhoneBeatHandled && ShouldTriggerIntroPhoneBeat(dialogue))
+            {
+                introPhoneBeatHandled = true;
+                yield return RunIntroPhoneBeat();
+            }
+
             yield return null;
+        }
     }
 
     private void BeginWaitingForWindowDialogueTrigger()
@@ -437,6 +480,7 @@ public class OpeningGhostIntroController : MonoBehaviour
     {
         SetCameraState(introCamera, false);
         SetCameraState(gameplayCamera, true);
+        HideIntroPhoneImmediate();
         ReleaseControlLock();
         gatedWindowSequence?.SetInteractionEnabled(true);
         sequenceFinished = true;
@@ -680,6 +724,18 @@ public class OpeningGhostIntroController : MonoBehaviour
 
         CacheGhostRenderers();
         AutoAssignSceneTwoReferences();
+        AutoAssignIntroPhoneReferences();
+    }
+
+    private void AutoAssignIntroPhoneReferences()
+    {
+        if (phoneEndPoint == null)
+            phoneEndPoint = transform.Find("PhoneEndPoint");
+
+        if (introPhoneObject == null && gatedPuzzleOpener != null)
+            introPhoneObject = gatedPuzzleOpener.PhoneWorldObject;
+
+        CacheIntroPhonePose();
     }
 
     private void TryPopulateFallbackBehaviours()
@@ -789,6 +845,139 @@ public class OpeningGhostIntroController : MonoBehaviour
             if (familyMinigames.Length > 0)
                 gatedFamilyMinigame = familyMinigames[0];
         }
+    }
+
+    private bool ShouldRunIntroPhoneBeatFor(DialogueData dialogue)
+    {
+        return dialogue != null &&
+               introPhoneObject != null &&
+               phoneEndPoint != null &&
+               !introPhoneBeatCompleted &&
+               dialogue.lines != null &&
+               phonePullDownTriggerLineIndex >= 0 &&
+               phonePullDownTriggerLineIndex < dialogue.lines.Length;
+    }
+
+    private bool HasConfiguredIntroPhoneBeat()
+    {
+        return phonePullDownTriggerSegmentIndex >= 0 &&
+               phonePullDownTriggerSegmentIndex < introDialogueSegments.Count &&
+               ShouldRunIntroPhoneBeatFor(introDialogueSegments[phonePullDownTriggerSegmentIndex]);
+    }
+
+    private bool ShouldTriggerIntroPhoneBeat(DialogueData dialogue)
+    {
+        DialogueUI dialogueUi = DialogueUI.Instance;
+
+        if (dialogueUi == null || dialogueUi.CurrentDialogue != dialogue)
+            return false;
+
+        return dialogueUi.CurrentLineIndex >= phonePullDownTriggerLineIndex &&
+               !dialogueUi.IsTypingCurrentLine;
+    }
+
+    private IEnumerator RunIntroPhoneBeat()
+    {
+        DialogueUI dialogueUi = DialogueUI.Instance;
+
+        if (dialogueUi != null)
+        {
+            dialogueUi.AcquireAdvanceInputLock();
+            dialogueAdvanceLockedByIntroPhoneBeat = true;
+        }
+
+        if (phonePullDownStartDelay > 0f)
+            yield return new WaitForSeconds(phonePullDownStartDelay);
+
+        if (introPhoneObject != null && phoneEndPoint != null)
+        {
+            CacheIntroPhonePose();
+            introPhoneObject.SetActive(true);
+
+            Transform phoneTransform = introPhoneObject.transform;
+            Vector3 startPosition = phoneTransform.position;
+            Quaternion startRotation = phoneTransform.rotation;
+            Vector3 endPosition = phoneEndPoint.position;
+            Quaternion endRotation = phoneEndPoint.rotation;
+            float duration = phonePullDownDuration > 0f ? phonePullDownDuration : DefaultPhonePullDownDuration;
+            float elapsed = 0f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                float easedT = 1f - Mathf.Pow(1f - t, 3f);
+
+                phoneTransform.SetPositionAndRotation(
+                    Vector3.Lerp(startPosition, endPosition, easedT),
+                    Quaternion.Slerp(startRotation, endRotation, easedT)
+                );
+
+                yield return null;
+            }
+
+            phoneTransform.SetPositionAndRotation(endPosition, endRotation);
+            introPhoneObject.SetActive(false);
+            RestoreIntroPhonePose();
+            introPhoneBeatCompleted = true;
+        }
+
+        ReleaseIntroPhoneBeatInputLock();
+    }
+
+    private void PrepareIntroPhoneForSequence()
+    {
+        introPhoneBeatCompleted = false;
+        CacheIntroPhonePose();
+
+        if (!HasConfiguredIntroPhoneBeat())
+            return;
+
+        RestoreIntroPhonePose();
+        introPhoneObject.SetActive(true);
+    }
+
+    private void CacheIntroPhonePose()
+    {
+        if (introPhoneObject == null || introPhonePoseCached)
+            return;
+
+        Transform phoneTransform = introPhoneObject.transform;
+        introPhoneInitialPosition = phoneTransform.position;
+        introPhoneInitialRotation = phoneTransform.rotation;
+        introPhonePoseCached = true;
+    }
+
+    private void RestoreIntroPhonePose()
+    {
+        if (introPhoneObject == null || !introPhonePoseCached)
+            return;
+
+        introPhoneObject.transform.SetPositionAndRotation(introPhoneInitialPosition, introPhoneInitialRotation);
+    }
+
+    private void HideIntroPhoneImmediate()
+    {
+        ReleaseIntroPhoneBeatInputLock();
+
+        if (introPhoneObject == null)
+            return;
+
+        RestoreIntroPhonePose();
+        introPhoneObject.SetActive(false);
+    }
+
+    private void ReleaseIntroPhoneBeatInputLock()
+    {
+        if (!dialogueAdvanceLockedByIntroPhoneBeat)
+            return;
+
+        DialogueUI dialogueUi = DialogueUI.Instance;
+
+        if (dialogueUi != null)
+            dialogueUi.ReleaseAdvanceInputLock();
+
+        dialogueAdvanceLockedByIntroPhoneBeat = false;
     }
 
     private void EnsureWindowDialogueTriggerRelay()

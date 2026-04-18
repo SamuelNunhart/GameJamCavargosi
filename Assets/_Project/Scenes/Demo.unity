@@ -322,8 +322,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d674c78dd8af8e844afb793f7635ba9d, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &55337633 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -6497544467051754862, guid: 20ec74de6449d204588ffa089f41f1eb,
@@ -523,8 +523,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   m_RenderShadows: 1
   m_RequiresDepthTextureOption: 2
   m_RequiresOpaqueTextureOption: 2
@@ -756,8 +756,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d674c78dd8af8e844afb793f7635ba9d, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &210838831
 GameObject:
   m_ObjectHideFlags: 0
@@ -2606,8 +2606,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
@@ -2658,8 +2658,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d674c78dd8af8e844afb793f7635ba9d, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &716153977
 GameObject:
   m_ObjectHideFlags: 0
@@ -4391,6 +4391,7 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 3468755486377148355, guid: 20ec74de6449d204588ffa089f41f1eb, type: 3}
+<<<<<<< HEAD
 --- !u!1 &1058241455
 GameObject:
   m_ObjectHideFlags: 0
@@ -4489,6 +4490,8 @@ MonoBehaviour:
   instructionText: {fileID: 185447164}
   foundCountText: {fileID: 1232164907}
   completionPanel: {fileID: 1384735100}
+=======
+>>>>>>> 78731aa5a13f125713a22f8e630b7aefd30cf67b
 --- !u!1 &1060700982 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7328375999379925804, guid: 20ec74de6449d204588ffa089f41f1eb,
@@ -5972,6 +5975,7 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2fd0bf916c7f43747ba17a2d4c48d509, type: 3}
+<<<<<<< HEAD
 --- !u!1 &1387794568
 GameObject:
   m_ObjectHideFlags: 0
@@ -6152,6 +6156,8 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1406508175}
   m_CullTransparentMesh: 1
+=======
+>>>>>>> 78731aa5a13f125713a22f8e630b7aefd30cf67b
 --- !u!1 &1408991940
 GameObject:
   m_ObjectHideFlags: 0

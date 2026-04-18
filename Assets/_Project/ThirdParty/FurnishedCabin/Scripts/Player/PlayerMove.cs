@@ -8,8 +8,8 @@ public class PlayerMove : MonoBehaviour
     [SerializeField] private string verticalInputName = "Vertical";
 
     [Header("Movement Speeds")]
-    [SerializeField] private float movementSpeed = 4f;
-    [SerializeField] private float crouchMovementSpeed = 2f;
+    [SerializeField] private float movementSpeed = 5.5f;
+    [SerializeField] private float crouchMovementSpeed = 3f;
 
     [Header("Crouch")]
     [SerializeField] private KeyCode crouchKey = KeyCode.LeftControl;

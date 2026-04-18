@@ -35,6 +35,13 @@ public class DialogueUI : MonoBehaviour
     private string fullCurrentText;
     private Action onDialogueFinished;
     private bool controlsLockedByDialogue;
+    private RectTransform promptRectTransform;
+    private RectTransform promptParentRectTransform;
+    private Canvas promptCanvas;
+    private Camera promptWorldCamera;
+    private Transform promptAnchor;
+    private Vector2 promptDefaultAnchoredPosition;
+    private bool promptDefaultPositionCached;
 
     public event Action<DialogueData> DialogueStarted;
     public event Action<DialogueData> DialogueEnded;
@@ -48,6 +55,11 @@ public class DialogueUI : MonoBehaviour
         }
 
         Instance = this;
+
+        promptRectTransform = promptGroup != null ? promptGroup.transform as RectTransform : null;
+        promptParentRectTransform = promptRectTransform != null ? promptRectTransform.parent as RectTransform : null;
+        promptCanvas = promptRectTransform != null ? promptRectTransform.GetComponentInParent<Canvas>() : null;
+        CachePromptDefaultPosition();
 
         SetPromptVisible(false);
         SetDialogueVisible(false);
@@ -63,6 +75,8 @@ public class DialogueUI : MonoBehaviour
 
     private void Update()
     {
+        UpdatePromptAnchorPosition();
+
         if (!IsDialogueOpen)
             return;
 
@@ -80,7 +94,22 @@ public class DialogueUI : MonoBehaviour
         if (promptText != null)
             promptText.text = message;
 
+        if (!visible)
+            ClearPromptAnchor();
+
         SetCanvasGroup(promptGroup, visible);
+    }
+
+    public void SetPromptAnchor(Transform anchor)
+    {
+        promptAnchor = anchor;
+        UpdatePromptAnchorPosition();
+    }
+
+    public void ClearPromptAnchor()
+    {
+        promptAnchor = null;
+        RestorePromptDefaultPosition();
     }
 
     public bool StartDialogue(DialogueData dialogueData, Action finishedCallback = null)
@@ -249,6 +278,49 @@ public class DialogueUI : MonoBehaviour
         group.alpha = visible ? 1f : 0f;
         group.interactable = visible;
         group.blocksRaycasts = visible;
+    }
+
+    private void UpdatePromptAnchorPosition()
+    {
+        if (promptAnchor == null || promptRectTransform == null || promptParentRectTransform == null)
+            return;
+
+        Camera worldCamera = GetPromptWorldCamera();
+        Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(worldCamera, promptAnchor.position);
+        Camera uiCamera = promptCanvas != null && promptCanvas.renderMode == RenderMode.ScreenSpaceOverlay
+            ? null
+            : worldCamera;
+
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(promptParentRectTransform, screenPoint, uiCamera, out Vector2 localPoint))
+            promptRectTransform.anchoredPosition = localPoint;
+    }
+
+    private Camera GetPromptWorldCamera()
+    {
+        if (promptCanvas != null && promptCanvas.worldCamera != null)
+            return promptCanvas.worldCamera;
+
+        if (promptWorldCamera == null)
+            promptWorldCamera = Camera.main;
+
+        return promptWorldCamera;
+    }
+
+    private void CachePromptDefaultPosition()
+    {
+        if (promptRectTransform == null)
+            return;
+
+        promptDefaultAnchoredPosition = promptRectTransform.anchoredPosition;
+        promptDefaultPositionCached = true;
+    }
+
+    private void RestorePromptDefaultPosition()
+    {
+        if (!promptDefaultPositionCached || promptRectTransform == null)
+            return;
+
+        promptRectTransform.anchoredPosition = promptDefaultAnchoredPosition;
     }
 
     private void TryAcquirePlayerControlLock(bool shouldLock)

@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2846490e87135c94c80c2665f6defa8e, type: 3}
+  m_Name: Scene5_AfterFamilyMinigame
+  m_EditorClassIdentifier: 
+  lines:
+  - speakerName: Arthur
+    text: Ah, I'm so exhausted... I didn't even relize how much I was missing. You were right...
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Arthur
+    text: Are you still there?
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: Now you know, what I wanted to show you. The real life. The real purpose of living.
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Arthur
+    text: I have already wasted so much time...
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: You can't change what's already gone.
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: But you can choose what comes next.
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: The choice is on you, Arthur...
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: And when you let it all go, you don't just learn how to live again, but you also remember how to dream...
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: Good night, Arthur. Sweet Dreams.
+    side: 0
+    voiceClip: {fileID: 0}

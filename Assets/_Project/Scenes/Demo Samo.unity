@@ -752,6 +752,39 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1221782528}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &146747390
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 146747391}
+  m_Layer: 0
+  m_Name: FamilyMinigame
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &146747391
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 146747390}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -27.178753, y: 2.671171, z: 22.496635}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 395306792}
+  - {fileID: 760314793}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &154247052 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -8391222552659086748, guid: 20ec74de6449d204588ffa089f41f1eb,
@@ -2088,6 +2121,91 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 388413603}
   m_CullTransparentMesh: 1
+--- !u!1 &395306791
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 395306792}
+  - component: {fileID: 395306793}
+  - component: {fileID: 395306794}
+  m_Layer: 0
+  m_Name: FamilyMinigameTrigger
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &395306792
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 395306791}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.7071068, y: -0, z: -0, w: 0.7071067}
+  m_LocalPosition: {x: -2.4405403, y: -1.5657166, z: 1.5008583}
+  m_LocalScale: {x: 105.46924, y: 118.75721, z: 11.044485}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 146747391}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &395306793
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 395306791}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.025, y: 0.025, z: 0.2}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &395306794
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 395306791}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a543619dfa0942f1b58a56b2eb73a2d8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  interactKey: 101
+  cancelKey: 27
+  skipKey: 96
+  promptMessage: Press E
+  transitionDuration: 0.35
+  interactionDetectionTolerance: 0.75
+  enableDebugLogs: 0
+  completionDialogue: {fileID: 0}
+  completionDialogueResourcePath: Dialogue/Scene5_AfterFamilyMinigame
+  lockPlayerControlsDuringCompletionDialogue: 0
+  onSequenceCompleted:
+    m_PersistentCalls:
+      m_Calls: []
+  playerViewTransform: {fileID: 0}
+  playerControlLocker: {fileID: 0}
+  playerMovement: {fileID: 0}
+  playerLook: {fileID: 0}
+  minigameViewPoint: {fileID: 760314793}
+  minigameViewPointObjectName: FamilyMinigameViewPoint
 --- !u!1001 &396893967
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4334,6 +4452,37 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -4696227204524416233, guid: 20ec74de6449d204588ffa089f41f1eb, type: 3}
+--- !u!1 &760314792
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 760314793}
+  m_Layer: 0
+  m_Name: FamilyMinigameViewPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &760314793
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 760314792}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 146747391}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &792901952 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4647871307584112395, guid: 20ec74de6449d204588ffa089f41f1eb,
@@ -5973,6 +6122,8 @@ MonoBehaviour:
   onSequenceCompleted:
     m_PersistentCalls:
       m_Calls: []
+  enableSkipShortcut: 1
+  skipSequenceKey: 96
   windowSequenceRoot: {fileID: 1221782528}
   windowPromptAnchor: {fileID: 126961100}
   windowViewAnchor: {fileID: 1319231262}
@@ -10336,7 +10487,7 @@ MonoBehaviour:
   sceneTwoWindowDialogueResourcePath: Dialogue/Scene2_WindowTrigger
   sceneThreePaintingDialogue: {fileID: 11400000, guid: 6b6b0d3f659244cba4d748755d2c8625,
     type: 2}
-  sceneThreePaintingTrigger: {fileID: 0}
+  sceneThreePaintingTrigger: {fileID: 599336890}
   lockPlayerControlsDuringSceneThreePaintingDialogue: 0
   sceneThreePaintingDialogueResourcePath: Dialogue/Scene3_PaintingTrigger
   sceneThreePaintingTriggerObjectName: PaintingDialogueTrigger
@@ -12677,3 +12828,4 @@ SceneRoots:
   - {fileID: 1546250647}
   - {fileID: 1509934278}
   - {fileID: 939795678}
+  - {fileID: 146747391}

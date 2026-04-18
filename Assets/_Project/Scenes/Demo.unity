@@ -256,7 +256,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 43367229}
-  - component: {fileID: 43367230}
   m_Layer: 0
   m_Name: GhostApproachPoint
   m_TagString: Untagged
@@ -279,27 +278,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1709980707}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &43367230
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 43367228}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &51596583 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -7480854062587003116, guid: 20ec74de6449d204588ffa089f41f1eb,
@@ -451,7 +429,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 102537825}
-  - component: {fileID: 102537826}
   m_Layer: 0
   m_Name: GhostSpawnPoint
   m_TagString: Untagged
@@ -474,27 +451,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1709980707}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &102537826
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 102537824}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &154247052 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -8391222552659086748, guid: 20ec74de6449d204588ffa089f41f1eb,
@@ -3225,7 +3181,7 @@ Transform:
   m_GameObject: {fileID: 770544285}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.07142067, y: 2.5082731, z: 4.6099424}
+  m_LocalPosition: {x: 1.837, y: 2.5082731, z: 4.6099424}
   m_LocalScale: {x: 0.05, y: 2.5, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5849,11 +5805,11 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1514127639}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 100, y: 100}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0, y: 0}
 --- !u!114 &1408991942
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7235,10 +7191,10 @@ MonoBehaviour:
   playerControlLocker: {fileID: 0}
   fallbackBehavioursToDisable: []
   gameplayCamera: {fileID: 2271036429879105432}
-  disturbancePause: 0.35
-  fadeOutDuration: 0.2
-  fadeInDuration: 0.25
-  ghostMoveDuration: 1.6
+  disturbancePause: 0.5
+  fadeOutDuration: 0.5
+  fadeInDuration: 1
+  ghostMoveDuration: 3
   playOnStart: 1
   introCamera: {fileID: 167691721}
   ghostSpawnPoint: {fileID: 102537825}
@@ -8717,6 +8673,7 @@ MonoBehaviour:
   continueHintText: {fileID: 541930201}
   charactersPerSecond: 40
   voiceSource: {fileID: 744408586}
+  playerControlLocker: {fileID: 0}
 --- !u!1001 &2079131842
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -9220,7 +9177,6 @@ SceneRoots:
   - {fileID: 716153978}
   - {fileID: 1258341157}
   - {fileID: 1734890966}
-  - {fileID: 939795678}
   - {fileID: 939795678}
   - {fileID: 1709980707}
   - {fileID: 2079131842}

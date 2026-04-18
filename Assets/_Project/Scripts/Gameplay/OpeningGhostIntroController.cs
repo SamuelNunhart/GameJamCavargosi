@@ -178,6 +178,7 @@ public class OpeningGhostIntroController : MonoBehaviour
             yield return new WaitForSeconds(disturbancePause);
 
         RevealGhostAtSpawnPoint();
+        MoveGhostToApproachPoint();
     }
 
     private void RevealGhostAtSpawnPoint()

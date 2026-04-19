@@ -30,14 +30,17 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
     private Canvas canvas;
     private CanvasGroup canvasGroup;
     private RectTransform panelTransform;
+    private Slider sensitivitySlider;
     private Slider masterSlider;
     private Slider musicSlider;
     private Slider sfxSlider;
+    private Text sensitivityValueLabel;
     private Text masterValueLabel;
     private Text musicValueLabel;
     private Text sfxValueLabel;
     private Font uiFont;
 
+    private float sensitivity;
     private float masterVolume;
     private float musicVolume;
     private float sfxVolume;
@@ -165,6 +168,7 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
 
     private void LoadVolumes()
     {
+        sensitivity = PlayerLook.CurrentSensitivity;
         masterVolume = PlayerPrefs.GetFloat(MasterVolumeKey, DefaultMasterVolume);
         musicVolume = PlayerPrefs.GetFloat(MusicVolumeKey, DefaultMusicVolume);
         sfxVolume = PlayerPrefs.GetFloat(SfxVolumeKey, DefaultSfxVolume);
@@ -173,9 +177,10 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
     private void ApplyAllVolumes()
     {
         AudioListener.volume = masterVolume;
+        PlayerLook.SetSensitivity(sensitivity);
         ApplyTrackedSources(musicSources, musicVolume);
         ApplyTrackedSources(sfxSources, sfxVolume);
-        SyncUiWithVolumes();
+        SyncUiWithSettings();
     }
 
     private void ApplyTrackedSources(Dictionary<int, TrackedAudioSource> trackedSources, float channelVolume)
@@ -212,7 +217,7 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
         AudioListener.volume = masterVolume;
         PlayerPrefs.SetFloat(MasterVolumeKey, masterVolume);
         PlayerPrefs.Save();
-        SyncUiWithVolumes();
+        SyncUiWithSettings();
     }
 
     private void SetMusicVolume(float value)
@@ -221,7 +226,7 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
         ApplyTrackedSources(musicSources, musicVolume);
         PlayerPrefs.SetFloat(MusicVolumeKey, musicVolume);
         PlayerPrefs.Save();
-        SyncUiWithVolumes();
+        SyncUiWithSettings();
     }
 
     private void SetSfxVolume(float value)
@@ -230,11 +235,21 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
         ApplyTrackedSources(sfxSources, sfxVolume);
         PlayerPrefs.SetFloat(SfxVolumeKey, sfxVolume);
         PlayerPrefs.Save();
-        SyncUiWithVolumes();
+        SyncUiWithSettings();
     }
 
-    private void SyncUiWithVolumes()
+    private void SetSensitivity(float value)
     {
+        sensitivity = Mathf.Clamp(value, PlayerLook.MinSensitivity, PlayerLook.MaxSensitivity);
+        PlayerLook.SetSensitivity(sensitivity);
+        SyncUiWithSettings();
+    }
+
+    private void SyncUiWithSettings()
+    {
+        if (sensitivitySlider != null && !Mathf.Approximately(sensitivitySlider.value, sensitivity))
+            sensitivitySlider.SetValueWithoutNotify(sensitivity);
+
         if (masterSlider != null && !Mathf.Approximately(masterSlider.value, masterVolume))
             masterSlider.SetValueWithoutNotify(masterVolume);
 
@@ -243,6 +258,9 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
 
         if (sfxSlider != null && !Mathf.Approximately(sfxSlider.value, sfxVolume))
             sfxSlider.SetValueWithoutNotify(sfxVolume);
+
+        if (sensitivityValueLabel != null)
+            sensitivityValueLabel.text = FormatSensitivity(sensitivity);
 
         if (masterValueLabel != null)
             masterValueLabel.text = FormatPercent(masterVolume);
@@ -257,6 +275,11 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
     private static string FormatPercent(float value)
     {
         return Mathf.RoundToInt(Mathf.Clamp01(value) * 100f) + "%";
+    }
+
+    private static string FormatSensitivity(float value)
+    {
+        return Mathf.RoundToInt(value).ToString();
     }
 
     private bool IsSettingsAllowedInActiveScene()
@@ -300,7 +323,7 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
         }
 
         UpdateCursorForCurrentState();
-        SyncUiWithVolumes();
+        SyncUiWithSettings();
 
         if (instant)
             SnapPanelToTarget();
@@ -420,12 +443,21 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
         layoutGroup.childForceExpandHeight = false;
         layoutGroup.childForceExpandWidth = true;
 
-        CreateText("Title", panelObject.transform, "Audio Settings", 28, FontStyle.Bold, TextAnchor.MiddleLeft, Color.white);
+        CreateText("Title", panelObject.transform, "Settings", 28, FontStyle.Bold, TextAnchor.MiddleLeft, Color.white);
         CreateText("Hint", panelObject.transform, "Press Esc to close", 16, FontStyle.Normal, TextAnchor.MiddleLeft, new Color(0.8f, 0.84f, 0.9f, 0.95f));
 
-        masterValueLabel = CreateSliderRow(panelObject.transform, "Master", masterVolume, SetMasterVolume, out masterSlider);
-        musicValueLabel = CreateSliderRow(panelObject.transform, "Music", musicVolume, SetMusicVolume, out musicSlider);
-        sfxValueLabel = CreateSliderRow(panelObject.transform, "SFX", sfxVolume, SetSfxVolume, out sfxSlider);
+        sensitivityValueLabel = CreateSliderRow(
+            panelObject.transform,
+            "Sensitivity",
+            sensitivity,
+            PlayerLook.MinSensitivity,
+            PlayerLook.MaxSensitivity,
+            SetSensitivity,
+            FormatSensitivity,
+            out sensitivitySlider);
+        masterValueLabel = CreateSliderRow(panelObject.transform, "Master", masterVolume, 0f, 1f, SetMasterVolume, FormatPercent, out masterSlider);
+        musicValueLabel = CreateSliderRow(panelObject.transform, "Music", musicVolume, 0f, 1f, SetMusicVolume, FormatPercent, out musicSlider);
+        sfxValueLabel = CreateSliderRow(panelObject.transform, "SFX", sfxVolume, 0f, 1f, SetSfxVolume, FormatPercent, out sfxSlider);
 
         LayoutElement spacer = new GameObject("Spacer").AddComponent<LayoutElement>();
         spacer.transform.SetParent(panelObject.transform, false);
@@ -433,10 +465,18 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
 
         CreateText("Footer", panelObject.transform, "Changes save automatically.", 15, FontStyle.Italic, TextAnchor.LowerLeft, new Color(0.8f, 0.84f, 0.9f, 0.85f));
 
-        SyncUiWithVolumes();
+        SyncUiWithSettings();
     }
 
-    private Text CreateSliderRow(Transform parent, string label, float initialValue, UnityEngine.Events.UnityAction<float> onValueChanged, out Slider slider)
+    private Text CreateSliderRow(
+        Transform parent,
+        string label,
+        float initialValue,
+        float minValue,
+        float maxValue,
+        UnityEngine.Events.UnityAction<float> onValueChanged,
+        System.Func<float, string> formatValue,
+        out Slider slider)
     {
         GameObject rowObject = new GameObject(label + "Row");
         rowObject.transform.SetParent(parent, false);
@@ -464,13 +504,13 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
         headerLayout.childForceExpandHeight = false;
 
         CreateText("Label", labelRowObject.transform, label, 20, FontStyle.Bold, TextAnchor.MiddleLeft, Color.white);
-        Text valueLabel = CreateText("Value", labelRowObject.transform, FormatPercent(initialValue), 18, FontStyle.Normal, TextAnchor.MiddleRight, new Color(0.75f, 0.93f, 0.82f, 1f));
+        Text valueLabel = CreateText("Value", labelRowObject.transform, formatValue(initialValue), 18, FontStyle.Normal, TextAnchor.MiddleRight, new Color(0.75f, 0.93f, 0.82f, 1f));
 
         GameObject sliderObject = new GameObject(label + "Slider");
         sliderObject.transform.SetParent(rowObject.transform, false);
         slider = sliderObject.AddComponent<Slider>();
-        slider.minValue = 0f;
-        slider.maxValue = 1f;
+        slider.minValue = minValue;
+        slider.maxValue = maxValue;
         slider.value = initialValue;
         slider.direction = Slider.Direction.LeftToRight;
 

@@ -43,8 +43,8 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
     [SerializeField] private Sprite endingImage;
     [SerializeField] private Color endingImageColor = Color.white;
     [SerializeField] private string endingQuestionText = "And what will you choose?";
-    [SerializeField] private float endingQuestionHoldDuration = 1.75f;
-    [SerializeField] private float endingQuestionFadeDuration = 2.5f;
+    [SerializeField] private float endingQuestionHoldDuration = 3f;
+    [SerializeField] private float endingQuestionFadeDuration = 5f;
     [SerializeField] private int endingQuestionFontSize = 72;
     [SerializeField] private Color endingQuestionColor = Color.white;
 
@@ -431,12 +431,6 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
             SetEndingQuestionAlpha(showEndingQuestion ? 1f : 0f);
         }
 
-        if (!showEndingQuestion)
-        {
-            QuitGame();
-            yield break;
-        }
-
         float holdDuration = Mathf.Max(0f, endingQuestionHoldDuration);
         if (holdDuration > 0f)
             yield return new WaitForSecondsRealtime(holdDuration);
@@ -444,6 +438,7 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
         float questionFadeDuration = Mathf.Max(0f, endingQuestionFadeDuration);
         if (questionFadeDuration <= 0f)
         {
+            SetEndingImageAlpha(0f);
             SetEndingQuestionAlpha(0f);
         }
         else
@@ -454,10 +449,12 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
             {
                 elapsed += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(elapsed / questionFadeDuration);
+                SetEndingImageAlpha(1f - t);
                 SetEndingQuestionAlpha(1f - t);
                 yield return null;
             }
 
+            SetEndingImageAlpha(0f);
             SetEndingQuestionAlpha(0f);
         }
 

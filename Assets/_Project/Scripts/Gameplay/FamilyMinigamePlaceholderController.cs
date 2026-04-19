@@ -27,6 +27,10 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
     [SerializeField] private bool lockPlayerControlsDuringCompletionDialogue;
     [SerializeField] private UnityEvent onSequenceCompleted;
 
+    [Header("Post Completion")]
+    [SerializeField] private bool returnToOpeningSceneStateOnCompletion = true;
+    [SerializeField] private OpeningGhostIntroController postCompletionIntroController;
+
     [Header("Minigame Scene")]
     [SerializeField] private string minigameSceneName = "Pipes";
     [SerializeField] private Vector3 minigameSceneOffset = new Vector3(10000f, 0f, 0f);
@@ -267,13 +271,17 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
     private IEnumerator CloseSequenceRoutine(bool completed)
     {
         isTransitioning = true;
+        bool restoreOpeningSceneState = completed && returnToOpeningSceneStateOnCompletion && postCompletionIntroController != null;
 
         if (minigameSceneLoaded)
             yield return UnloadMinigameScene();
-        else
+        else if (!restoreOpeningSceneState)
             yield return MoveBackToSavedView();
 
-        ReleasePlayerControlLock();
+        if (restoreOpeningSceneState)
+            postCompletionIntroController.PlayFinalBedEnding();
+        else
+            ReleasePlayerControlLock();
 
         sequenceOpen = false;
         isTransitioning = false;
@@ -286,6 +294,7 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
         {
             yield return PlayCompletionDialogueIfAssigned();
             yield return PlayEndingPresentationIfEnabled();
+            ReleasePlayerControlLock();
             onSequenceCompleted?.Invoke();
             ShowPrompt(false);
             DebugLog("Family minigame placeholder completed.");
@@ -724,6 +733,13 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
             PlayerControlLocker[] controlLockers = FindObjectsOfType<PlayerControlLocker>(true);
             if (controlLockers.Length > 0)
                 playerControlLocker = controlLockers[0];
+        }
+
+        if (postCompletionIntroController == null)
+        {
+            OpeningGhostIntroController[] introControllers = FindObjectsOfType<OpeningGhostIntroController>(true);
+            if (introControllers.Length > 0)
+                postCompletionIntroController = introControllers[0];
         }
     }
 

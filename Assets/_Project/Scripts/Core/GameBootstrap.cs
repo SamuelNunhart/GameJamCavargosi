@@ -13,6 +13,7 @@ public sealed class GameplayMusicController : MonoBehaviour
     private const string GhostRevealTrackKey = "ghost-first";
     private const string WindowMinigameTrackKey = "Ambiance_Forest_Birds_Loop_Stereo";
     private const string KitchenDoorTrackKey = "rodinka-na-city";
+    private const string FinalFamilyEndingTrackKey = "ending after las game";
     private const float DefaultMusicCrossfadeDuration = 1f;
     private const float GhostRevealCrossfadeDuration = 0.45f;
 
@@ -21,7 +22,8 @@ public sealed class GameplayMusicController : MonoBehaviour
     {
         GhostRevealTrackKey,
         WindowMinigameTrackKey,
-        KitchenDoorTrackKey
+        KitchenDoorTrackKey,
+        FinalFamilyEndingTrackKey
     };
 
     private readonly Dictionary<string, AudioClip> clipCache = new Dictionary<string, AudioClip>();
@@ -62,6 +64,11 @@ public sealed class GameplayMusicController : MonoBehaviour
     public static void PlayKitchenDoorMusic()
     {
         EnsureInstance().PlayMusicTrack(KitchenDoorTrackKey, loop: true, DefaultMusicCrossfadeDuration);
+    }
+
+    public static void PlayFinalFamilyEndingMusic()
+    {
+        EnsureInstance().PlayMusicTrack(FinalFamilyEndingTrackKey, loop: false, DefaultMusicCrossfadeDuration);
     }
 
     public static void RestorePreviousMusic()

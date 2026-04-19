@@ -92,6 +92,7 @@ public class OpeningGhostIntroController : MonoBehaviour
     private int fallbackLockCount;
     private bool sequenceFinished;
     private bool ghostRevealed;
+    private bool wakeUpLightingStateCached;
     private bool waitingForWindowDialogueTrigger;
     private bool waitingForSceneThreePaintingTrigger;
     private bool waitingForSceneThreePuzzleDialogueTrigger;
@@ -108,6 +109,9 @@ public class OpeningGhostIntroController : MonoBehaviour
     private Vector3 introPhoneInitialPosition;
     private Quaternion introPhoneInitialRotation;
     private GameObject cachedIntroPhonePoseSource;
+    private bool wakeUpLightToEnableInitialActiveSelf;
+    private bool wakeUpLightToEnableInitialEnabled;
+    private float wakeUpLightToBrightenInitialIntensity;
 
     public bool HasCompletedPaintingDialogue => sceneThreePaintingDialogueCompleted;
 
@@ -269,6 +273,22 @@ public class OpeningGhostIntroController : MonoBehaviour
         RevealGhostAtSpawnPoint();
     }
 
+    public void PlayFinalBedEnding()
+    {
+        AutoAssignSceneReferences();
+        AcquireControlLock();
+        HideIntroPhoneImmediate();
+        SetBlackoutAlpha(0f);
+        RestoreOpeningLightingState();
+        SetCameraState(gameplayCamera, false);
+        SetCameraState(introCamera, true);
+        HideGhostImmediate();
+        RevealGhostAtSpawnPoint(startHidden: true, playRevealStinger: false);
+        StartGhostFadeIn();
+        MoveGhostToApproachPoint();
+        GameplayMusicController.PlayFinalFamilyEndingMusic();
+    }
+
     public void MoveGhostToApproachPoint()
     {
         if (ghostObject == null || ghostApproachPoint == null)
@@ -399,7 +419,7 @@ public class OpeningGhostIntroController : MonoBehaviour
         MoveGhostToApproachPoint();
     }
 
-    private void RevealGhostAtSpawnPoint(bool startHidden = false)
+    private void RevealGhostAtSpawnPoint(bool startHidden = false, bool playRevealStinger = true)
     {
         if (ghostObject == null)
             return;
@@ -419,7 +439,7 @@ public class OpeningGhostIntroController : MonoBehaviour
         SetGhostAlpha(startHidden ? 0f : 1f);
         ghostRevealed = true;
 
-        if (!wasGhostRevealed)
+        if (!wasGhostRevealed && playRevealStinger)
             GameplayMusicController.PlayGhostRevealStinger();
     }
 
@@ -572,6 +592,7 @@ public class OpeningGhostIntroController : MonoBehaviour
     private void ApplyWakeUpLightingTransition()
     {
         AutoAssignWakeUpLighting();
+        CacheWakeUpLightingState();
 
         if (wakeUpLightToEnable != null)
         {
@@ -583,6 +604,21 @@ public class OpeningGhostIntroController : MonoBehaviour
 
         if (wakeUpLightToBrighten != null)
             wakeUpLightToBrighten.intensity = wakeUpLightTargetIntensity;
+    }
+
+    private void RestoreOpeningLightingState()
+    {
+        AutoAssignWakeUpLighting();
+        CacheWakeUpLightingState();
+
+        if (wakeUpLightToEnable != null)
+        {
+            wakeUpLightToEnable.gameObject.SetActive(wakeUpLightToEnableInitialActiveSelf);
+            wakeUpLightToEnable.enabled = wakeUpLightToEnableInitialEnabled;
+        }
+
+        if (wakeUpLightToBrighten != null)
+            wakeUpLightToBrighten.intensity = wakeUpLightToBrightenInitialIntensity;
     }
 
     private void HideGhostImmediate()
@@ -760,6 +796,7 @@ public class OpeningGhostIntroController : MonoBehaviour
         }
 
         AutoAssignWakeUpLighting();
+        CacheWakeUpLightingState();
         CacheGhostRenderers();
         AutoAssignSceneTwoReferences();
         AutoAssignIntroPhoneReferences();
@@ -782,6 +819,23 @@ public class OpeningGhostIntroController : MonoBehaviour
                 transform
             );
         }
+    }
+
+    private void CacheWakeUpLightingState()
+    {
+        if (wakeUpLightingStateCached)
+            return;
+
+        if (wakeUpLightToEnable != null)
+        {
+            wakeUpLightToEnableInitialActiveSelf = wakeUpLightToEnable.gameObject.activeSelf;
+            wakeUpLightToEnableInitialEnabled = wakeUpLightToEnable.enabled;
+        }
+
+        if (wakeUpLightToBrighten != null)
+            wakeUpLightToBrightenInitialIntensity = wakeUpLightToBrighten.intensity;
+
+        wakeUpLightingStateCached = true;
     }
 
     private void AutoAssignIntroPhoneReferences()

@@ -53,6 +53,9 @@ public class GridManager : MonoBehaviour
             Debug.Log("<color=green>VŠETKO JE SPRÁVNE! 🎉</color>");
             Debug.Log("Všetky reálne rúrky sú v pôvodných pozíciách.");
 
+            if (FamilyMinigamePlaceholderController.TryCompleteActiveSceneMinigame())
+                return;
+
             if (GameManager.instance != null)
             {
                 GameManager.instance.Win();

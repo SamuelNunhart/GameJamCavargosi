@@ -3083,6 +3083,10 @@ MonoBehaviour:
   onSequenceCompleted:
     m_PersistentCalls:
       m_Calls: []
+  returnToOpeningSceneStateOnCompletion: 1
+  postCompletionIntroController: {fileID: 1709980708}
+  completionViewHoldDuration: 2
+  completionFadeDuration: 0.5
   minigameSceneName: Pipes
   minigameSceneOffset: {x: 10000, y: 0, z: 0}
   playEndingFadeAfterCompletionDialogue: 1
@@ -8162,6 +8166,11 @@ MonoBehaviour:
   promptMessage: Press E to inspect puzzle
   interactionDetectionTolerance: 0.75
   interactionEnabled: 1
+  closeHintText: {fileID: 0}
+  closeHintMessage: Press ESC to close
+  closeHintOffset: {x: -24, y: -24}
+  closeHintFontSize: 24
+  closeHintColor: {r: 1, g: 1, b: 1, a: 0.92}
 --- !u!4 &939795682 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1344604610958702863, guid: 20ec74de6449d204588ffa089f41f1eb,
@@ -11832,7 +11841,7 @@ Transform:
   m_GameObject: {fileID: 1387794568}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.00956, y: -0.064, z: 0.01178}
+  m_LocalPosition: {x: -0.00956, y: -0.0688, z: 0.01178}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -13959,7 +13968,10 @@ MonoBehaviour:
   fadeOutDuration: 1
   fadeInDuration: 2
   ghostMoveDuration: 6
-  ghostFadeInDuration: 3
+  ghostFadeInDuration: 5
+  firstMovementHintText: WASD
+  firstMovementHintDuration: 2.5
+  firstMovementHintFadeDuration: 0.35
   playOnStart: 1
   introCamera: {fileID: 167691721}
   ghostSpawnPoint: {fileID: 102537825}

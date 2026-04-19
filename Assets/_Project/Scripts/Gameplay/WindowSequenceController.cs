@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -87,6 +88,7 @@ public class WindowSequenceController : MonoBehaviour
     private Vector2 initialPanoramaAnchoredPosition;
     private Vector3 savedViewPosition;
     private Quaternion savedViewRotation;
+    private bool uiLayoutNormalized;
 
     public bool IsOpen => sequenceOpen;
     public bool IsCompleted => completionHandled;
@@ -110,6 +112,7 @@ public class WindowSequenceController : MonoBehaviour
     private void Awake()
     {
         AutoAssignReferences();
+        NormalizeWindowMinigameLayout();
         ConfigureTrigger();
         AutoAssignCompletionDialogue();
 
@@ -696,6 +699,199 @@ public class WindowSequenceController : MonoBehaviour
         AutoAssignPlayerReferences();
     }
 
+    private void NormalizeWindowMinigameLayout()
+    {
+        if (uiLayoutNormalized || hideSeekCanvas == null)
+            return;
+
+        RectTransform canvasRect = hideSeekCanvas.transform as RectTransform;
+        if (canvasRect == null)
+            return;
+
+        NormalizeCanvasRoot(canvasRect);
+        NormalizeInstructionPanel(canvasRect);
+        NormalizeTargetPanel(canvasRect);
+
+        uiLayoutNormalized = true;
+        Canvas.ForceUpdateCanvases();
+    }
+
+    private void NormalizeCanvasRoot(RectTransform canvasRect)
+    {
+        Canvas canvas = hideSeekCanvas.GetComponent<Canvas>();
+        if (canvas != null)
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+
+        CanvasScaler canvasScaler = hideSeekCanvas.GetComponent<CanvasScaler>();
+        if (canvasScaler != null)
+        {
+            canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            canvasScaler.referenceResolution = new Vector2(1920f, 1080f);
+            canvasScaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            canvasScaler.matchWidthOrHeight = 0.5f;
+        }
+
+        canvasRect.localRotation = Quaternion.identity;
+        canvasRect.localScale = Vector3.one;
+        canvasRect.anchorMin = Vector2.zero;
+        canvasRect.anchorMax = Vector2.one;
+        canvasRect.pivot = new Vector2(0.5f, 0.5f);
+        canvasRect.anchoredPosition = Vector2.zero;
+        canvasRect.offsetMin = Vector2.zero;
+        canvasRect.offsetMax = Vector2.zero;
+    }
+
+    private void NormalizeInstructionPanel(RectTransform canvasRect)
+    {
+        RectTransform instructionPanelRect = instructionText != null
+            ? instructionText.rectTransform.parent as RectTransform
+            : null;
+
+        if (instructionPanelRect == null)
+            return;
+
+        FlattenPanelHierarchy(instructionPanelRect, canvasRect);
+        targetPanelLeft = instructionPanelRect;
+    }
+
+    private void NormalizeTargetPanel(RectTransform canvasRect)
+    {
+        RectTransform targetPanelRect = null;
+
+        for (int i = 0; i < targetImages.Length; i++)
+        {
+            if (targetImages[i] == null)
+                continue;
+
+            targetPanelRect = targetImages[i].rectTransform.parent as RectTransform;
+            if (targetPanelRect != null)
+                break;
+        }
+
+        if (targetPanelRect == null)
+            return;
+
+        FlattenPanelHierarchy(targetPanelRect, canvasRect);
+        targetPanelRight = targetPanelRect;
+    }
+
+    private void FlattenPanelHierarchy(RectTransform panelRect, RectTransform canvasRect)
+    {
+        if (panelRect == null || canvasRect == null)
+            return;
+
+        RectSnapshot panelSnapshot = CaptureRectSnapshot(panelRect);
+        List<RectSnapshot> childSnapshots = CaptureDirectChildRectSnapshots(panelRect);
+
+        int siblingIndex = GetCanvasSiblingIndex(panelRect, canvasRect);
+        ApplyRectSnapshot(panelSnapshot, canvasRect, siblingIndex);
+
+        for (int i = 0; i < childSnapshots.Count; i++)
+            ApplyRectSnapshot(childSnapshots[i], panelRect, childSnapshots[i].SiblingIndex);
+    }
+
+    private static List<RectSnapshot> CaptureDirectChildRectSnapshots(RectTransform parentRect)
+    {
+        List<RectSnapshot> snapshots = new List<RectSnapshot>();
+        if (parentRect == null)
+            return snapshots;
+
+        for (int i = 0; i < parentRect.childCount; i++)
+        {
+            RectTransform childRect = parentRect.GetChild(i) as RectTransform;
+            if (childRect == null)
+                continue;
+
+            snapshots.Add(CaptureRectSnapshot(childRect));
+        }
+
+        return snapshots;
+    }
+
+    private static int GetCanvasSiblingIndex(RectTransform rectTransform, RectTransform canvasRect)
+    {
+        Transform currentParent = rectTransform.parent;
+        if (currentParent != null && currentParent.parent == canvasRect)
+            return currentParent.GetSiblingIndex();
+
+        if (currentParent == canvasRect)
+            return rectTransform.GetSiblingIndex();
+
+        return canvasRect.childCount;
+    }
+
+    private static RectSnapshot CaptureRectSnapshot(RectTransform rectTransform)
+    {
+        Vector3[] worldCorners = new Vector3[4];
+        rectTransform.GetWorldCorners(worldCorners);
+
+        return new RectSnapshot(
+            rectTransform,
+            worldCorners[0],
+            worldCorners[1],
+            worldCorners[2],
+            worldCorners[3],
+            rectTransform.GetSiblingIndex());
+    }
+
+    private static void ApplyRectSnapshot(RectSnapshot snapshot, RectTransform newParent, int siblingIndex)
+    {
+        if (snapshot.RectTransform == null || newParent == null)
+            return;
+
+        Vector2 min = new Vector2(float.PositiveInfinity, float.PositiveInfinity);
+        Vector2 max = new Vector2(float.NegativeInfinity, float.NegativeInfinity);
+
+        CollectLocalBounds(snapshot.BottomLeft, newParent, ref min, ref max);
+        CollectLocalBounds(snapshot.TopLeft, newParent, ref min, ref max);
+        CollectLocalBounds(snapshot.TopRight, newParent, ref min, ref max);
+        CollectLocalBounds(snapshot.BottomRight, newParent, ref min, ref max);
+
+        RectTransform rectTransform = snapshot.RectTransform;
+        rectTransform.SetParent(newParent, false);
+        rectTransform.SetSiblingIndex(Mathf.Clamp(siblingIndex, 0, newParent.childCount - 1));
+        rectTransform.localRotation = Quaternion.identity;
+        rectTransform.localScale = Vector3.one;
+        rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+        rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+        rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        rectTransform.sizeDelta = max - min;
+        rectTransform.anchoredPosition = (min + max) * 0.5f;
+    }
+
+    private static void CollectLocalBounds(Vector3 worldPoint, RectTransform parentRect, ref Vector2 min, ref Vector2 max)
+    {
+        Vector3 localPoint = parentRect.InverseTransformPoint(worldPoint);
+        min = Vector2.Min(min, localPoint);
+        max = Vector2.Max(max, localPoint);
+    }
+
+    private readonly struct RectSnapshot
+    {
+        public RectSnapshot(
+            RectTransform rectTransform,
+            Vector3 bottomLeft,
+            Vector3 topLeft,
+            Vector3 topRight,
+            Vector3 bottomRight,
+            int siblingIndex)
+        {
+            RectTransform = rectTransform;
+            BottomLeft = bottomLeft;
+            TopLeft = topLeft;
+            TopRight = topRight;
+            BottomRight = bottomRight;
+            SiblingIndex = siblingIndex;
+        }
+
+        public RectTransform RectTransform { get; }
+        public Vector3 BottomLeft { get; }
+        public Vector3 TopLeft { get; }
+        public Vector3 TopRight { get; }
+        public Vector3 BottomRight { get; }
+        public int SiblingIndex { get; }
+    }
+
     private void AutoAssignPlayerReferences()
     {
         if (playerViewTransform == null && Camera.main != null)
@@ -802,9 +998,6 @@ public class WindowSequenceController : MonoBehaviour
         Mask mask = panoramaContainer.GetComponentInParent<Mask>(includeInactive: true);
         if (mask != null)
             return mask.transform as RectTransform;
-
-        if (hideSeekCanvas != null)
-            return hideSeekCanvas.transform as RectTransform;
 
         return panoramaContainer;
     }

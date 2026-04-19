@@ -19,12 +19,15 @@ public class DoorDialogueTrigger : MonoBehaviour
     [Header("Trigger")]
     [SerializeField] private string playerTag = "Player";
     [SerializeField] private bool interactionEnabled = true;
+    [SerializeField] private float playerExitGracePeriod = 1.25f;
 
     private Quaternion closedRotation;
     private Quaternion openRotation;
     private bool rotationsCached;
     private bool playerInRange;
+    private bool hasPendingPlayerTrigger;
     private bool hasPlayed;
+    private float lastPlayerDetectionTime = float.NegativeInfinity;
     private Coroutine waitForDoorRoutine;
 
     public bool HasPlayedDialogue => hasPlayed;
@@ -70,8 +73,7 @@ public class DoorDialogueTrigger : MonoBehaviour
         if (!IsPlayerCollider(other))
             return;
 
-        playerInRange = true;
-        TryStartWaitingForDialogue();
+        RegisterPlayerDetection();
     }
 
     private void OnTriggerStay(Collider other)
@@ -79,8 +81,7 @@ public class DoorDialogueTrigger : MonoBehaviour
         if (!IsPlayerCollider(other))
             return;
 
-        playerInRange = true;
-        TryStartWaitingForDialogue();
+        RegisterPlayerDetection();
     }
 
     private void OnTriggerExit(Collider other)
@@ -89,17 +90,13 @@ public class DoorDialogueTrigger : MonoBehaviour
             return;
 
         playerInRange = false;
-
-        if (waitForDoorRoutine != null)
-        {
-            StopCoroutine(waitForDoorRoutine);
-            waitForDoorRoutine = null;
-        }
+        lastPlayerDetectionTime = Time.time;
     }
 
     private void OnDisable()
     {
         playerInRange = false;
+        hasPendingPlayerTrigger = false;
 
         if (waitForDoorRoutine != null)
         {
@@ -114,11 +111,13 @@ public class DoorDialogueTrigger : MonoBehaviour
 
         if (interactionEnabled)
         {
-            if (playerInRange)
+            if (HasPendingPlayerTrigger())
                 TryStartWaitingForDialogue();
 
             return;
         }
+
+        hasPendingPlayerTrigger = false;
 
         if (waitForDoorRoutine != null)
         {
@@ -129,7 +128,7 @@ public class DoorDialogueTrigger : MonoBehaviour
 
     private void TryStartWaitingForDialogue()
     {
-        if (!interactionEnabled || !playerInRange || hasPlayed || waitForDoorRoutine != null || dialogue == null)
+        if (!interactionEnabled || !HasPendingPlayerTrigger() || hasPlayed || waitForDoorRoutine != null || dialogue == null)
             return;
 
         waitForDoorRoutine = StartCoroutine(WaitForDoorAndPlayDialogue());
@@ -137,7 +136,7 @@ public class DoorDialogueTrigger : MonoBehaviour
 
     private IEnumerator WaitForDoorAndPlayDialogue()
     {
-        while (interactionEnabled && playerInRange && !hasPlayed)
+        while (interactionEnabled && HasPendingPlayerTrigger() && !hasPlayed)
         {
             if (DialogueUI.Instance == null || DialogueUI.Instance.IsDialogueOpen)
             {
@@ -154,7 +153,7 @@ public class DoorDialogueTrigger : MonoBehaviour
             if (startDelayAfterDoorOpens > 0f)
                 yield return new WaitForSeconds(startDelayAfterDoorOpens);
 
-            if (!playerInRange || hasPlayed)
+            if (!HasPendingPlayerTrigger() || hasPlayed)
                 break;
 
             if (DialogueUI.Instance == null || DialogueUI.Instance.IsDialogueOpen)
@@ -172,11 +171,15 @@ public class DoorDialogueTrigger : MonoBehaviour
             if (started)
             {
                 hasPlayed = true;
+                hasPendingPlayerTrigger = false;
                 break;
             }
 
             yield return null;
         }
+
+        if (!playerInRange && !HasPendingPlayerTrigger())
+            hasPendingPlayerTrigger = false;
 
         waitForDoorRoutine = null;
     }
@@ -227,6 +230,26 @@ public class DoorDialogueTrigger : MonoBehaviour
 
         if (triggerCollider != null)
             triggerCollider.isTrigger = true;
+    }
+
+    private void RegisterPlayerDetection()
+    {
+        playerInRange = true;
+        hasPendingPlayerTrigger = true;
+        lastPlayerDetectionTime = Time.time;
+        TryStartWaitingForDialogue();
+    }
+
+    private bool HasPendingPlayerTrigger()
+    {
+        if (!hasPendingPlayerTrigger)
+            return false;
+
+        if (playerInRange)
+            return true;
+
+        float gracePeriod = Mathf.Max(0f, playerExitGracePeriod);
+        return Time.time - lastPlayerDetectionTime <= gracePeriod;
     }
 
     private bool IsPlayerCollider(Collider other)

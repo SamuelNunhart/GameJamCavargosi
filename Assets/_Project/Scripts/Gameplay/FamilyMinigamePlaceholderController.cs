@@ -1,6 +1,9 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(Collider))]
@@ -22,6 +25,10 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
     [SerializeField] private bool lockPlayerControlsDuringCompletionDialogue;
     [SerializeField] private UnityEvent onSequenceCompleted;
 
+    [Header("Minigame Scene")]
+    [SerializeField] private string minigameSceneName = "Pipes";
+    [SerializeField] private Vector3 minigameSceneOffset = new Vector3(10000f, 0f, 0f);
+
     [Header("Ending Presentation")]
     [SerializeField] private bool playEndingFadeAfterCompletionDialogue;
     [SerializeField] private float endingFadeDuration = 2.5f;
@@ -39,14 +46,20 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
     [SerializeField] private string minigameViewPointObjectName = "FamilyMinigameViewPoint";
 
     private Collider triggerCollider;
+    private static FamilyMinigamePlaceholderController activeMinigameController;
     private bool playerInRange;
     private bool sequenceOpen;
     private bool isTransitioning;
     private bool completionHandled;
+    private bool minigameSceneLoaded;
+    private bool minigameSceneOffsetApplied;
     private bool promptVisible;
     private bool playerControlLockHeld;
     private Vector3 savedViewPosition;
     private Quaternion savedViewRotation;
+    private Scene gameplayScene;
+    private Scene loadedMinigameScene;
+    private readonly List<Behaviour> suspendedPresentationBehaviours = new List<Behaviour>();
     private Canvas endingOverlayCanvas;
     private Image endingBlackoutImage;
     private Image endingPresentationImage;
@@ -138,14 +151,20 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
         if (!Application.isPlaying)
             return;
 
+        if (ReferenceEquals(activeMinigameController, this))
+            activeMinigameController = null;
+
         ShowPrompt(false);
         promptVisible = false;
         HideEndingOverlayImmediate();
+        RestoreSuspendedPresentation();
 
-        if (sequenceOpen && playerViewTransform != null)
+        if (sequenceOpen && !minigameSceneLoaded && playerViewTransform != null)
             playerViewTransform.SetPositionAndRotation(savedViewPosition, savedViewRotation);
 
+        RestoreCursorState();
         ReleasePlayerControlLock();
+        minigameSceneLoaded = false;
         sequenceOpen = false;
         isTransitioning = false;
     }
@@ -181,10 +200,24 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
         StartCoroutine(CloseSequenceRoutine(true));
     }
 
+    public static bool TryCompleteActiveSceneMinigame()
+    {
+        if (activeMinigameController == null ||
+            !activeMinigameController.sequenceOpen ||
+            activeMinigameController.completionHandled ||
+            activeMinigameController.isTransitioning)
+            return false;
+
+        activeMinigameController.CompleteSequence();
+        return true;
+    }
+
     private IEnumerator OpenSequenceRoutine()
     {
         isTransitioning = true;
         sequenceOpen = true;
+        gameplayScene = gameObject.scene;
+        activeMinigameController = this;
 
         ShowPrompt(false);
         AcquirePlayerControlLock();
@@ -195,7 +228,18 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
             savedViewRotation = playerViewTransform.rotation;
         }
 
-        yield return MoveToView(minigameViewPoint);
+        bool loadedSeparateScene = false;
+
+        if (!string.IsNullOrWhiteSpace(minigameSceneName))
+        {
+            yield return LoadMinigameScene();
+            loadedSeparateScene = minigameSceneLoaded;
+        }
+
+        if (!loadedSeparateScene)
+            yield return MoveToView(minigameViewPoint);
+        else
+            ApplyOpenCursorState();
 
         isTransitioning = false;
         DebugLog("Family minigame placeholder opened.");
@@ -205,12 +249,19 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
     {
         isTransitioning = true;
 
-        yield return MoveBackToSavedView();
+        if (minigameSceneLoaded)
+            yield return UnloadMinigameScene();
+        else
+            yield return MoveBackToSavedView();
 
         ReleasePlayerControlLock();
 
         sequenceOpen = false;
         isTransitioning = false;
+        minigameSceneLoaded = false;
+
+        if (ReferenceEquals(activeMinigameController, this))
+            activeMinigameController = null;
 
         if (completed)
         {
@@ -309,6 +360,107 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
         );
     }
 
+    private IEnumerator LoadMinigameScene()
+    {
+        if (SceneManager.GetSceneByName(minigameSceneName).isLoaded)
+        {
+            loadedMinigameScene = SceneManager.GetSceneByName(minigameSceneName);
+            minigameSceneLoaded = loadedMinigameScene.IsValid() && loadedMinigameScene.isLoaded;
+
+            if (minigameSceneLoaded)
+            {
+                ApplyMinigameSceneOffset();
+                SuspendPresentationForMinigame();
+                SceneManager.SetActiveScene(loadedMinigameScene);
+            }
+
+            yield break;
+        }
+
+        AsyncOperation loadOperation = SceneManager.LoadSceneAsync(minigameSceneName, LoadSceneMode.Additive);
+
+        if (loadOperation == null)
+        {
+            Debug.LogWarning($"Unable to load minigame scene '{minigameSceneName}'. Falling back to placeholder view.", this);
+            yield break;
+        }
+
+        while (!loadOperation.isDone)
+            yield return null;
+
+        loadedMinigameScene = SceneManager.GetSceneByName(minigameSceneName);
+        minigameSceneLoaded = loadedMinigameScene.IsValid() && loadedMinigameScene.isLoaded;
+
+        if (!minigameSceneLoaded)
+        {
+            Debug.LogWarning($"Minigame scene '{minigameSceneName}' finished loading but is not available. Falling back to placeholder view.", this);
+            yield break;
+        }
+
+        ApplyMinigameSceneOffset();
+        SuspendPresentationForMinigame();
+        SceneManager.SetActiveScene(loadedMinigameScene);
+    }
+
+    private IEnumerator UnloadMinigameScene()
+    {
+        RestoreSuspendedPresentation();
+
+        if (gameplayScene.IsValid() && gameplayScene.isLoaded)
+            SceneManager.SetActiveScene(gameplayScene);
+
+        RevertMinigameSceneOffset();
+
+        if (!loadedMinigameScene.IsValid() || !loadedMinigameScene.isLoaded)
+            yield break;
+
+        AsyncOperation unloadOperation = SceneManager.UnloadSceneAsync(loadedMinigameScene);
+
+        if (unloadOperation == null)
+            yield break;
+
+        while (!unloadOperation.isDone)
+            yield return null;
+
+        RestoreCursorState();
+    }
+
+    private void ApplyMinigameSceneOffset()
+    {
+        if (!loadedMinigameScene.IsValid() || !loadedMinigameScene.isLoaded || minigameSceneOffsetApplied || minigameSceneOffset == Vector3.zero)
+            return;
+
+        GameObject[] rootObjects = loadedMinigameScene.GetRootGameObjects();
+
+        for (int i = 0; i < rootObjects.Length; i++)
+        {
+            Transform rootTransform = rootObjects[i] != null ? rootObjects[i].transform : null;
+
+            if (rootTransform != null)
+                rootTransform.position += minigameSceneOffset;
+        }
+
+        minigameSceneOffsetApplied = true;
+    }
+
+    private void RevertMinigameSceneOffset()
+    {
+        if (!loadedMinigameScene.IsValid() || !loadedMinigameScene.isLoaded || !minigameSceneOffsetApplied || minigameSceneOffset == Vector3.zero)
+            return;
+
+        GameObject[] rootObjects = loadedMinigameScene.GetRootGameObjects();
+
+        for (int i = 0; i < rootObjects.Length; i++)
+        {
+            Transform rootTransform = rootObjects[i] != null ? rootObjects[i].transform : null;
+
+            if (rootTransform != null)
+                rootTransform.position -= minigameSceneOffset;
+        }
+
+        minigameSceneOffsetApplied = false;
+    }
+
     private IEnumerator MoveView(Vector3 startPosition, Quaternion startRotation, Vector3 endPosition, Quaternion endRotation)
     {
         float elapsed = 0f;
@@ -400,6 +552,72 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
         }
 
         playerControlLockHeld = false;
+    }
+
+    private void ApplyOpenCursorState()
+    {
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+    private void RestoreCursorState()
+    {
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
+    private void SuspendPresentationForMinigame()
+    {
+        RestoreSuspendedPresentation();
+
+        Camera[] cameras = FindObjectsOfType<Camera>(true);
+        for (int i = 0; i < cameras.Length; i++)
+        {
+            Camera camera = cameras[i];
+
+            if (camera == null || !camera.enabled || camera.gameObject.scene == loadedMinigameScene)
+                continue;
+
+            camera.enabled = false;
+            suspendedPresentationBehaviours.Add(camera);
+        }
+
+        AudioListener[] listeners = FindObjectsOfType<AudioListener>(true);
+        for (int i = 0; i < listeners.Length; i++)
+        {
+            AudioListener listener = listeners[i];
+
+            if (listener == null || !listener.enabled || listener.gameObject.scene == loadedMinigameScene)
+                continue;
+
+            listener.enabled = false;
+            suspendedPresentationBehaviours.Add(listener);
+        }
+
+        EventSystem[] eventSystems = FindObjectsOfType<EventSystem>(true);
+        for (int i = 0; i < eventSystems.Length; i++)
+        {
+            EventSystem eventSystem = eventSystems[i];
+
+            if (eventSystem == null || !eventSystem.enabled || eventSystem.gameObject.scene == loadedMinigameScene)
+                continue;
+
+            eventSystem.enabled = false;
+            suspendedPresentationBehaviours.Add(eventSystem);
+        }
+    }
+
+    private void RestoreSuspendedPresentation()
+    {
+        for (int i = 0; i < suspendedPresentationBehaviours.Count; i++)
+        {
+            Behaviour behaviour = suspendedPresentationBehaviours[i];
+
+            if (behaviour != null)
+                behaviour.enabled = true;
+        }
+
+        suspendedPresentationBehaviours.Clear();
     }
 
     private void AutoAssignCompletionDialogue()

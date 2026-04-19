@@ -13,7 +13,7 @@ public sealed class GameplayMusicController : MonoBehaviour
     private const string IntroTrackKey = "main_menu-music";
     private const string GhostRevealTrackKey = "ghost-first";
     private const string WindowMinigameTrackKey = "Ambiance_Forest_Birds_Loop_Stereo";
-    private const string KitchenDoorTrackKey = "rodinka-na-city";
+    private const string KitchenDoorTrackKey = "family-separation";
     private const string FinalFamilyEndingTrackKey = "ending after las game";
     private const string MainMenuSceneName = "MainMenu";
     private const string GameSceneName = "Game";

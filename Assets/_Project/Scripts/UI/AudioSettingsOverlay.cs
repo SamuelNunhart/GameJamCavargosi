@@ -56,6 +56,7 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
     }
 
     public static bool IsOpen => instance != null && instance.isVisible;
+    public static float MusicChannelVolume => instance != null ? instance.musicVolume : DefaultMusicVolume;
 
     public static void RegisterMusicSource(AudioSource source)
     {

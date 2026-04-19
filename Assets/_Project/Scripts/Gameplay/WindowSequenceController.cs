@@ -336,6 +336,7 @@ public class WindowSequenceController : MonoBehaviour
         isTransitioning = true;
         sequenceOpen = true;
         DebugLog("Opening window sequence.");
+        GameplayMusicController.PlayWindowMinigameMusic();
 
         ShowPrompt(false);
         AcquirePlayerControlLock();

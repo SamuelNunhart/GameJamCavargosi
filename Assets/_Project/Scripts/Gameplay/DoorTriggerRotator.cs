@@ -121,7 +121,11 @@ public class DoorTriggerRotator : MonoBehaviour
 
     public void OpenDoor()
     {
+        bool wasOpen = isOpen;
         isOpen = true;
+
+        if (!wasOpen)
+            GameplayMusicController.PlayKitchenDoorMusic();
     }
 
     public void CloseDoor()

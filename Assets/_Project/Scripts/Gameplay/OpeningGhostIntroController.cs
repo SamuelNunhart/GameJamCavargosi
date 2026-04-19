@@ -167,6 +167,8 @@ public class OpeningGhostIntroController : MonoBehaviour
 
     private void Start()
     {
+        GameplayMusicController.PlayIntroSceneMusic();
+
         if (playOnStart)
             introRoutine = StartCoroutine(RunIntroSequence());
     }
@@ -402,6 +404,8 @@ public class OpeningGhostIntroController : MonoBehaviour
         if (ghostObject == null)
             return;
 
+        bool wasGhostRevealed = ghostRevealed;
+
         if (ghostSpawnPoint != null)
         {
             ghostObject.transform.SetPositionAndRotation(
@@ -414,6 +418,9 @@ public class OpeningGhostIntroController : MonoBehaviour
         ghostObject.SetActive(true);
         SetGhostAlpha(startHidden ? 0f : 1f);
         ghostRevealed = true;
+
+        if (!wasGhostRevealed)
+            GameplayMusicController.PlayGhostRevealStinger();
     }
 
     private IEnumerator MoveGhostRoutine()

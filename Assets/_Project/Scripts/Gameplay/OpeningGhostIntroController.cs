@@ -19,6 +19,13 @@ public class OpeningGhostIntroController : MonoBehaviour
 
     [Header("Camera")]
     [SerializeField] private Camera gameplayCamera;
+    
+    [Header("Wake Up Lighting")]
+    [SerializeField] private Light wakeUpLightToEnable;
+    [SerializeField] private string wakeUpLightToEnableObjectName = "Point.002";
+    [SerializeField] private Light wakeUpLightToBrighten;
+    [SerializeField] private string wakeUpLightToBrightenObjectName = "Point Light";
+    [SerializeField] private float wakeUpLightTargetIntensity = 30f;
 
     [Header("Timing")]
     [SerializeField] private float disturbancePause = 0.35f;
@@ -311,6 +318,7 @@ public class OpeningGhostIntroController : MonoBehaviour
         HideIntroPhoneImmediate();
         SetCameraState(introCamera, false);
         SetCameraState(gameplayCamera, true);
+        ApplyWakeUpLightingTransition();
         yield return FadeFromBlack(fadeInDuration);
 
         ReleaseControlLock();
@@ -485,6 +493,7 @@ public class OpeningGhostIntroController : MonoBehaviour
     {
         SetCameraState(introCamera, false);
         SetCameraState(gameplayCamera, true);
+        ApplyWakeUpLightingTransition();
         HideIntroPhoneImmediate();
         ReleaseControlLock();
         gatedWindowSequence?.SetInteractionEnabled(true);
@@ -551,6 +560,22 @@ public class OpeningGhostIntroController : MonoBehaviour
         AudioListener audioListener = targetCamera.GetComponent<AudioListener>();
         if (audioListener != null)
             audioListener.enabled = isActive;
+    }
+
+    private void ApplyWakeUpLightingTransition()
+    {
+        AutoAssignWakeUpLighting();
+
+        if (wakeUpLightToEnable != null)
+        {
+            if (!wakeUpLightToEnable.gameObject.activeSelf)
+                wakeUpLightToEnable.gameObject.SetActive(true);
+
+            wakeUpLightToEnable.enabled = true;
+        }
+
+        if (wakeUpLightToBrighten != null)
+            wakeUpLightToBrighten.intensity = wakeUpLightTargetIntensity;
     }
 
     private void HideGhostImmediate()
@@ -727,9 +752,29 @@ public class OpeningGhostIntroController : MonoBehaviour
             }
         }
 
+        AutoAssignWakeUpLighting();
         CacheGhostRenderers();
         AutoAssignSceneTwoReferences();
         AutoAssignIntroPhoneReferences();
+    }
+
+    private void AutoAssignWakeUpLighting()
+    {
+        if (wakeUpLightToEnable == null)
+            wakeUpLightToEnable = FindLightInScene(wakeUpLightToEnableObjectName);
+
+        if (wakeUpLightToBrighten == null)
+        {
+            Vector3? referencePosition = gameplayCamera != null
+                ? gameplayCamera.transform.position
+                : null;
+
+            wakeUpLightToBrighten = FindLightInScene(
+                wakeUpLightToBrightenObjectName,
+                referencePosition,
+                transform
+            );
+        }
     }
 
     private void AutoAssignIntroPhoneReferences()
@@ -1356,6 +1401,54 @@ public class OpeningGhostIntroController : MonoBehaviour
     private bool ShouldGateFamilyMinigame()
     {
         return gatedFamilyMinigame != null && gatedDoorDialogueTrigger != null;
+    }
+
+    private static Light FindLightInScene(
+        string targetName,
+        Vector3? referencePosition = null,
+        Transform excludedRoot = null)
+    {
+        if (string.IsNullOrWhiteSpace(targetName))
+            return null;
+
+        Transform[] transforms = FindObjectsOfType<Transform>(true);
+        Light closestLight = null;
+        float closestDistanceSqr = float.PositiveInfinity;
+
+        for (int i = 0; i < transforms.Length; i++)
+        {
+            Transform transformCandidate = transforms[i];
+
+            if (transformCandidate == null ||
+                !string.Equals(transformCandidate.name, targetName, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (excludedRoot != null && transformCandidate.IsChildOf(excludedRoot))
+                continue;
+
+            Light lightCandidate = transformCandidate.GetComponent<Light>();
+
+            if (lightCandidate == null)
+                lightCandidate = transformCandidate.GetComponentInChildren<Light>(true);
+
+            if (lightCandidate == null)
+                continue;
+
+            if (!referencePosition.HasValue)
+                return lightCandidate;
+
+            float distanceSqr = (lightCandidate.transform.position - referencePosition.Value).sqrMagnitude;
+
+            if (distanceSqr < closestDistanceSqr)
+            {
+                closestDistanceSqr = distanceSqr;
+                closestLight = lightCandidate;
+            }
+        }
+
+        return closestLight;
     }
 
     private static Transform FindTransformInScene(string targetName)

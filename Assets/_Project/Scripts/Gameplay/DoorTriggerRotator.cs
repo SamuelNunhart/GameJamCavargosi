@@ -9,6 +9,9 @@ public class DoorTriggerRotator : MonoBehaviour
     [SerializeField] private bool useLocalRotation = true;
     [SerializeField] private float rotationSpeedDegreesPerSecond = 180f;
 
+    [Header("Collision")]
+    [SerializeField] private bool ensurePhysicalDoorCollider = true;
+
     [Header("Trigger")]
     [SerializeField] private string playerTag = "Player";
     [SerializeField] private bool closeWhenPlayerLeaves;
@@ -19,6 +22,7 @@ public class DoorTriggerRotator : MonoBehaviour
     private int overlappingPlayerCount;
     private bool isOpen;
     private bool rotationsCached;
+    private BoxCollider generatedDoorCollider;
 
     public bool IsInteractionEnabled => interactionEnabled;
 
@@ -28,6 +32,8 @@ public class DoorTriggerRotator : MonoBehaviour
 
         if (doorTransform == null && transform.parent != null)
             doorTransform = transform.parent;
+
+        UpdateGeneratedDoorCollider();
     }
 
     private void OnValidate()
@@ -35,13 +41,16 @@ public class DoorTriggerRotator : MonoBehaviour
         ConfigureTrigger();
 
         if (!Application.isPlaying)
+        {
             CacheRotations();
+        }
     }
 
     private void Awake()
     {
         ConfigureTrigger();
         CacheRotations();
+        UpdateGeneratedDoorCollider();
     }
 
     private void Update()
@@ -164,6 +173,91 @@ public class DoorTriggerRotator : MonoBehaviour
 
         if (triggerCollider != null)
             triggerCollider.isTrigger = true;
+    }
+
+    private void UpdateGeneratedDoorCollider()
+    {
+        if (!ensurePhysicalDoorCollider || doorTransform == null)
+            return;
+
+        if (HasGeneratedColliderAlreadyCovered(doorTransform))
+            return;
+
+        if (!TryGetDoorLocalBounds(doorTransform, out Vector3 center, out Vector3 size))
+            return;
+
+        generatedDoorCollider = doorTransform.GetComponent<BoxCollider>();
+
+        if (generatedDoorCollider == null || generatedDoorCollider.isTrigger)
+            generatedDoorCollider = doorTransform.gameObject.AddComponent<BoxCollider>();
+
+        generatedDoorCollider.isTrigger = false;
+        generatedDoorCollider.center = center;
+        generatedDoorCollider.size = size;
+    }
+
+    private static bool HasGeneratedColliderAlreadyCovered(Transform target)
+    {
+        Collider[] colliders = target.GetComponents<Collider>();
+
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            Collider collider = colliders[i];
+
+            if (collider == null || collider.isTrigger || collider is MeshCollider)
+                continue;
+
+            if (collider is BoxCollider || collider is CapsuleCollider || collider is SphereCollider)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryGetDoorLocalBounds(Transform target, out Vector3 center, out Vector3 size)
+    {
+        Renderer[] renderers = target.GetComponentsInChildren<Renderer>(true);
+        bool hasBounds = false;
+        Vector3 min = Vector3.zero;
+        Vector3 max = Vector3.zero;
+
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer renderer = renderers[i];
+
+            if (renderer == null || !renderer.enabled)
+                continue;
+
+            Bounds bounds = renderer.bounds;
+            Vector3 boundsMin = bounds.min;
+            Vector3 boundsMax = bounds.max;
+
+            for (int cornerIndex = 0; cornerIndex < 8; cornerIndex++)
+            {
+                Vector3 worldCorner = new Vector3(
+                    (cornerIndex & 1) == 0 ? boundsMin.x : boundsMax.x,
+                    (cornerIndex & 2) == 0 ? boundsMin.y : boundsMax.y,
+                    (cornerIndex & 4) == 0 ? boundsMin.z : boundsMax.z
+                );
+
+                Vector3 localCorner = target.InverseTransformPoint(worldCorner);
+
+                if (!hasBounds)
+                {
+                    min = localCorner;
+                    max = localCorner;
+                    hasBounds = true;
+                    continue;
+                }
+
+                min = Vector3.Min(min, localCorner);
+                max = Vector3.Max(max, localCorner);
+            }
+        }
+
+        center = hasBounds ? (min + max) * 0.5f : Vector3.zero;
+        size = hasBounds ? max - min : Vector3.zero;
+        return hasBounds;
     }
 
     private bool IsPlayerCollider(Collider other)

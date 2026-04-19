@@ -34,6 +34,11 @@ public class OpeningGhostIntroController : MonoBehaviour
     [SerializeField] private float ghostMoveDuration = 1.6f;
     [SerializeField] private float ghostFadeInDuration = 0.45f;
 
+    [Header("Wake Up Hint")]
+    [SerializeField] private string firstMovementHintText = "WASD";
+    [SerializeField] private float firstMovementHintDuration = 2.5f;
+    [SerializeField] private float firstMovementHintFadeDuration = 0.35f;
+
     [Header("Auto Run")]
     [SerializeField] private bool playOnStart = true;
 
@@ -112,6 +117,7 @@ public class OpeningGhostIntroController : MonoBehaviour
     private bool wakeUpLightToEnableInitialActiveSelf;
     private bool wakeUpLightToEnableInitialEnabled;
     private float wakeUpLightToBrightenInitialIntensity;
+    private bool firstMovementHintShown;
 
     public bool HasCompletedPaintingDialogue => sceneThreePaintingDialogueCompleted;
 
@@ -344,6 +350,7 @@ public class OpeningGhostIntroController : MonoBehaviour
         yield return FadeFromBlack(fadeInDuration);
 
         ReleaseControlLock();
+        ShowFirstMovementHint();
 
         if (sceneTwoIntroDialogue != null)
             yield return PlayDialogueSegment(sceneTwoIntroDialogue, lockPlayerControlsDuringSceneTwoIntroDialogue);
@@ -527,6 +534,23 @@ public class OpeningGhostIntroController : MonoBehaviour
         sequenceFinished = true;
         introRoutine = null;
         yield break;
+    }
+
+    private void ShowFirstMovementHint()
+    {
+        if (firstMovementHintShown)
+            return;
+
+        if (string.IsNullOrWhiteSpace(firstMovementHintText))
+            return;
+
+        DialogueUI.Instance?.ShowTemporaryCenterMessage(
+            firstMovementHintText,
+            firstMovementHintDuration,
+            firstMovementHintFadeDuration
+        );
+
+        firstMovementHintShown = true;
     }
 
     private void AcquireControlLock()

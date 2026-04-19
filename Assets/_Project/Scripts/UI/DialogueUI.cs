@@ -50,6 +50,9 @@ public class DialogueUI : MonoBehaviour
     private UnityEngine.Object promptOwner;
     private string currentPromptMessage = string.Empty;
     private int advanceInputLockCount;
+    private CanvasGroup transientCenterMessageGroup;
+    private TMP_Text transientCenterMessageText;
+    private Coroutine transientCenterMessageRoutine;
 
     public event Action<DialogueData> DialogueStarted;
     public event Action<DialogueData> DialogueEnded;
@@ -205,6 +208,24 @@ public class DialogueUI : MonoBehaviour
             advanceInputLockCount--;
     }
 
+    public void ShowTemporaryCenterMessage(string message, float visibleDuration = 2.5f, float fadeDuration = 0.35f)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+            return;
+
+        if (!EnsureTransientCenterMessageUi())
+            return;
+
+        if (transientCenterMessageRoutine != null)
+            StopCoroutine(transientCenterMessageRoutine);
+
+        transientCenterMessageText.text = message;
+        transientCenterMessageGroup.alpha = 1f;
+        transientCenterMessageGroup.interactable = false;
+        transientCenterMessageGroup.blocksRaycasts = false;
+        transientCenterMessageRoutine = StartCoroutine(RunTransientCenterMessage(visibleDuration, fadeDuration));
+    }
+
     private void AdvanceDialogue()
     {
         currentLineIndex++;
@@ -216,6 +237,34 @@ public class DialogueUI : MonoBehaviour
         }
 
         ShowLine(currentDialogue.lines[currentLineIndex]);
+    }
+
+    private IEnumerator RunTransientCenterMessage(float visibleDuration, float fadeDuration)
+    {
+        if (visibleDuration > 0f)
+            yield return new WaitForSecondsRealtime(visibleDuration);
+
+        if (fadeDuration <= 0f)
+        {
+            transientCenterMessageGroup.alpha = 0f;
+            transientCenterMessageText.text = string.Empty;
+            transientCenterMessageRoutine = null;
+            yield break;
+        }
+
+        float elapsed = 0f;
+
+        while (elapsed < fadeDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / fadeDuration);
+            transientCenterMessageGroup.alpha = 1f - t;
+            yield return null;
+        }
+
+        transientCenterMessageGroup.alpha = 0f;
+        transientCenterMessageText.text = string.Empty;
+        transientCenterMessageRoutine = null;
     }
 
     private void ShowLine(DialogueLine line)
@@ -324,6 +373,71 @@ public class DialogueUI : MonoBehaviour
 
         if (continueHintText != null)
             continueHintText.text = visible ? "E - Continue" : "";
+    }
+
+    private bool EnsureTransientCenterMessageUi()
+    {
+        if (transientCenterMessageGroup != null && transientCenterMessageText != null)
+            return true;
+
+        Canvas targetCanvas = null;
+
+        if (dialogueGroup != null)
+            targetCanvas = dialogueGroup.GetComponentInParent<Canvas>();
+
+        if (targetCanvas == null && promptGroup != null)
+            targetCanvas = promptGroup.GetComponentInParent<Canvas>();
+
+        if (targetCanvas == null)
+            targetCanvas = GetComponentInParent<Canvas>();
+
+        if (targetCanvas == null)
+            return false;
+
+        GameObject containerObject = new GameObject("TransientCenterMessage", typeof(RectTransform), typeof(CanvasGroup));
+        containerObject.transform.SetParent(targetCanvas.transform, false);
+
+        RectTransform containerTransform = (RectTransform)containerObject.transform;
+        containerTransform.anchorMin = Vector2.zero;
+        containerTransform.anchorMax = Vector2.one;
+        containerTransform.offsetMin = Vector2.zero;
+        containerTransform.offsetMax = Vector2.zero;
+
+        transientCenterMessageGroup = containerObject.GetComponent<CanvasGroup>();
+        transientCenterMessageGroup.alpha = 0f;
+        transientCenterMessageGroup.interactable = false;
+        transientCenterMessageGroup.blocksRaycasts = false;
+
+        GameObject textObject = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+        textObject.transform.SetParent(containerObject.transform, false);
+
+        RectTransform textTransform = (RectTransform)textObject.transform;
+        textTransform.anchorMin = new Vector2(0.5f, 0.5f);
+        textTransform.anchorMax = new Vector2(0.5f, 0.5f);
+        textTransform.pivot = new Vector2(0.5f, 0.5f);
+        textTransform.anchoredPosition = Vector2.zero;
+        textTransform.sizeDelta = new Vector2(900f, 200f);
+
+        TextMeshProUGUI messageText = textObject.GetComponent<TextMeshProUGUI>();
+        TMP_FontAsset fontAsset = promptText != null
+            ? promptText.font
+            : dialogueText != null
+                ? dialogueText.font
+                : TMP_Settings.defaultFontAsset;
+
+        if (fontAsset != null)
+            messageText.font = fontAsset;
+
+        messageText.alignment = TextAlignmentOptions.Center;
+        messageText.enableWordWrapping = false;
+        messageText.fontSize = 84f;
+        messageText.fontStyle = FontStyles.Bold;
+        messageText.color = Color.white;
+        messageText.alpha = 1f;
+        messageText.text = string.Empty;
+
+        transientCenterMessageText = messageText;
+        return true;
     }
 
     private void SetCanvasGroup(CanvasGroup group, bool visible)

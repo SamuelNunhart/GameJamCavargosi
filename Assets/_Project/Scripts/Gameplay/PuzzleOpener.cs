@@ -30,6 +30,13 @@ public class PuzzleOpener : MonoBehaviour
     [SerializeField] private float interactionDetectionTolerance = 0.75f;
     [SerializeField] private bool interactionEnabled = true;
 
+    [Header("Close Hint")]
+    [SerializeField] private TMP_Text closeHintText;
+    [SerializeField] private string closeHintMessage = "Press ESC to close";
+    [SerializeField] private Vector2 closeHintOffset = new Vector2(-24f, -24f);
+    [SerializeField] private int closeHintFontSize = 24;
+    [SerializeField] private Color closeHintColor = new Color(1f, 1f, 1f, 0.92f);
+
     private Collider triggerCollider;
     private bool playerInRange;
     private bool puzzleOpen;
@@ -68,6 +75,9 @@ public class PuzzleOpener : MonoBehaviour
 
     private void Start()
     {
+        EnsureCloseHintCreated();
+        RefreshCloseHint();
+
         if (puzzleCanvas != null)
             puzzleCanvas.SetActive(false);
 
@@ -199,6 +209,9 @@ public class PuzzleOpener : MonoBehaviour
 
     public void SetPuzzleCanvasVisible(bool visible)
     {
+        EnsureCloseHintCreated();
+        RefreshCloseHint();
+
         if (puzzleCanvas != null)
             puzzleCanvas.SetActive(visible);
     }
@@ -436,6 +449,46 @@ public class PuzzleOpener : MonoBehaviour
             return playerViewTransform.root;
 
         return Camera.main != null ? Camera.main.transform.root : null;
+    }
+
+    private void EnsureCloseHintCreated()
+    {
+        if (closeHintText != null || puzzleCanvas == null)
+            return;
+
+        RectTransform hintParent = puzzleCanvas.GetComponent<RectTransform>();
+        if (hintParent == null)
+            hintParent = puzzleCanvas.GetComponentInChildren<Canvas>(true)?.GetComponent<RectTransform>();
+
+        if (hintParent == null)
+        {
+            Debug.LogWarning("Puzzle canvas is missing a RectTransform for the close hint.", this);
+            return;
+        }
+
+        GameObject closeHintObject = new GameObject("CloseHint", typeof(RectTransform), typeof(TextMeshProUGUI));
+        RectTransform closeHintRect = closeHintObject.GetComponent<RectTransform>();
+        closeHintRect.SetParent(hintParent, false);
+        closeHintRect.anchorMin = new Vector2(1f, 1f);
+        closeHintRect.anchorMax = new Vector2(1f, 1f);
+        closeHintRect.pivot = new Vector2(1f, 1f);
+        closeHintRect.anchoredPosition = closeHintOffset;
+        closeHintRect.sizeDelta = new Vector2(320f, 48f);
+
+        closeHintText = closeHintObject.GetComponent<TextMeshProUGUI>();
+        closeHintText.raycastTarget = false;
+    }
+
+    private void RefreshCloseHint()
+    {
+        if (closeHintText == null)
+            return;
+
+        closeHintText.text = closeHintMessage;
+        closeHintText.fontSize = closeHintFontSize;
+        closeHintText.color = closeHintColor;
+        closeHintText.alignment = TextAlignmentOptions.TopRight;
+        closeHintText.enableWordWrapping = false;
     }
 
     private void AutoAssignReferences()

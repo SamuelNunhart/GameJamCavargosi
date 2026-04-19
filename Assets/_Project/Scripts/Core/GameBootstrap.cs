@@ -19,6 +19,11 @@ public sealed class GameplayMusicController : MonoBehaviour
 
     private AudioSource musicSource;
     private AudioSource oneShotSource;
+    private string currentMusicTrackKey;
+    private bool currentMusicLoop;
+    private string previousMusicTrackKey;
+    private bool previousMusicLoop;
+    private bool hasPreviousMusicTrack;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap()
@@ -28,22 +33,27 @@ public sealed class GameplayMusicController : MonoBehaviour
 
     public static void PlayIntroSceneMusic()
     {
-        EnsureInstance().PlayLoopingTrack(IntroTrackKey);
+        EnsureInstance().PlayMusicTrack(IntroTrackKey, loop: true);
     }
 
     public static void PlayGhostRevealStinger()
     {
-        EnsureInstance().PlayOneShotTrack(GhostRevealTrackKey);
+        EnsureInstance().PlayMusicTrack(GhostRevealTrackKey, loop: false);
     }
 
     public static void PlayWindowMinigameMusic()
     {
-        EnsureInstance().PlayLoopingTrack(WindowMinigameTrackKey);
+        EnsureInstance().PlayTemporaryMusicTrack(WindowMinigameTrackKey, loop: true);
     }
 
     public static void PlayKitchenDoorMusic()
     {
-        EnsureInstance().PlayLoopingTrack(KitchenDoorTrackKey);
+        EnsureInstance().PlayMusicTrack(KitchenDoorTrackKey, loop: true);
+    }
+
+    public static void RestorePreviousMusic()
+    {
+        EnsureInstance().RestorePreviousMusicTrack();
     }
 
     private static GameplayMusicController EnsureInstance()
@@ -92,7 +102,7 @@ public sealed class GameplayMusicController : MonoBehaviour
         }
     }
 
-    private void PlayLoopingTrack(string trackKey)
+    private void PlayMusicTrack(string trackKey, bool loop)
     {
         AudioClip clip = LoadClip(trackKey);
         if (clip == null)
@@ -100,13 +110,47 @@ public sealed class GameplayMusicController : MonoBehaviour
 
         EnsureAudioSources();
 
-        if (musicSource.isPlaying && musicSource.clip == clip)
+        if (musicSource.isPlaying && musicSource.clip == clip && musicSource.loop == loop)
             return;
 
         musicSource.Stop();
         musicSource.clip = clip;
-        musicSource.loop = true;
+        musicSource.loop = loop;
         musicSource.Play();
+        currentMusicTrackKey = trackKey;
+        currentMusicLoop = loop;
+    }
+
+    private void PlayTemporaryMusicTrack(string trackKey, bool loop)
+    {
+        if (string.IsNullOrWhiteSpace(trackKey))
+            return;
+
+        if (!hasPreviousMusicTrack && !string.IsNullOrWhiteSpace(currentMusicTrackKey))
+        {
+            previousMusicTrackKey = currentMusicTrackKey;
+            previousMusicLoop = currentMusicLoop;
+            hasPreviousMusicTrack = true;
+        }
+
+        PlayMusicTrack(trackKey, loop);
+    }
+
+    private void RestorePreviousMusicTrack()
+    {
+        if (!hasPreviousMusicTrack)
+            return;
+
+        string trackKeyToRestore = previousMusicTrackKey;
+        bool loopToRestore = previousMusicLoop;
+        hasPreviousMusicTrack = false;
+        previousMusicTrackKey = null;
+        previousMusicLoop = false;
+
+        if (string.IsNullOrWhiteSpace(trackKeyToRestore))
+            return;
+
+        PlayMusicTrack(trackKeyToRestore, loopToRestore);
     }
 
     private void PlayOneShotTrack(string trackKey)

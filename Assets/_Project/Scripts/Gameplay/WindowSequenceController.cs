@@ -372,6 +372,7 @@ public class WindowSequenceController : MonoBehaviour
         heldPanoramaScrollDirection = 0;
         RestoreCursorState();
         yield return MoveBackToSavedView();
+        GameplayMusicController.RestorePreviousMusic();
 
         ReleasePlayerControlLock();
 

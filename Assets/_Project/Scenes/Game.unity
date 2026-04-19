@@ -5954,7 +5954,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 305, y: 450}
+  m_AnchoredPosition: {x: 305, y: -2}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0, y: 0}
 --- !u!114 &685974357
@@ -8168,6 +8168,12 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 939795678}
   m_PrefabAsset: {fileID: 0}
+--- !u!108 &939795683 stripped
+Light:
+  m_CorrespondingSourceObject: {fileID: -1294892128559850198, guid: 20ec74de6449d204588ffa089f41f1eb,
+    type: 3}
+  m_PrefabInstance: {fileID: 939795678}
+  m_PrefabAsset: {fileID: 0}
 --- !u!64 &939795685
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -8919,7 +8925,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1051624666
 Transform:
   m_ObjectHideFlags: 0
@@ -8970,7 +8976,7 @@ Light:
   m_Type: 2
   m_Shape: 0
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 0.002
+  m_Intensity: 0.00002
   m_Range: 0.25
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -9012,7 +9018,7 @@ Light:
   m_Lightmapping: 2
   m_LightShadowCasterMode: 0
   m_AreaSize: {x: 1, y: 1}
-  m_BounceIntensity: 1
+  m_BounceIntensity: 0.1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
   m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
@@ -13260,7 +13266,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1540003455
 RectTransform:
   m_ObjectHideFlags: 0
@@ -13944,6 +13950,11 @@ MonoBehaviour:
   playerControlLocker: {fileID: 0}
   fallbackBehavioursToDisable: []
   gameplayCamera: {fileID: 2271036429879105432}
+  wakeUpLightToEnable: {fileID: 939795683}
+  wakeUpLightToEnableObjectName: Point.002
+  wakeUpLightToBrighten: {fileID: 1051624668}
+  wakeUpLightToBrightenObjectName: Point Light
+  wakeUpLightTargetIntensity: 30
   disturbancePause: 1
   fadeOutDuration: 1
   fadeInDuration: 2

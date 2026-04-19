@@ -1374,7 +1374,12 @@ public class OpeningGhostIntroController : MonoBehaviour
             return;
 
         sceneFourFamilyUnlocked = true;
-        gatedFamilyMinigame?.SetInteractionEnabled(true);
+
+        if (gatedFamilyMinigame == null)
+            return;
+
+        gatedFamilyMinigame.SetInteractionEnabled(true);
+        gatedFamilyMinigame.OpenSequence();
     }
 
     private void SetDoorSequenceInteractionEnabled(bool enabled)

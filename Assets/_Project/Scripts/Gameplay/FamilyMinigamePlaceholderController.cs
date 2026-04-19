@@ -321,6 +321,8 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
         if (!playEndingFadeAfterCompletionDialogue)
             yield break;
 
+        bool showEndingQuestion = !string.IsNullOrWhiteSpace(endingQuestionText);
+
         AcquirePlayerControlLock();
         EnsureEndingOverlay();
 
@@ -328,7 +330,7 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
             yield break;
 
         SetEndingBlackoutAlpha(0f);
-        SetEndingImageVisible(false);
+        SetEndingImageAlpha(0f);
         SetEndingQuestionAlpha(0f);
 
         float duration = Mathf.Max(0f, endingFadeDuration);
@@ -336,8 +338,8 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
         if (duration <= 0f)
         {
             SetEndingBlackoutAlpha(1f);
-            SetEndingImageVisible(endingImage != null);
-            SetEndingQuestionAlpha(1f);
+            SetEndingImageAlpha(1f);
+            SetEndingQuestionAlpha(showEndingQuestion ? 1f : 0f);
         }
         else
         {
@@ -348,12 +350,20 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
                 elapsed += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
                 SetEndingBlackoutAlpha(t);
+                SetEndingImageAlpha(t);
+                SetEndingQuestionAlpha(showEndingQuestion ? t : 0f);
                 yield return null;
             }
 
             SetEndingBlackoutAlpha(1f);
-            SetEndingImageVisible(endingImage != null);
-            SetEndingQuestionAlpha(1f);
+            SetEndingImageAlpha(1f);
+            SetEndingQuestionAlpha(showEndingQuestion ? 1f : 0f);
+        }
+
+        if (!showEndingQuestion)
+        {
+            QuitGame();
+            yield break;
         }
 
         float holdDuration = Mathf.Max(0f, endingQuestionHoldDuration);
@@ -744,7 +754,7 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
         endingPresentationImage = imageObject.GetComponent<Image>();
         endingPresentationImage.preserveAspect = true;
         endingPresentationImage.raycastTarget = false;
-        SetEndingImageVisible(endingImage != null);
+        SetEndingImageAlpha(0f);
 
         GameObject questionObject = new GameObject("EndingQuestion", typeof(RectTransform), typeof(TextMeshProUGUI));
         questionObject.transform.SetParent(overlayRoot.transform, false);
@@ -768,7 +778,7 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
     private void HideEndingOverlayImmediate()
     {
         SetEndingBlackoutAlpha(0f);
-        SetEndingImageVisible(false);
+        SetEndingImageAlpha(0f);
         SetEndingQuestionAlpha(0f);
     }
 
@@ -782,14 +792,17 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
         endingBlackoutImage.color = color;
     }
 
-    private void SetEndingImageVisible(bool visible)
+    private void SetEndingImageAlpha(float alpha)
     {
         if (endingPresentationImage == null)
             return;
 
         endingPresentationImage.sprite = endingImage;
-        endingPresentationImage.color = endingImageColor;
-        endingPresentationImage.enabled = visible && endingImage != null;
+
+        Color color = endingImageColor;
+        color.a *= Mathf.Clamp01(alpha);
+        endingPresentationImage.color = color;
+        endingPresentationImage.enabled = endingImage != null && color.a > 0f;
     }
 
     private void SetEndingQuestionAlpha(float alpha)

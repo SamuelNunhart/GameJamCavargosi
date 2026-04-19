@@ -2205,9 +2205,9 @@ MonoBehaviour:
   minigameSceneOffset: {x: 10000, y: 0, z: 0}
   playEndingFadeAfterCompletionDialogue: 1
   endingFadeDuration: 2.5
-  endingImage: {fileID: 0}
+  endingImage: {fileID: 21300000, guid: 0f06e89f556f57648bda9feb233c9226, type: 3}
   endingImageColor: {r: 1, g: 1, b: 1, a: 1}
-  endingQuestionText: And what will you choose?
+  endingQuestionText: 
   endingQuestionHoldDuration: 1.75
   endingQuestionFadeDuration: 2.5
   endingQuestionFontSize: 72

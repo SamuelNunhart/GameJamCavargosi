@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
 
 public class GameBootstrap : MonoBehaviour
@@ -14,8 +15,15 @@ public sealed class GameplayMusicController : MonoBehaviour
     private const string KitchenDoorTrackKey = "rodinka-na-city";
 
     private static GameplayMusicController instance;
+    private static readonly string[] PreloadTrackKeys =
+    {
+        GhostRevealTrackKey,
+        WindowMinigameTrackKey,
+        KitchenDoorTrackKey
+    };
 
     private readonly Dictionary<string, AudioClip> clipCache = new Dictionary<string, AudioClip>();
+    private readonly HashSet<string> preloadedTrackKeys = new HashSet<string>();
 
     private AudioSource musicSource;
     private AudioSource oneShotSource;
@@ -24,6 +32,7 @@ public sealed class GameplayMusicController : MonoBehaviour
     private string previousMusicTrackKey;
     private bool previousMusicLoop;
     private bool hasPreviousMusicTrack;
+    private Coroutine preloadRoutine;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap()
@@ -77,6 +86,7 @@ public sealed class GameplayMusicController : MonoBehaviour
         instance = this;
         DontDestroyOnLoad(gameObject);
         EnsureAudioSources();
+        StartPreloadingTracks();
     }
 
     private void OnDestroy()
@@ -119,6 +129,55 @@ public sealed class GameplayMusicController : MonoBehaviour
         musicSource.Play();
         currentMusicTrackKey = trackKey;
         currentMusicLoop = loop;
+    }
+
+    private void StartPreloadingTracks()
+    {
+        if (preloadRoutine != null)
+            return;
+
+        preloadRoutine = StartCoroutine(PreloadTracksAsync());
+    }
+
+    private IEnumerator PreloadTracksAsync()
+    {
+        for (int i = 0; i < PreloadTrackKeys.Length; i++)
+        {
+            yield return PreloadTrackAsync(PreloadTrackKeys[i]);
+        }
+
+        preloadRoutine = null;
+    }
+
+    private IEnumerator PreloadTrackAsync(string trackKey)
+    {
+        if (string.IsNullOrWhiteSpace(trackKey) || preloadedTrackKeys.Contains(trackKey))
+            yield break;
+
+        if (!clipCache.TryGetValue(trackKey, out AudioClip clip) || clip == null)
+        {
+            ResourceRequest request = Resources.LoadAsync<AudioClip>(ResourceRoot + trackKey);
+            yield return request;
+            clip = request.asset as AudioClip;
+
+            if (clip == null)
+            {
+                Debug.LogWarning($"GameplayMusicController could not preload AudioClip '{trackKey}' from Resources/{ResourceRoot}.", this);
+                yield break;
+            }
+
+            clipCache[trackKey] = clip;
+        }
+
+        if (clip.loadState == AudioDataLoadState.Unloaded)
+        {
+            clip.LoadAudioData();
+
+            while (clip != null && clip.loadState == AudioDataLoadState.Loading)
+                yield return null;
+        }
+
+        preloadedTrackKeys.Add(trackKey);
     }
 
     private void PlayTemporaryMusicTrack(string trackKey, bool loop)
@@ -179,6 +238,10 @@ public sealed class GameplayMusicController : MonoBehaviour
         }
 
         clipCache[trackKey] = loadedClip;
+
+        if (loadedClip.loadState == AudioDataLoadState.Loaded)
+            preloadedTrackKeys.Add(trackKey);
+
         return loadedClip;
     }
 

@@ -208,11 +208,10 @@ public class DoorTriggerRotator : MonoBehaviour
         {
             Collider collider = colliders[i];
 
-            if (collider == null || collider.isTrigger || collider is MeshCollider)
+            if (collider == null || collider.isTrigger)
                 continue;
 
-            if (collider is BoxCollider || collider is CapsuleCollider || collider is SphereCollider)
-                return true;
+            return true;
         }
 
         return false;

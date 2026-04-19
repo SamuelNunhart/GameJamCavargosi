@@ -999,6 +999,9 @@ public class WindowSequenceController : MonoBehaviour
         if (mask != null)
             return mask.transform as RectTransform;
 
+        if (hideSeekCanvas != null)
+            return hideSeekCanvas.transform as RectTransform;
+
         return panoramaContainer;
     }
 

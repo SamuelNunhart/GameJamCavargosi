@@ -11,4 +11,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Project/Scenes/Game.unity
     guid: cefd6fcb37307d54691717d35eaf534f
+  - enabled: 1
+    path: Assets/_Project/Scenes/Pipes.unity
+    guid: e5e8a39fb59f01d47b29050e03c56687
   m_configObjects: {}

@@ -573,7 +573,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   type: 0
-  isReal: 0
+  isReal: 1
   currentRotationIndex: 0
 --- !u!114 &398330625
 MonoBehaviour:
@@ -796,7 +796,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   type: 0
-  isReal: 0
+  isReal: 1
   currentRotationIndex: 0
 --- !u!114 &533430717
 MonoBehaviour:
@@ -1203,8 +1203,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d67638abc63d25247b8a842457a03cb2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  type: 0
-  isReal: 0
+  type: 1
+  isReal: 1
   currentRotationIndex: 0
 --- !u!114 &995126551
 MonoBehaviour:
@@ -1797,8 +1797,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d67638abc63d25247b8a842457a03cb2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  type: 0
-  isReal: 0
+  type: 1
+  isReal: 1
   currentRotationIndex: 0
 --- !u!114 &1447293373
 MonoBehaviour:
@@ -1945,8 +1945,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d67638abc63d25247b8a842457a03cb2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  type: 0
-  isReal: 0
+  type: 1
+  isReal: 1
   currentRotationIndex: 0
 --- !u!114 &1618519831
 MonoBehaviour:
@@ -2241,8 +2241,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d67638abc63d25247b8a842457a03cb2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  type: 0
-  isReal: 0
+  type: 1
+  isReal: 1
   currentRotationIndex: 0
 --- !u!114 &1718437787
 MonoBehaviour:
@@ -2434,7 +2434,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   type: 0
-  isReal: 0
+  isReal: 1
   currentRotationIndex: 0
 --- !u!114 &1801984478
 MonoBehaviour:
@@ -2581,8 +2581,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d67638abc63d25247b8a842457a03cb2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  type: 0
-  isReal: 0
+  type: 1
+  isReal: 1
   currentRotationIndex: 0
 --- !u!114 &1808296088
 MonoBehaviour:
@@ -2776,8 +2776,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d67638abc63d25247b8a842457a03cb2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  type: 0
-  isReal: 0
+  type: 1
+  isReal: 1
   currentRotationIndex: 0
 --- !u!114 &2023269845
 MonoBehaviour:

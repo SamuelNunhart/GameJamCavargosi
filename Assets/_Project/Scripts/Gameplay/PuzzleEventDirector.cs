@@ -58,7 +58,7 @@ public class PuzzleEventDirector : MonoBehaviour
     [FormerlySerializedAs("newPhonePromptMessage")]
     [SerializeField] private string phonePromptMessage = "";
     [FormerlySerializedAs("newCompletePhoneEventKey")]
-    [SerializeField] private KeyCode completePhoneEventKey = KeyCode.F;
+    [SerializeField] private KeyCode completePhoneEventKey = KeyCode.BackQuote;
 
     private int nextPhoneEventIndex;
     private int current3DInterruptionIndex;

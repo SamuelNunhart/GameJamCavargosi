@@ -81,12 +81,14 @@ public sealed class GameplayMusicController : MonoBehaviour
         {
             musicSource = gameObject.AddComponent<AudioSource>();
             ConfigureSource(musicSource, loop: true);
+            AudioSettingsOverlay.RegisterMusicSource(musicSource);
         }
 
         if (oneShotSource == null)
         {
             oneShotSource = gameObject.AddComponent<AudioSource>();
             ConfigureSource(oneShotSource, loop: false);
+            AudioSettingsOverlay.RegisterSfxSource(oneShotSource);
         }
     }
 

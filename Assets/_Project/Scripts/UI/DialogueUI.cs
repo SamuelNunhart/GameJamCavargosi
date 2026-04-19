@@ -429,7 +429,10 @@ public class DialogueUI : MonoBehaviour
     private AudioSource EnsureVoiceSource()
     {
         if (voiceSource != null)
+        {
+            AudioSettingsOverlay.RegisterSfxSource(voiceSource);
             return voiceSource;
+        }
 
         voiceSource = GetComponent<AudioSource>();
 
@@ -442,6 +445,7 @@ public class DialogueUI : MonoBehaviour
         voiceSource.playOnAwake = false;
         voiceSource.loop = false;
         voiceSource.spatialBlend = 0f;
+        AudioSettingsOverlay.RegisterSfxSource(voiceSource);
 
         return voiceSource;
     }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -111,6 +112,9 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
 
         if (sequenceOpen && !isTransitioning && Input.GetKeyDown(cancelKey))
         {
+            if (IsMinigameSceneActive())
+                return;
+
             DebugLog("Cancel key pressed. Closing family minigame placeholder without completion.");
             CloseSequence(false);
             return;
@@ -217,6 +221,14 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
 
         activeMinigameController.CompleteSequence();
         return true;
+    }
+
+    private bool IsMinigameSceneActive()
+    {
+        if (string.IsNullOrWhiteSpace(minigameSceneName))
+            return false;
+
+        return string.Equals(SceneManager.GetActiveScene().name, minigameSceneName, StringComparison.Ordinal);
     }
 
     private IEnumerator OpenSequenceRoutine()

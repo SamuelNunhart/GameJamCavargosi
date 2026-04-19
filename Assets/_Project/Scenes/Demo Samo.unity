@@ -495,7 +495,7 @@ MeshCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 5
@@ -3720,7 +3720,7 @@ Transform:
   m_GameObject: {fileID: 656942293}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 5.3409996, y: 1.57, z: 4.6400003}
+  m_LocalPosition: {x: 5.3409996, y: 1.768, z: 4.6400003}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5377,10 +5377,6 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 55337637}
-    - targetCorrespondingSourceObject: {fileID: -6497544467051754862, guid: 20ec74de6449d204588ffa089f41f1eb,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 939795689}
     - targetCorrespondingSourceObject: {fileID: 5418391755230851744, guid: 20ec74de6449d204588ffa089f41f1eb,
         type: 3}
       insertIndex: -1
@@ -5607,7 +5603,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 55337633}
+  m_GameObject: {fileID: 1387794568}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1761c7e85fb9bb8439dca794af92ac92, type: 3}
@@ -5616,7 +5612,7 @@ MonoBehaviour:
   doorTransform: {fileID: 939795682}
   openRotationEuler: {x: 0, y: 0, z: -90}
   useLocalRotation: 1
-  rotationSpeedDegreesPerSecond: 180
+  rotationSpeedDegreesPerSecond: 90
   playerTag: Player
   closeWhenPlayerLeaves: 0
   interactionEnabled: 1
@@ -8175,6 +8171,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1387794569}
+  - component: {fileID: 939795689}
   - component: {fileID: 1387794573}
   - component: {fileID: 1387794572}
   - component: {fileID: 1387794571}
@@ -10557,8 +10554,8 @@ MonoBehaviour:
   blackoutGraphic: {fileID: 1408991942}
   phonePullDownTriggerSegmentIndex: 0
   phonePullDownTriggerLineIndex: 1
-  phonePullDownDuration: 3.5
-  phonePullDownStartDelay: 0.2
+  phonePullDownDuration: 2.5
+  phonePullDownStartDelay: 0.05
   sceneTwoIntroDialogue: {fileID: 11400000, guid: 6a2cbd4d6fd9404aa0f7f7f26272d2ad,
     type: 2}
   sceneTwoWindowDialogue: {fileID: 11400000, guid: 9b5dfd5083bc4de2ba660f24e6c15a6d,

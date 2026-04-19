@@ -30,6 +30,8 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
     [Header("Post Completion")]
     [SerializeField] private bool returnToOpeningSceneStateOnCompletion = true;
     [SerializeField] private OpeningGhostIntroController postCompletionIntroController;
+    [SerializeField] private float completionViewHoldDuration = 2f;
+    [SerializeField] private float completionFadeDuration = 0.5f;
 
     [Header("Minigame Scene")]
     [SerializeField] private string minigameSceneName = "Pipes";
@@ -272,6 +274,10 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
     {
         isTransitioning = true;
         bool restoreOpeningSceneState = completed && returnToOpeningSceneStateOnCompletion && postCompletionIntroController != null;
+        bool useCompletionCloseTransition = completed && ShouldUseCompletionCloseTransition();
+
+        if (useCompletionCloseTransition)
+            yield return PlayCompletionCloseTransitionToBlack();
 
         if (minigameSceneLoaded)
             yield return UnloadMinigameScene();
@@ -280,7 +286,7 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
 
         if (restoreOpeningSceneState)
             postCompletionIntroController.PlayFinalBedEnding();
-        else
+        else if (!completed)
             ReleasePlayerControlLock();
 
         sequenceOpen = false;
@@ -292,6 +298,12 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
 
         if (completed)
         {
+            if (useCompletionCloseTransition)
+                yield return PlayCompletionCloseTransitionFromBlack();
+
+            if (!restoreOpeningSceneState)
+                ReleasePlayerControlLock();
+
             yield return PlayCompletionDialogueIfAssigned();
             yield return PlayEndingPresentationIfEnabled();
             ReleasePlayerControlLock();
@@ -304,6 +316,56 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
             RefreshPrompt();
             DebugLog("Family minigame placeholder closed without completion.");
         }
+    }
+
+    private bool ShouldUseCompletionCloseTransition()
+    {
+        return completionViewHoldDuration > 0f || completionFadeDuration > 0f;
+    }
+
+    private IEnumerator PlayCompletionCloseTransitionToBlack()
+    {
+        float holdDuration = Mathf.Max(0f, completionViewHoldDuration);
+        if (holdDuration > 0f)
+            yield return new WaitForSecondsRealtime(holdDuration);
+
+        yield return FadeCompletionBlackout(0f, 1f);
+    }
+
+    private IEnumerator PlayCompletionCloseTransitionFromBlack()
+    {
+        yield return FadeCompletionBlackout(1f, 0f);
+    }
+
+    private IEnumerator FadeCompletionBlackout(float from, float to)
+    {
+        EnsureEndingOverlay();
+
+        if (endingBlackoutImage == null)
+            yield break;
+
+        SetEndingImageAlpha(0f);
+        SetEndingQuestionAlpha(0f);
+        SetEndingBlackoutAlpha(from);
+
+        float duration = Mathf.Max(0f, completionFadeDuration);
+        if (duration <= 0f)
+        {
+            SetEndingBlackoutAlpha(to);
+            yield break;
+        }
+
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            SetEndingBlackoutAlpha(Mathf.Lerp(from, to, t));
+            yield return null;
+        }
+
+        SetEndingBlackoutAlpha(to);
     }
 
     private IEnumerator PlayCompletionDialogueIfAssigned()

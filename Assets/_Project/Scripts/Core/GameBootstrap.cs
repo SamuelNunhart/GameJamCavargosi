@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameBootstrap : MonoBehaviour
 {
@@ -9,17 +10,20 @@ public class GameBootstrap : MonoBehaviour
 public sealed class GameplayMusicController : MonoBehaviour
 {
     private const string ResourceRoot = "Audio/Music/";
-    private const string IntroTrackKey = "uvod-scrollovanie";
+    private const string IntroTrackKey = "main_menu-music";
     private const string GhostRevealTrackKey = "ghost-first";
     private const string WindowMinigameTrackKey = "Ambiance_Forest_Birds_Loop_Stereo";
     private const string KitchenDoorTrackKey = "rodinka-na-city";
     private const string FinalFamilyEndingTrackKey = "ending after las game";
+    private const string MainMenuSceneName = "MainMenu";
+    private const string GameSceneName = "Game";
     private const float DefaultMusicCrossfadeDuration = 1f;
     private const float GhostRevealCrossfadeDuration = 0.45f;
 
     private static GameplayMusicController instance;
     private static readonly string[] PreloadTrackKeys =
     {
+        IntroTrackKey,
         GhostRevealTrackKey,
         WindowMinigameTrackKey,
         KitchenDoorTrackKey,
@@ -97,6 +101,7 @@ public sealed class GameplayMusicController : MonoBehaviour
         instance = this;
         DontDestroyOnLoad(gameObject);
         EnsureAudioSources();
+        SceneManager.sceneLoaded += OnSceneLoaded;
         StartPreloadingTracks();
     }
 
@@ -104,6 +109,14 @@ public sealed class GameplayMusicController : MonoBehaviour
     {
         if (instance == this)
             instance = null;
+
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
+    {
+        if (scene.name == MainMenuSceneName || scene.name == GameSceneName)
+            PlayIntroSceneMusic();
     }
 
     private void EnsureAudioSources()

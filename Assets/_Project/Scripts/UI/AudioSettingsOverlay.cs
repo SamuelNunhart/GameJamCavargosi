@@ -9,7 +9,7 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
     private const string MusicVolumeKey = "AudioSettings.MusicVolume";
     private const string SfxVolumeKey = "AudioSettings.SfxVolume";
     private const float DefaultMasterVolume = 1f;
-    private const float DefaultMusicVolume = 0.85f;
+    private const float DefaultMusicVolume = 0.25f;
     private const float DefaultSfxVolume = 1f;
     private const float PanelWidth = 360f;
     private const float PanelMargin = 24f;
@@ -139,11 +139,26 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
             return;
 
         Dictionary<int, TrackedAudioSource> targetDictionary = isMusic ? musicSources : sfxSources;
-        targetDictionary[source.GetInstanceID()] = new TrackedAudioSource
+        int sourceId = source.GetInstanceID();
+
+        if (targetDictionary.TryGetValue(sourceId, out TrackedAudioSource trackedSource))
         {
-            Source = source,
-            BaseVolume = Mathf.Clamp01(source.volume)
-        };
+            trackedSource.Source = source;
+            targetDictionary[sourceId] = trackedSource;
+        }
+        else
+        {
+            float channelVolume = isMusic ? musicVolume : sfxVolume;
+            float baseVolume = channelVolume > 0.0001f
+                ? Mathf.Clamp01(source.volume / channelVolume)
+                : Mathf.Clamp01(source.volume);
+
+            targetDictionary[sourceId] = new TrackedAudioSource
+            {
+                Source = source,
+                BaseVolume = baseVolume
+            };
+        }
 
         ApplyTrackedSources(targetDictionary, isMusic ? musicVolume : sfxVolume);
     }

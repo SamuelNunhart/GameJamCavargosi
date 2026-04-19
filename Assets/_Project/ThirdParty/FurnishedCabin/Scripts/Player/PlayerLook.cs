@@ -21,7 +21,18 @@ public class PlayerLook : MonoBehaviour
 
     private void Update()
     {
+        if (AudioSettingsOverlay.IsOpen)
+        {
+            if (cursorIsLocked)
+            {
+                SetCursorState(false);
+            }
+
+            return;
+        }
+
         HandleCursorLock();
+        SyncCursorState();
 
         if (cursorIsLocked)
         {
@@ -40,6 +51,16 @@ public class PlayerLook : MonoBehaviour
         {
             SetCursorState(true);
         }
+    }
+
+    private void SyncCursorState()
+    {
+        bool shouldBeLocked = Cursor.lockState == CursorLockMode.Locked && !Cursor.visible;
+
+        if (cursorIsLocked == shouldBeLocked)
+            return;
+
+        cursorIsLocked = shouldBeLocked;
     }
 
     private void SetCursorState(bool locked)

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
@@ -34,6 +35,11 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
     [SerializeField] private float endingFadeDuration = 2.5f;
     [SerializeField] private Sprite endingImage;
     [SerializeField] private Color endingImageColor = Color.white;
+    [SerializeField] private string endingQuestionText = "And what will you choose?";
+    [SerializeField] private float endingQuestionHoldDuration = 1.75f;
+    [SerializeField] private float endingQuestionFadeDuration = 2.5f;
+    [SerializeField] private int endingQuestionFontSize = 72;
+    [SerializeField] private Color endingQuestionColor = Color.white;
 
     [Header("Player Control")]
     [SerializeField] private Transform playerViewTransform;
@@ -63,6 +69,7 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
     private Canvas endingOverlayCanvas;
     private Image endingBlackoutImage;
     private Image endingPresentationImage;
+    private TextMeshProUGUI endingQuestionLabel;
 
     public bool IsInteractionEnabled => interactionEnabled;
 
@@ -310,6 +317,7 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
 
         SetEndingBlackoutAlpha(0f);
         SetEndingImageVisible(false);
+        SetEndingQuestionAlpha(0f);
 
         float duration = Mathf.Max(0f, endingFadeDuration);
 
@@ -317,21 +325,50 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
         {
             SetEndingBlackoutAlpha(1f);
             SetEndingImageVisible(endingImage != null);
-            yield break;
+            SetEndingQuestionAlpha(1f);
         }
-
-        float elapsed = 0f;
-
-        while (elapsed < duration)
+        else
         {
-            elapsed += Time.unscaledDeltaTime;
-            float t = Mathf.Clamp01(elapsed / duration);
-            SetEndingBlackoutAlpha(t);
-            yield return null;
+            float elapsed = 0f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                SetEndingBlackoutAlpha(t);
+                yield return null;
+            }
+
+            SetEndingBlackoutAlpha(1f);
+            SetEndingImageVisible(endingImage != null);
+            SetEndingQuestionAlpha(1f);
         }
 
-        SetEndingBlackoutAlpha(1f);
-        SetEndingImageVisible(endingImage != null);
+        float holdDuration = Mathf.Max(0f, endingQuestionHoldDuration);
+        if (holdDuration > 0f)
+            yield return new WaitForSecondsRealtime(holdDuration);
+
+        float questionFadeDuration = Mathf.Max(0f, endingQuestionFadeDuration);
+        if (questionFadeDuration <= 0f)
+        {
+            SetEndingQuestionAlpha(0f);
+        }
+        else
+        {
+            float elapsed = 0f;
+
+            while (elapsed < questionFadeDuration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / questionFadeDuration);
+                SetEndingQuestionAlpha(1f - t);
+                yield return null;
+            }
+
+            SetEndingQuestionAlpha(0f);
+        }
+
+        QuitGame();
     }
 
     private IEnumerator MoveToView(Transform targetView)
@@ -670,7 +707,7 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
 
     private void EnsureEndingOverlay()
     {
-        if (endingOverlayCanvas != null && endingBlackoutImage != null && endingPresentationImage != null)
+        if (endingOverlayCanvas != null && endingBlackoutImage != null && endingPresentationImage != null && endingQuestionLabel != null)
             return;
 
         GameObject overlayRoot = new GameObject("EndingOverlay", typeof(Canvas), typeof(GraphicRaycaster));
@@ -696,12 +733,31 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
         endingPresentationImage.preserveAspect = true;
         endingPresentationImage.raycastTarget = false;
         SetEndingImageVisible(endingImage != null);
+
+        GameObject questionObject = new GameObject("EndingQuestion", typeof(RectTransform), typeof(TextMeshProUGUI));
+        questionObject.transform.SetParent(overlayRoot.transform, false);
+
+        RectTransform questionRect = questionObject.GetComponent<RectTransform>();
+        StretchFullScreen(questionRect);
+        questionRect.offsetMin = new Vector2(96f, 96f);
+        questionRect.offsetMax = new Vector2(-96f, -96f);
+
+        endingQuestionLabel = questionObject.GetComponent<TextMeshProUGUI>();
+        endingQuestionLabel.text = endingQuestionText;
+        endingQuestionLabel.fontSize = Mathf.Max(1, endingQuestionFontSize);
+        endingQuestionLabel.color = endingQuestionColor;
+        endingQuestionLabel.alignment = TextAlignmentOptions.Center;
+        endingQuestionLabel.enableWordWrapping = true;
+        endingQuestionLabel.overflowMode = TextOverflowModes.Overflow;
+        endingQuestionLabel.raycastTarget = false;
+        SetEndingQuestionAlpha(0f);
     }
 
     private void HideEndingOverlayImmediate()
     {
         SetEndingBlackoutAlpha(0f);
         SetEndingImageVisible(false);
+        SetEndingQuestionAlpha(0f);
     }
 
     private void SetEndingBlackoutAlpha(float alpha)
@@ -722,6 +778,27 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
         endingPresentationImage.sprite = endingImage;
         endingPresentationImage.color = endingImageColor;
         endingPresentationImage.enabled = visible && endingImage != null;
+    }
+
+    private void SetEndingQuestionAlpha(float alpha)
+    {
+        if (endingQuestionLabel == null)
+            return;
+
+        endingQuestionLabel.text = endingQuestionText;
+
+        Color color = endingQuestionColor;
+        color.a *= Mathf.Clamp01(alpha);
+        endingQuestionLabel.color = color;
+    }
+
+    private static void QuitGame()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
     }
 
     private static void StretchFullScreen(RectTransform rectTransform)

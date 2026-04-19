@@ -2965,10 +2965,17 @@ MonoBehaviour:
   onSequenceCompleted:
     m_PersistentCalls:
       m_Calls: []
+  minigameSceneName: Pipes
+  minigameSceneOffset: {x: 10000, y: 0, z: 0}
   playEndingFadeAfterCompletionDialogue: 1
-  endingFadeDuration: 2.5
+  endingFadeDuration: 3.5
   endingImage: {fileID: 0}
   endingImageColor: {r: 1, g: 1, b: 1, a: 1}
+  endingQuestionText: And what will you choose?
+  endingQuestionHoldDuration: 2.5
+  endingQuestionFadeDuration: 4
+  endingQuestionFontSize: 72
+  endingQuestionColor: {r: 0, g: 0.3622446, b: 1, a: 1}
   playerViewTransform: {fileID: 1429301928}
   playerControlLocker: {fileID: 0}
   playerMovement: {fileID: 2271036429879105431}
@@ -8080,6 +8087,7 @@ MonoBehaviour:
   openRotationEuler: {x: 0, y: 0, z: -90}
   useLocalRotation: 1
   rotationSpeedDegreesPerSecond: 90
+  ensurePhysicalDoorCollider: 1
   playerTag: Player
   closeWhenPlayerLeaves: 0
   interactionEnabled: 1

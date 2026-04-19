@@ -75,6 +75,7 @@ public class OpeningGhostIntroController : MonoBehaviour
     private Coroutine introRoutine;
     private Coroutine ghostMoveRoutine;
     private Coroutine ghostFadeRoutine;
+    private Coroutine introPhoneBeatRoutine;
     private Coroutine windowTriggerDialogueRoutine;
     private Coroutine sceneThreePaintingDialogueRoutine;
     private PlayerTriggerRelay windowDialogueTriggerRelay;
@@ -97,7 +98,6 @@ public class OpeningGhostIntroController : MonoBehaviour
     private bool sceneFourFamilyUnlocked;
     private bool introPhonePoseCached;
     private bool introPhoneBeatCompleted;
-    private bool dialogueAdvanceLockedByIntroPhoneBeat;
     private Vector3 introPhoneInitialPosition;
     private Quaternion introPhoneInitialRotation;
     private GameObject cachedIntroPhonePoseSource;
@@ -212,6 +212,9 @@ public class OpeningGhostIntroController : MonoBehaviour
         if (ghostFadeRoutine != null)
             StopCoroutine(ghostFadeRoutine);
 
+        if (introPhoneBeatRoutine != null)
+            StopCoroutine(introPhoneBeatRoutine);
+
         if (windowTriggerDialogueRoutine != null)
             StopCoroutine(windowTriggerDialogueRoutine);
 
@@ -221,6 +224,7 @@ public class OpeningGhostIntroController : MonoBehaviour
         introRoutine = null;
         ghostMoveRoutine = null;
         ghostFadeRoutine = null;
+        introPhoneBeatRoutine = null;
         windowTriggerDialogueRoutine = null;
         sceneThreePaintingDialogueRoutine = null;
         waitingForWindowDialogueTrigger = false;
@@ -337,7 +341,7 @@ public class OpeningGhostIntroController : MonoBehaviour
             if (!introPhoneBeatHandled && ShouldTriggerIntroPhoneBeat(dialogue))
             {
                 introPhoneBeatHandled = true;
-                yield return RunIntroPhoneBeat();
+                StartIntroPhoneBeat();
             }
 
             yield return null;
@@ -925,14 +929,6 @@ public class OpeningGhostIntroController : MonoBehaviour
 
     private IEnumerator RunIntroPhoneBeat()
     {
-        DialogueUI dialogueUi = DialogueUI.Instance;
-
-        if (dialogueUi != null)
-        {
-            dialogueUi.AcquireAdvanceInputLock();
-            dialogueAdvanceLockedByIntroPhoneBeat = true;
-        }
-
         if (phonePullDownStartDelay > 0f)
             yield return new WaitForSeconds(phonePullDownStartDelay);
 
@@ -968,8 +964,16 @@ public class OpeningGhostIntroController : MonoBehaviour
             RestoreIntroPhonePose();
             introPhoneBeatCompleted = true;
         }
+        
+        introPhoneBeatRoutine = null;
+    }
 
-        ReleaseIntroPhoneBeatInputLock();
+    private void StartIntroPhoneBeat()
+    {
+        if (introPhoneBeatRoutine != null || introPhoneBeatCompleted)
+            return;
+
+        introPhoneBeatRoutine = StartCoroutine(RunIntroPhoneBeat());
     }
 
     private void PrepareIntroPhoneForSequence()
@@ -1009,7 +1013,7 @@ public class OpeningGhostIntroController : MonoBehaviour
 
     private void HideIntroPhoneImmediate()
     {
-        ReleaseIntroPhoneBeatInputLock();
+        StopIntroPhoneBeatRoutine();
 
         if (introPhoneObject == null)
             return;
@@ -1018,17 +1022,13 @@ public class OpeningGhostIntroController : MonoBehaviour
         introPhoneObject.SetActive(false);
     }
 
-    private void ReleaseIntroPhoneBeatInputLock()
+    private void StopIntroPhoneBeatRoutine()
     {
-        if (!dialogueAdvanceLockedByIntroPhoneBeat)
+        if (introPhoneBeatRoutine == null)
             return;
 
-        DialogueUI dialogueUi = DialogueUI.Instance;
-
-        if (dialogueUi != null)
-            dialogueUi.ReleaseAdvanceInputLock();
-
-        dialogueAdvanceLockedByIntroPhoneBeat = false;
+        StopCoroutine(introPhoneBeatRoutine);
+        introPhoneBeatRoutine = null;
     }
 
     private void EnsureWindowDialogueTriggerRelay()

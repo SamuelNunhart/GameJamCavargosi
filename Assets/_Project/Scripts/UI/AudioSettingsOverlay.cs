@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 public sealed class AudioSettingsOverlay : MonoBehaviour
 {
@@ -11,9 +12,11 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
     private const float DefaultMasterVolume = 1f;
     private const float DefaultMusicVolume = 0.25f;
     private const float DefaultSfxVolume = 1f;
-    private const float PanelWidth = 360f;
-    private const float PanelMargin = 24f;
-    private const float PanelSlideSpeed = 1200f;
+    private GameObject previousSelection;
+    private Font displayFont;
+    private readonly List<Selectable> controls = new List<Selectable>();
+    private static readonly Color Ink = new Color(0.78f, 0.9f, 0.96f);
+    private static readonly Color Glow = new Color(0.55f, 0.94f, 1f);
 
     private static readonly HashSet<string> AllowedSceneNames = new HashSet<string>
     {
@@ -103,6 +106,7 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
     {
         if (instance == this)
         {
+            DialogueUI.Instance?.SetSettingsPaused(false);
             SceneManager.activeSceneChanged -= OnActiveSceneChanged;
             instance = null;
         }
@@ -169,9 +173,9 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
     private void LoadVolumes()
     {
         sensitivity = PlayerLook.CurrentSensitivity;
-        masterVolume = PlayerPrefs.GetFloat(MasterVolumeKey, DefaultMasterVolume);
-        musicVolume = PlayerPrefs.GetFloat(MusicVolumeKey, DefaultMusicVolume);
-        sfxVolume = PlayerPrefs.GetFloat(SfxVolumeKey, DefaultSfxVolume);
+        masterVolume = Mathf.Clamp01(PlayerPrefs.GetFloat(MasterVolumeKey, DefaultMasterVolume));
+        musicVolume = Mathf.Clamp01(PlayerPrefs.GetFloat(MusicVolumeKey, DefaultMusicVolume));
+        sfxVolume = Mathf.Clamp01(PlayerPrefs.GetFloat(SfxVolumeKey, DefaultSfxVolume));
     }
 
     private void ApplyAllVolumes()
@@ -247,8 +251,8 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
 
     private void SyncUiWithSettings()
     {
-        if (sensitivitySlider != null && !Mathf.Approximately(sensitivitySlider.value, sensitivity))
-            sensitivitySlider.SetValueWithoutNotify(sensitivity);
+        if (sensitivitySlider != null && !Mathf.Approximately(sensitivitySlider.value, SensitivityToSlider(sensitivity)))
+            sensitivitySlider.SetValueWithoutNotify(SensitivityToSlider(sensitivity));
 
         if (masterSlider != null && !Mathf.Approximately(masterSlider.value, masterVolume))
             masterSlider.SetValueWithoutNotify(masterVolume);
@@ -290,7 +294,7 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
     private bool ShouldBlockOpenForCurrentState()
     {
         if (DialogueUI.Instance != null && DialogueUI.Instance.IsDialogueOpen)
-            return true;
+            return false;
 
         if (!string.Equals(SceneManager.GetActiveScene().name, "Game"))
             return false;
@@ -316,68 +320,62 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
 
     private void RefreshVisibilityForScene(Scene scene, bool instant)
     {
-        if (!AllowedSceneNames.Contains(scene.name))
-        {
-            SetVisible(false, instant: true);
-            return;
-        }
-
-        UpdateCursorForCurrentState();
+        SetVisible(false, instant: true);
         SyncUiWithSettings();
-
-        if (instant)
-            SnapPanelToTarget();
     }
 
     private void SetVisible(bool visible, bool instant = false)
     {
-        isVisible = visible && IsSettingsAllowedInActiveScene();
-
-        if (canvas != null)
-            canvas.enabled = isVisible || !instant;
-
-        if (canvasGroup != null)
+        bool opening = visible && IsSettingsAllowedInActiveScene();
+        if (opening && !isVisible && EventSystem.current != null)
+            previousSelection = EventSystem.current.currentSelectedGameObject;
+        isVisible = opening;
+        DialogueUI.Instance?.SetSettingsPaused(isVisible);
+        canvas.enabled = true;
+        canvasGroup.interactable = isVisible;
+        canvasGroup.blocksRaycasts = isVisible;
+        if (EventSystem.current != null)
         {
-            canvasGroup.interactable = isVisible;
-            canvasGroup.blocksRaycasts = isVisible;
+            if (isVisible)
+                EventSystem.current.SetSelectedGameObject(sensitivitySlider.gameObject);
+            else if (previousSelection != null && previousSelection.activeInHierarchy)
+                EventSystem.current.SetSelectedGameObject(previousSelection);
+            else
+                EventSystem.current.SetSelectedGameObject(null);
         }
-
         UpdateCursorForCurrentState();
-
-        if (instant)
-            SnapPanelToTarget();
+        if (instant) SnapPanelToTarget();
     }
 
     private void AnimatePanel()
     {
-        if (panelTransform == null)
-            return;
-
-        float targetX = GetTargetPanelX();
-        Vector2 anchoredPosition = panelTransform.anchoredPosition;
-        anchoredPosition.x = Mathf.MoveTowards(anchoredPosition.x, targetX, PanelSlideSpeed * Time.unscaledDeltaTime);
-        panelTransform.anchoredPosition = anchoredPosition;
-
-        if (!isVisible && Mathf.Abs(anchoredPosition.x - targetX) <= 0.01f && canvas != null)
-            canvas.enabled = false;
+        canvasGroup.alpha = Mathf.MoveTowards(canvasGroup.alpha, isVisible ? 1f : 0f, 8f * Time.unscaledDeltaTime);
+        if (!isVisible && canvasGroup.alpha == 0f) canvas.enabled = false;
     }
 
     private void SnapPanelToTarget()
     {
-        if (panelTransform == null)
-            return;
-
-        Vector2 anchoredPosition = panelTransform.anchoredPosition;
-        anchoredPosition.x = GetTargetPanelX();
-        panelTransform.anchoredPosition = anchoredPosition;
-
-        if (!isVisible && canvas != null)
-            canvas.enabled = false;
+        canvasGroup.alpha = isVisible ? 1f : 0f;
+        canvas.enabled = isVisible;
     }
 
-    private float GetTargetPanelX()
+    // Logarithmic travel gives the low end as much precision as the high end.
+    private static float SensitivityToSlider(float value)
     {
-        return isVisible ? -PanelMargin : PanelWidth + PanelMargin;
+        return Mathf.Log(value / PlayerLook.MinSensitivity) / Mathf.Log(PlayerLook.MaxSensitivity / PlayerLook.MinSensitivity);
+    }
+
+    private void SetSensitivityFromSlider(float value)
+    {
+        SetSensitivity(PlayerLook.MinSensitivity * Mathf.Pow(PlayerLook.MaxSensitivity / PlayerLook.MinSensitivity, value));
+    }
+
+    private void RestoreDefaults()
+    {
+        SetSensitivity(PlayerLook.DefaultSensitivity);
+        SetMasterVolume(DefaultMasterVolume);
+        SetMusicVolume(DefaultMusicVolume);
+        SetSfxVolume(DefaultSfxVolume);
     }
 
     private void UpdateCursorForCurrentState()
@@ -400,192 +398,142 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
 
     private void BuildUiIfNeeded()
     {
-        if (canvas != null)
-            return;
-
+        if (canvas != null) return;
         uiFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-
-        GameObject canvasObject = new GameObject("AudioSettingsCanvas");
-        canvasObject.transform.SetParent(transform, false);
-
-        canvas = canvasObject.AddComponent<Canvas>();
+        displayFont = Resources.Load<Font>("UI/IMFeENrm28P") ?? uiFont;
+        RectTransform root = Rect("Settings", transform);
+        canvas = root.gameObject.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 32000;
-        canvas.enabled = false;
-
-        CanvasScaler scaler = canvasObject.AddComponent<CanvasScaler>();
+        CanvasScaler scaler = root.gameObject.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-        scaler.matchWidthOrHeight = 0.5f;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+        root.gameObject.AddComponent<GraphicRaycaster>();
+        canvasGroup = root.gameObject.AddComponent<CanvasGroup>();
+        canvasGroup.alpha = 0;
+        canvasGroup.interactable = canvasGroup.blocksRaycasts = false;
 
-        canvasObject.AddComponent<GraphicRaycaster>();
-        canvasGroup = canvasObject.AddComponent<CanvasGroup>();
+        RectTransform veil = Rect("Backdrop", root);
+        veil.anchorMin = Vector2.zero;
+        veil.anchorMax = Vector2.one;
+        veil.offsetMin = veil.offsetMax = Vector2.zero;
+        veil.gameObject.AddComponent<Image>().color = new Color(0.015f, 0.035f, 0.06f, 0.76f);
 
-        GameObject panelObject = new GameObject("AudioSettingsPanel");
-        panelObject.transform.SetParent(canvasObject.transform, false);
-        panelTransform = panelObject.AddComponent<RectTransform>();
-        panelTransform.anchorMin = new Vector2(1f, 0f);
-        panelTransform.anchorMax = new Vector2(1f, 1f);
-        panelTransform.pivot = new Vector2(1f, 0.5f);
-        panelTransform.sizeDelta = new Vector2(PanelWidth, -48f);
-        panelTransform.anchoredPosition = new Vector2(GetTargetPanelX(), 0f);
-
-        Image panelBackground = panelObject.AddComponent<Image>();
-        panelBackground.color = new Color(0.08f, 0.08f, 0.11f, 0.94f);
-
-        VerticalLayoutGroup layoutGroup = panelObject.AddComponent<VerticalLayoutGroup>();
-        layoutGroup.padding = new RectOffset(28, 28, 28, 28);
-        layoutGroup.spacing = 18f;
-        layoutGroup.childAlignment = TextAnchor.UpperLeft;
-        layoutGroup.childControlHeight = true;
-        layoutGroup.childControlWidth = true;
-        layoutGroup.childForceExpandHeight = false;
-        layoutGroup.childForceExpandWidth = true;
-
-        CreateText("Title", panelObject.transform, "Settings", 28, FontStyle.Bold, TextAnchor.MiddleLeft, Color.white);
-        CreateText("Hint", panelObject.transform, "Press Esc to close", 16, FontStyle.Normal, TextAnchor.MiddleLeft, new Color(0.8f, 0.84f, 0.9f, 0.95f));
-
-        sensitivityValueLabel = CreateSliderRow(
-            panelObject.transform,
-            "Sensitivity",
-            sensitivity,
-            PlayerLook.MinSensitivity,
-            PlayerLook.MaxSensitivity,
-            SetSensitivity,
-            FormatSensitivity,
-            out sensitivitySlider);
-        masterValueLabel = CreateSliderRow(panelObject.transform, "Master", masterVolume, 0f, 1f, SetMasterVolume, FormatPercent, out masterSlider);
-        musicValueLabel = CreateSliderRow(panelObject.transform, "Music", musicVolume, 0f, 1f, SetMusicVolume, FormatPercent, out musicSlider);
-        sfxValueLabel = CreateSliderRow(panelObject.transform, "SFX", sfxVolume, 0f, 1f, SetSfxVolume, FormatPercent, out sfxSlider);
-
-        LayoutElement spacer = new GameObject("Spacer").AddComponent<LayoutElement>();
-        spacer.transform.SetParent(panelObject.transform, false);
-        spacer.flexibleHeight = 1f;
-
-        CreateText("Footer", panelObject.transform, "Changes save automatically.", 15, FontStyle.Italic, TextAnchor.LowerLeft, new Color(0.8f, 0.84f, 0.9f, 0.85f));
-
+        panelTransform = Rect("Settings content", root);
+        panelTransform.sizeDelta = new Vector2(620, 850);
+        panelTransform.gameObject.AddComponent<Image>().color = new Color(0.025f, 0.055f, 0.085f, 0.94f);
+        TextAt("Settings", panelTransform, 42, 32, 536, 60, 46, true);
+        TextAt("Make yourself comfortable.", panelTransform, 42, 98, 536, 32, 19);
+        TextAt("Controls", panelTransform, 42, 155, 536, 38, 28, true);
+        sensitivityValueLabel = SliderRow("Mouse sensitivity", 202, SensitivityToSlider(sensitivity), SetSensitivityFromSlider, out sensitivitySlider);
+        TextAt("Sound", panelTransform, 42, 316, 536, 38, 28, true);
+        masterValueLabel = SliderRow("Master volume", 365, masterVolume, SetMasterVolume, out masterSlider);
+        musicValueLabel = SliderRow("Music", 465, musicVolume, SetMusicVolume, out musicSlider);
+        sfxValueLabel = SliderRow("Effects & voices", 565, sfxVolume, SetSfxVolume, out sfxSlider);
+        ButtonAt("Restore defaults", 42, 690, 300, RestoreDefaults);
+        ButtonAt("Close", 420, 690, 158, () => SetVisible(false));
+        TextAt("Saved automatically  /  Esc to close", panelTransform, 42, 776, 536, 32, 18);
+        for (int i = 0; i < controls.Count; i++)
+        {
+            Navigation nav = new Navigation { mode = Navigation.Mode.Explicit };
+            nav.selectOnUp = controls[(i + controls.Count - 1) % controls.Count];
+            nav.selectOnDown = controls[(i + 1) % controls.Count];
+            controls[i].navigation = nav;
+        }
         SyncUiWithSettings();
+        canvas.enabled = false;
     }
 
-    private Text CreateSliderRow(
-        Transform parent,
-        string label,
-        float initialValue,
-        float minValue,
-        float maxValue,
-        UnityEngine.Events.UnityAction<float> onValueChanged,
-        System.Func<float, string> formatValue,
-        out Slider slider)
+    private static RectTransform Rect(string name, Transform parent)
     {
-        GameObject rowObject = new GameObject(label + "Row");
-        rowObject.transform.SetParent(parent, false);
-
-        VerticalLayoutGroup rowLayout = rowObject.AddComponent<VerticalLayoutGroup>();
-        rowLayout.spacing = 8f;
-        rowLayout.childAlignment = TextAnchor.UpperLeft;
-        rowLayout.childControlWidth = true;
-        rowLayout.childControlHeight = true;
-        rowLayout.childForceExpandHeight = false;
-        rowLayout.childForceExpandWidth = true;
-
-        LayoutElement rowLayoutElement = rowObject.AddComponent<LayoutElement>();
-        rowLayoutElement.minHeight = 72f;
-
-        GameObject labelRowObject = new GameObject(label + "Header");
-        labelRowObject.transform.SetParent(rowObject.transform, false);
-
-        HorizontalLayoutGroup headerLayout = labelRowObject.AddComponent<HorizontalLayoutGroup>();
-        headerLayout.spacing = 12f;
-        headerLayout.childAlignment = TextAnchor.MiddleLeft;
-        headerLayout.childControlHeight = true;
-        headerLayout.childControlWidth = true;
-        headerLayout.childForceExpandWidth = true;
-        headerLayout.childForceExpandHeight = false;
-
-        CreateText("Label", labelRowObject.transform, label, 20, FontStyle.Bold, TextAnchor.MiddleLeft, Color.white);
-        Text valueLabel = CreateText("Value", labelRowObject.transform, formatValue(initialValue), 18, FontStyle.Normal, TextAnchor.MiddleRight, new Color(0.75f, 0.93f, 0.82f, 1f));
-
-        GameObject sliderObject = new GameObject(label + "Slider");
-        sliderObject.transform.SetParent(rowObject.transform, false);
-        slider = sliderObject.AddComponent<Slider>();
-        slider.minValue = minValue;
-        slider.maxValue = maxValue;
-        slider.value = initialValue;
-        slider.direction = Slider.Direction.LeftToRight;
-
-        RectTransform sliderRect = sliderObject.GetComponent<RectTransform>();
-        sliderRect.sizeDelta = new Vector2(0f, 24f);
-
-        GameObject backgroundObject = new GameObject("Background");
-        backgroundObject.transform.SetParent(sliderObject.transform, false);
-        Image background = backgroundObject.AddComponent<Image>();
-        background.color = new Color(0.19f, 0.22f, 0.28f, 1f);
-        RectTransform backgroundRect = backgroundObject.GetComponent<RectTransform>();
-        backgroundRect.anchorMin = new Vector2(0f, 0.25f);
-        backgroundRect.anchorMax = new Vector2(1f, 0.75f);
-        backgroundRect.offsetMin = Vector2.zero;
-        backgroundRect.offsetMax = Vector2.zero;
-
-        GameObject fillAreaObject = new GameObject("Fill Area");
-        fillAreaObject.transform.SetParent(sliderObject.transform, false);
-        RectTransform fillAreaRect = fillAreaObject.AddComponent<RectTransform>();
-        fillAreaRect.anchorMin = new Vector2(0f, 0f);
-        fillAreaRect.anchorMax = new Vector2(1f, 1f);
-        fillAreaRect.offsetMin = new Vector2(12f, 0f);
-        fillAreaRect.offsetMax = new Vector2(-12f, 0f);
-
-        GameObject fillObject = new GameObject("Fill");
-        fillObject.transform.SetParent(fillAreaObject.transform, false);
-        Image fillImage = fillObject.AddComponent<Image>();
-        fillImage.color = new Color(0.34f, 0.78f, 0.56f, 1f);
-        RectTransform fillRect = fillObject.GetComponent<RectTransform>();
-        fillRect.anchorMin = new Vector2(0f, 0f);
-        fillRect.anchorMax = new Vector2(1f, 1f);
-        fillRect.offsetMin = Vector2.zero;
-        fillRect.offsetMax = Vector2.zero;
-
-        GameObject handleAreaObject = new GameObject("Handle Slide Area");
-        handleAreaObject.transform.SetParent(sliderObject.transform, false);
-        RectTransform handleAreaRect = handleAreaObject.AddComponent<RectTransform>();
-        handleAreaRect.anchorMin = new Vector2(0f, 0f);
-        handleAreaRect.anchorMax = new Vector2(1f, 1f);
-        handleAreaRect.offsetMin = new Vector2(10f, 0f);
-        handleAreaRect.offsetMax = new Vector2(-10f, 0f);
-
-        GameObject handleObject = new GameObject("Handle");
-        handleObject.transform.SetParent(handleAreaObject.transform, false);
-        Image handleImage = handleObject.AddComponent<Image>();
-        handleImage.color = Color.white;
-        RectTransform handleRect = handleObject.GetComponent<RectTransform>();
-        handleRect.sizeDelta = new Vector2(20f, 20f);
-
-        slider.targetGraphic = handleImage;
-        slider.fillRect = fillRect;
-        slider.handleRect = handleRect;
-        slider.onValueChanged.AddListener(onValueChanged);
-
-        return valueLabel;
+        RectTransform rect = new GameObject(name, typeof(RectTransform)).GetComponent<RectTransform>();
+        rect.SetParent(parent, false);
+        return rect;
     }
 
-    private Text CreateText(string objectName, Transform parent, string content, int fontSize, FontStyle fontStyle, TextAnchor alignment, Color color)
+    private static void Place(RectTransform rect, float x, float y, float width, float height)
     {
-        GameObject textObject = new GameObject(objectName);
-        textObject.transform.SetParent(parent, false);
+        rect.anchorMin = rect.anchorMax = new Vector2(0, 1);
+        rect.pivot = new Vector2(0, 1);
+        rect.anchoredPosition = new Vector2(x, -y);
+        rect.sizeDelta = new Vector2(width, height);
+    }
 
-        Text text = textObject.AddComponent<Text>();
-        text.font = uiFont;
+    private Text TextAt(string content, Transform parent, float x, float y, float width, float height, int size, bool display = false)
+    {
+        RectTransform rect = Rect(content, parent);
+        Place(rect, x, y, width, height);
+        Text text = rect.gameObject.AddComponent<Text>();
+        text.font = display ? displayFont : uiFont;
         text.text = content;
-        text.fontSize = fontSize;
-        text.fontStyle = fontStyle;
-        text.alignment = alignment;
-        text.color = color;
-        text.horizontalOverflow = HorizontalWrapMode.Wrap;
-        text.verticalOverflow = VerticalWrapMode.Overflow;
-
-        LayoutElement layoutElement = textObject.AddComponent<LayoutElement>();
-        layoutElement.minHeight = fontSize + 8f;
-
+        text.fontSize = size;
+        text.color = Ink;
+        text.alignment = TextAnchor.MiddleLeft;
+        text.raycastTarget = false;
+        Shadow shadow = rect.gameObject.AddComponent<Shadow>();
+        shadow.effectColor = new Color(0.015f, 0.035f, 0.065f, 1);
+        shadow.effectDistance = new Vector2(1, -2);
         return text;
+    }
+
+    private Text SliderRow(string label, float y, float value, UnityEngine.Events.UnityAction<float> changed, out Slider slider)
+    {
+        TextAt(label, panelTransform, 42, y, 390, 32, 23);
+        Text number = TextAt("", panelTransform, 432, y, 146, 32, 22);
+        number.alignment = TextAnchor.MiddleRight;
+        RectTransform rect = Rect(label + " slider", panelTransform);
+        Place(rect, 42, y + 40, 536, 40);
+        // A transparent hit area makes the entire slider easy to click.
+        rect.gameObject.AddComponent<Image>().color = Color.clear;
+        slider = rect.gameObject.AddComponent<Slider>();
+        RectTransform track = Rect("Track", rect);
+        Place(track, 10, 18, 516, 4);
+        track.gameObject.AddComponent<Image>().color = new Color(0.19f, 0.30f, 0.37f);
+        RectTransform area = Rect("Travel", rect);
+        Place(area, 10, 0, 516, 40);
+        RectTransform fillArea = Rect("Fill travel", rect);
+        Place(fillArea, 10, 18, 516, 4);
+        RectTransform fill = Rect("Fill", fillArea);
+        fill.anchorMin = new Vector2(0, 0);
+        fill.anchorMax = new Vector2(1, 1);
+        fill.offsetMin = fill.offsetMax = Vector2.zero;
+        fill.gameObject.AddComponent<Image>().color = new Color(0.35f, 0.70f, 0.8f);
+        RectTransform handle = Rect("Handle", area);
+        handle.sizeDelta = new Vector2(10, 0);
+        Image handleImage = handle.gameObject.AddComponent<Image>();
+        handleImage.color = Ink;
+        slider.fillRect = fill;
+        slider.handleRect = handle;
+        slider.targetGraphic = handleImage;
+        slider.value = value;
+        slider.colors = ControlColors();
+        slider.onValueChanged.AddListener(changed);
+        controls.Add(slider);
+        return number;
+    }
+
+    private void ButtonAt(string label, float x, float y, float width, UnityEngine.Events.UnityAction action)
+    {
+        RectTransform rect = Rect(label, panelTransform);
+        Place(rect, x, y, width, 58);
+        rect.gameObject.AddComponent<Image>().color = Color.clear;
+        Text text = TextAt(label, rect, 0, 0, width, 58, 28, true);
+        Button button = rect.gameObject.AddComponent<Button>();
+        button.targetGraphic = text;
+        button.colors = ControlColors();
+        button.onClick.AddListener(action);
+        controls.Add(button);
+    }
+
+    private static ColorBlock ControlColors()
+    {
+        ColorBlock colors = ColorBlock.defaultColorBlock;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = Glow;
+        colors.selectedColor = Glow;
+        colors.pressedColor = new Color(0.35f, 0.73f, 0.85f);
+        colors.fadeDuration = 0.12f;
+        return colors;
     }
 }

@@ -3,8 +3,8 @@ using UnityEngine;
 public class PlayerLook : MonoBehaviour
 {
     private const string MouseSensitivityKey = "InputSettings.MouseSensitivity";
-    private const float DefaultMouseSensitivity = 425f;
-    private const float MinMouseSensitivity = 100f;
+    private const float DefaultMouseSensitivity = 100f;
+    private const float MinMouseSensitivity = 25f;
     private const float MaxMouseSensitivity = 800f;
 
     private static readonly System.Collections.Generic.HashSet<PlayerLook> ActiveInstances = new System.Collections.Generic.HashSet<PlayerLook>();
@@ -31,6 +31,9 @@ public class PlayerLook : MonoBehaviour
             return savedMouseSensitivity;
         }
     }
+
+    /// <summary>The default look speed used by Restore defaults.</summary>
+    public static float DefaultSensitivity => DefaultMouseSensitivity;
 
     public static float MinSensitivity => MinMouseSensitivity;
     public static float MaxSensitivity => MaxMouseSensitivity;

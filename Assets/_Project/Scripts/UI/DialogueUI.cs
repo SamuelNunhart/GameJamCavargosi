@@ -36,6 +36,8 @@ public class DialogueUI : MonoBehaviour
     private int currentLineIndex;
     private Coroutine typingCoroutine;
     private bool isTyping;
+    private bool settingsPaused;
+    private bool voicePausedBySettings;
     private string fullCurrentText;
     private Action onDialogueFinished;
     private bool controlsLockedByDialogue;
@@ -90,6 +92,10 @@ public class DialogueUI : MonoBehaviour
         UpdatePromptAnchorPosition();
 
         if (!IsDialogueOpen)
+            return;
+
+        // Ignore the toggle frame too, regardless of component Update ordering.
+        if (settingsPaused || AudioSettingsOverlay.IsOpen || Input.GetKeyDown(KeyCode.Escape))
             return;
 
         if (advanceInputLockCount > 0)
@@ -197,6 +203,25 @@ public class DialogueUI : MonoBehaviour
         return true;
     }
 
+    /// <summary>Suspends text reveal and the current voice without restarting the line.</summary>
+    public void SetSettingsPaused(bool paused)
+    {
+        settingsPaused = paused;
+        if (paused)
+        {
+            if (voiceSource != null && voiceSource.isPlaying)
+            {
+                voiceSource.Pause();
+                voicePausedBySettings = true;
+            }
+        }
+        else if (voicePausedBySettings)
+        {
+            if (voiceSource != null) voiceSource.UnPause();
+            voicePausedBySettings = false;
+        }
+    }
+
     public void AcquireAdvanceInputLock()
     {
         advanceInputLockCount++;
@@ -279,6 +304,7 @@ public class DialogueUI : MonoBehaviour
         if (activeVoiceSource != null)
         {
             activeVoiceSource.Stop();
+            voicePausedBySettings = false;
 
             if (line.voiceClip != null)
                 activeVoiceSource.PlayOneShot(line.voiceClip);
@@ -287,6 +313,7 @@ public class DialogueUI : MonoBehaviour
         if (typingCoroutine != null)
             StopCoroutine(typingCoroutine);
 
+        SetSettingsPaused(AudioSettingsOverlay.IsOpen);
         typingCoroutine = StartCoroutine(TypeLine(line.text));
     }
 
@@ -300,12 +327,18 @@ public class DialogueUI : MonoBehaviour
 
         foreach (char c in targetText)
         {
-            dialogueText.text += c;
-
-            if (delay > 0f)
-                yield return new WaitForSeconds(delay);
-            else
+            while (settingsPaused || AudioSettingsOverlay.IsOpen)
                 yield return null;
+
+            dialogueText.text += c;
+            float remainingDelay = delay;
+            do
+            {
+                yield return null;
+                if (!settingsPaused && !AudioSettingsOverlay.IsOpen)
+                    remainingDelay -= Time.deltaTime;
+            }
+            while (remainingDelay > 0f || settingsPaused || AudioSettingsOverlay.IsOpen);
         }
 
         dialogueText.text = targetText;
@@ -329,6 +362,7 @@ public class DialogueUI : MonoBehaviour
             StopCoroutine(typingCoroutine);
 
         EnsureVoiceSource()?.Stop();
+        voicePausedBySettings = false;
 
         DialogueData finishedDialogue = currentDialogue;
         currentDialogue = null;

@@ -10,6 +10,8 @@ public sealed class StorySelectionUI : MonoBehaviour
     [SerializeField] private Button arthurButton;
     [SerializeField] private SceneLoader sceneLoader;
 
+    [SerializeField] private string fatherSceneName = "Demo Burzon";
+
     private void Start()
     {
         Cursor.lockState = CursorLockMode.None;
@@ -37,6 +39,12 @@ public sealed class StorySelectionUI : MonoBehaviour
     public void PlayArthur()
     {
         sceneLoader.LoadGameScene();
+    }
+
+    /// <summary>Load the configured father prototype without changing Arthur's destination.</summary>
+    public void PlayFather()
+    {
+        sceneLoader.LoadScene(fatherSceneName);
     }
 
     private static void Select(Button button)

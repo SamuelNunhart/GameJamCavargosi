@@ -6,6 +6,12 @@ using UnityEngine.UI;
 
 public class OpeningGhostIntroController : MonoBehaviour
 {
+    [Header("Story ownership")]
+    [Tooltip("Which story may run this interaction. All is for shared world interactions.")]
+    [SerializeField] private StoryId story = StoryId.Arthur;
+    private bool storyInitialized;
+    private bool CanRunStory => isActiveAndEnabled && StoryAccess.Allows(this, story);
+
     private const float DefaultGhostFadeInDuration = 0.45f;
     private const float DefaultPhonePullDownDuration = 0.3f;
 
@@ -119,6 +125,10 @@ public class OpeningGhostIntroController : MonoBehaviour
     private float wakeUpLightToBrightenInitialIntensity;
     private bool firstMovementHintShown;
 
+#if UNITY_EDITOR // DEBUG-ONLY: remove before release; see docs/debug-skips.md
+    public bool DebugIsIntroRunning => introRoutine != null;
+#endif
+
     public bool HasCompletedPaintingDialogue => sceneThreePaintingDialogueCompleted;
 
     public event Action PaintingDialogueCompleted;
@@ -153,6 +163,8 @@ public class OpeningGhostIntroController : MonoBehaviour
 
     private void Awake()
     {
+        if (!StoryAccess.Allows(this, story)) return;
+        storyInitialized = true;
         AutoAssignSceneReferences();
         EnsureWindowDialogueTriggerRelay();
         EnsureSceneThreePaintingTriggerRelay();
@@ -177,6 +189,7 @@ public class OpeningGhostIntroController : MonoBehaviour
 
     private void Start()
     {
+        if (!CanRunStory) return;
         GameplayMusicController.PlayIntroSceneMusic();
 
         if (playOnStart)
@@ -185,6 +198,7 @@ public class OpeningGhostIntroController : MonoBehaviour
 
     private void OnEnable()
     {
+        if (!CanRunStory) return;
         EnsureWindowDialogueTriggerRelay();
         EnsureSceneThreePaintingTriggerRelay();
         EnsureSceneThreePuzzleDialogueTriggerRelay();
@@ -212,6 +226,7 @@ public class OpeningGhostIntroController : MonoBehaviour
 
     private void OnDisable()
     {
+        if (!storyInitialized) return;
         if (!Application.isPlaying)
             return;
 
@@ -268,6 +283,7 @@ public class OpeningGhostIntroController : MonoBehaviour
 
     public void PlayIntro()
     {
+        if (!CanRunStory) return;
         if (introRoutine != null || sequenceFinished)
             return;
 
@@ -276,11 +292,13 @@ public class OpeningGhostIntroController : MonoBehaviour
 
     public void RevealGhostNow()
     {
+        if (!CanRunStory) return;
         RevealGhostAtSpawnPoint();
     }
 
     public void PlayFinalBedEnding()
     {
+        if (!CanRunStory) return;
         AutoAssignSceneReferences();
         AcquireControlLock();
         HideIntroPhoneImmediate();
@@ -297,6 +315,7 @@ public class OpeningGhostIntroController : MonoBehaviour
 
     public void MoveGhostToApproachPoint()
     {
+        if (!CanRunStory) return;
         if (ghostObject == null || ghostApproachPoint == null)
             return;
 
@@ -1298,6 +1317,7 @@ public class OpeningGhostIntroController : MonoBehaviour
 
     private void HandleWindowDialogueTriggerEntered(Collider other)
     {
+        if (!CanRunStory) return;
         if (!waitingForWindowDialogueTrigger || windowDialogueTriggered)
             return;
 
@@ -1308,6 +1328,7 @@ public class OpeningGhostIntroController : MonoBehaviour
 
     private void HandleWindowSequenceCompleted()
     {
+        if (!CanRunStory) return;
         if (sceneThreeCompletionHandled)
             return;
 
@@ -1317,11 +1338,13 @@ public class OpeningGhostIntroController : MonoBehaviour
 
     private void HandlePuzzleSequenceCompleted()
     {
+        if (!CanRunStory) return;
         UnlockDoorSequence();
     }
 
     private void HandleDoorDialogueCompleted()
     {
+        if (!CanRunStory) return;
         UnlockFamilyMinigame();
     }
 
@@ -1354,6 +1377,7 @@ public class OpeningGhostIntroController : MonoBehaviour
 
     private void HandleSceneThreePaintingTriggerEntered(Collider other)
     {
+        if (!CanRunStory) return;
         if (!waitingForSceneThreePaintingTrigger || sceneThreePaintingDialogueTriggered)
             return;
 
@@ -1422,6 +1446,7 @@ public class OpeningGhostIntroController : MonoBehaviour
 
     private void HandleSceneThreePuzzleDialogueTriggerEntered(Collider other)
     {
+        if (!CanRunStory) return;
         if (!waitingForSceneThreePuzzleDialogueTrigger || sceneThreePuzzleDialogueTriggered)
             return;
 

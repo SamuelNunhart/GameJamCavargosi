@@ -9,6 +9,12 @@ using UnityEngine.UI;
 [RequireComponent(typeof(Collider))]
 public class WindowSequenceController : MonoBehaviour
 {
+    [Header("Story ownership")]
+    [Tooltip("Which story may run this interaction. All is for shared world interactions.")]
+    [SerializeField] private StoryId story = StoryId.Arthur;
+    private bool storyInitialized;
+    private bool CanRunStory => isActiveAndEnabled && StoryAccess.Allows(this, story);
+
     private const int HotspotCount = 7;
     private static readonly Vector3[] PanoramaWorldCorners = new Vector3[4];
     private static readonly Vector3[] PanoramaViewportWorldCorners = new Vector3[4];
@@ -111,6 +117,8 @@ public class WindowSequenceController : MonoBehaviour
 
     private void Awake()
     {
+        if (!StoryAccess.Allows(this, story)) return;
+        storyInitialized = true;
         AutoAssignReferences();
         NormalizeWindowMinigameLayout();
         ConfigureTrigger();
@@ -137,6 +145,7 @@ public class WindowSequenceController : MonoBehaviour
 
     private void Update()
     {
+        if (!CanRunStory) return;
         UpdatePlayerRangeState();
 
         if (!completionHandled && !sequenceOpen && !isTransitioning && playerInRange && CanInteractNow() && Input.GetKeyDown(interactKey))
@@ -152,12 +161,14 @@ public class WindowSequenceController : MonoBehaviour
             return;
         }
 
+#if UNITY_EDITOR // DEBUG-ONLY: remove before release; see docs/debug-skips.md
         if (sequenceOpen && !isTransitioning && !completionHandled && enableSkipShortcut && Input.GetKeyDown(skipSequenceKey))
         {
             DebugLog("Skip shortcut pressed. Completing window sequence for testing.");
             SkipSequenceForTesting();
             return;
         }
+#endif
 
         if (sequenceOpen && !isTransitioning)
             UpdatePanoramaScroll();
@@ -167,6 +178,7 @@ public class WindowSequenceController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (!CanRunStory) return;
         if (!IsPlayerCollider(other))
             return;
 
@@ -177,6 +189,7 @@ public class WindowSequenceController : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
+        if (!CanRunStory) return;
         if (!IsPlayerCollider(other))
             return;
 
@@ -187,6 +200,7 @@ public class WindowSequenceController : MonoBehaviour
 
     private void OnTriggerStay(Collider other)
     {
+        if (!CanRunStory) return;
         if (playerInRange || !IsPlayerCollider(other))
             return;
 
@@ -197,6 +211,7 @@ public class WindowSequenceController : MonoBehaviour
 
     private void OnDisable()
     {
+        if (!storyInitialized) return;
         ShowPrompt(false);
         heldPanoramaScrollDirection = 0;
 
@@ -214,6 +229,7 @@ public class WindowSequenceController : MonoBehaviour
 
     public void OpenSequence()
     {
+        if (!CanRunStory) return;
         if (!interactionEnabled || sequenceOpen || isTransitioning || completionHandled)
         {
             DebugLog($"OpenSequence ignored. interactionEnabled={interactionEnabled}, sequenceOpen={sequenceOpen}, isTransitioning={isTransitioning}, completionHandled={completionHandled}");
@@ -225,6 +241,7 @@ public class WindowSequenceController : MonoBehaviour
 
     public void CloseSequence(bool completed)
     {
+        if (!CanRunStory) return;
         if (!sequenceOpen || isTransitioning)
             return;
 
@@ -233,6 +250,7 @@ public class WindowSequenceController : MonoBehaviour
 
     public void HandleHotspotFoundByName(string hotspotName)
     {
+        if (!CanRunStory) return;
         if (string.IsNullOrWhiteSpace(hotspotName))
             return;
 
@@ -248,6 +266,7 @@ public class WindowSequenceController : MonoBehaviour
 
     public void SetInteractionEnabled(bool enabled)
     {
+        if (!StoryAccess.Allows(this, story)) return;
         interactionEnabled = enabled;
         UpdatePlayerRangeState();
         RefreshPrompt();
@@ -255,56 +274,67 @@ public class WindowSequenceController : MonoBehaviour
 
     public void ScrollLeft()
     {
+        if (!CanRunStory) return;
         ScrollPanoramaLeft();
     }
 
     public void ScrollRight()
     {
+        if (!CanRunStory) return;
         ScrollPanoramaRight();
     }
 
     public void ScrollPanoramaLeft()
     {
+        if (!CanRunStory) return;
         MovePanoramaHorizontally(GetPanoramaButtonStep());
     }
 
     public void ScrollPanoramaRight()
     {
+        if (!CanRunStory) return;
         MovePanoramaHorizontally(-GetPanoramaButtonStep());
     }
 
     public void BeginScrollLeft()
     {
+        if (!CanRunStory) return;
         BeginPanoramaScrollLeft();
     }
 
     public void BeginScrollRight()
     {
+        if (!CanRunStory) return;
         BeginPanoramaScrollRight();
     }
 
     public void BeginPanoramaScrollLeft()
     {
+        if (!CanRunStory) return;
         heldPanoramaScrollDirection = -1;
     }
 
     public void BeginPanoramaScrollRight()
     {
+        if (!CanRunStory) return;
         heldPanoramaScrollDirection = 1;
     }
 
     public void EndScroll()
     {
+        if (!CanRunStory) return;
         EndPanoramaScroll();
     }
 
     public void EndPanoramaScroll()
     {
+        if (!CanRunStory) return;
         heldPanoramaScrollDirection = 0;
     }
 
     private void HandleHotspotFound(int index)
     {
+        if (!CanRunStory) return;
         if (!sequenceOpen || completionHandled)
             return;
 
@@ -506,7 +536,7 @@ public class WindowSequenceController : MonoBehaviour
 
     private bool CanInteractNow()
     {
-        return interactionEnabled && (DialogueUI.Instance == null || !DialogueUI.Instance.IsDialogueOpen);
+        return CanRunStory && interactionEnabled && (DialogueUI.Instance == null || !DialogueUI.Instance.IsDialogueOpen);
     }
 
     private void ShowPrompt(bool show)

@@ -6,6 +6,12 @@ using TMPro;
 [RequireComponent(typeof(Collider))]
 public class PuzzleOpener : MonoBehaviour
 {
+    [Header("Story ownership")]
+    [Tooltip("Which story may run this interaction. All is for shared world interactions.")]
+    [SerializeField] private StoryId story = StoryId.Arthur;
+    private bool storyInitialized;
+    private bool CanRunStory => isActiveAndEnabled && StoryAccess.Allows(this, story);
+
     [Header("Puzzle")]
     [SerializeField] private GameObject puzzleCanvas;
 
@@ -69,12 +75,15 @@ public class PuzzleOpener : MonoBehaviour
 
     private void Awake()
     {
+        if (!StoryAccess.Allows(this, story)) return;
+        storyInitialized = true;
         AutoAssignReferences();
         ConfigureTrigger();
     }
 
     private void Start()
     {
+        if (!CanRunStory) return;
         EnsureCloseHintCreated();
         RefreshCloseHint();
 
@@ -90,6 +99,7 @@ public class PuzzleOpener : MonoBehaviour
 
     private void Update()
     {
+        if (!CanRunStory) return;
         UpdatePlayerRangeState();
         RefreshPrompt();
 
@@ -109,6 +119,7 @@ public class PuzzleOpener : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (!CanRunStory) return;
         if (!IsPlayerCollider(other))
             return;
 
@@ -118,6 +129,7 @@ public class PuzzleOpener : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
+        if (!CanRunStory) return;
         if (!IsPlayerCollider(other))
             return;
 
@@ -127,6 +139,7 @@ public class PuzzleOpener : MonoBehaviour
 
     private void OnTriggerStay(Collider other)
     {
+        if (!CanRunStory) return;
         if (playerInRange || !IsPlayerCollider(other))
             return;
 
@@ -169,11 +182,12 @@ public class PuzzleOpener : MonoBehaviour
 
     private bool CanInteractNow()
     {
-        return interactionEnabled && (DialogueUI.Instance == null || !DialogueUI.Instance.IsDialogueOpen);
+        return CanRunStory && interactionEnabled && (DialogueUI.Instance == null || !DialogueUI.Instance.IsDialogueOpen);
     }
 
     private void OnDisable()
     {
+        if (!storyInitialized) return;
         ShowPrompt(false);
         promptVisible = false;
         ReleasePlayerControlLock();
@@ -187,6 +201,7 @@ public class PuzzleOpener : MonoBehaviour
 
     public void OpenPuzzle()
     {
+        if (!CanRunStory) return;
         if (!interactionEnabled || puzzleOpen || isTransitioning)
             return;
 
@@ -195,12 +210,14 @@ public class PuzzleOpener : MonoBehaviour
 
     public void SetInteractionEnabled(bool enabled)
     {
+        if (!StoryAccess.Allows(this, story)) return;
         interactionEnabled = enabled;
         RefreshPrompt();
     }
 
     public void ClosePuzzle()
     {
+        if (!CanRunStory) return;
         if (!puzzleOpen || isTransitioning)
             return;
 
@@ -209,6 +226,7 @@ public class PuzzleOpener : MonoBehaviour
 
     public void SetPuzzleCanvasVisible(bool visible)
     {
+        if (!CanRunStory) return;
         EnsureCloseHintCreated();
         RefreshCloseHint();
 
@@ -218,12 +236,14 @@ public class PuzzleOpener : MonoBehaviour
 
     public void SetPhoneWorldVisible(bool visible)
     {
+        if (!CanRunStory) return;
         if (phoneWorldObject != null)
             phoneWorldObject.SetActive(visible);
     }
 
     public IEnumerator MoveToPhoneViewRoutine()
     {
+        if (!CanRunStory) yield break;
         if (isTransitioning)
             yield break;
 
@@ -246,6 +266,7 @@ public class PuzzleOpener : MonoBehaviour
 
     public IEnumerator MoveToPuzzleViewRoutine()
     {
+        if (!CanRunStory) yield break;
         if (isTransitioning)
             yield break;
 

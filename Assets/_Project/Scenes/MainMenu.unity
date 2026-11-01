@@ -607,7 +607,7 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 1618518517}
+    m_SelectOnUp: {fileID: 1543890747}
     m_SelectOnDown: {fileID: 0}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
@@ -1615,6 +1615,7 @@ MonoBehaviour:
   playButton: {fileID: 124599243}
   arthurButton: {fileID: 1618518517}
   sceneLoader: {fileID: 1190526482}
+  fatherSceneName: Demo Burzon
 --- !u!1 &1543890745
 GameObject:
   m_ObjectHideFlags: 0
@@ -1668,10 +1669,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Navigation:
-    m_Mode: 3
+    m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 0}
-    m_SelectOnDown: {fileID: 0}
+    m_SelectOnUp: {fileID: 1618518517}
+    m_SelectOnDown: {fileID: 746482505}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
@@ -1694,11 +1695,23 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 0
+  m_Interactable: 1
   m_TargetGraphic: {fileID: 2143972643}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1315303331}
+        m_TargetAssemblyTypeName: StorySelectionUI, Assembly-CSharp
+        m_MethodName: PlayFather
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: 
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1543890748
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1772,7 +1785,7 @@ MonoBehaviour:
     m_Mode: 4
     m_WrapAround: 0
     m_SelectOnUp: {fileID: 0}
-    m_SelectOnDown: {fileID: 746482505}
+    m_SelectOnDown: {fileID: 1543890747}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
@@ -1942,7 +1955,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Coming soon
+  m_Text: Begin his story
 --- !u!222 &1862119664
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2302,7 +2315,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.64, g: 0.74, b: 0.8, a: 1}
+  m_Color: {r: 0.88, g: 0.98, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1

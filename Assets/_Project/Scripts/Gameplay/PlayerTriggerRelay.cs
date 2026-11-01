@@ -4,6 +4,11 @@ using UnityEngine;
 [RequireComponent(typeof(Collider))]
 public class PlayerTriggerRelay : MonoBehaviour
 {
+    [Header("Story ownership")]
+    [Tooltip("Which story may run this interaction. All is for shared world interactions.")]
+    [SerializeField] private StoryId story = StoryId.Arthur;
+    private bool CanRunStory => isActiveAndEnabled && StoryAccess.Allows(this, story);
+
     [SerializeField] private string playerTag = "Player";
     [SerializeField] private Transform playerViewTransform;
     [SerializeField] private MonoBehaviour playerMovement;
@@ -29,6 +34,7 @@ public class PlayerTriggerRelay : MonoBehaviour
 
     private void Awake()
     {
+        if (!StoryAccess.Allows(this, story)) return;
         AutoAssignReferences();
         ConfigureTrigger();
     }
@@ -40,16 +46,19 @@ public class PlayerTriggerRelay : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (!CanRunStory) return;
         TryNotify(other);
     }
 
     private void OnTriggerStay(Collider other)
     {
+        if (!CanRunStory) return;
         TryNotify(other);
     }
 
     private void TryNotify(Collider other)
     {
+        if (!CanRunStory) return;
         if (!enabled)
             return;
 

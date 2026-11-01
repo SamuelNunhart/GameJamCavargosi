@@ -3,6 +3,11 @@ using UnityEngine;
 [RequireComponent(typeof(Collider))]
 public class DoorTriggerRotator : MonoBehaviour
 {
+    [Header("Story ownership")]
+    [Tooltip("Which story may run this interaction. All is for shared world interactions.")]
+    [SerializeField] private StoryId story = StoryId.All;
+    private bool CanRunStory => isActiveAndEnabled && StoryAccess.Allows(this, story);
+
     [Header("Door")]
     [SerializeField] private Transform doorTransform;
     [SerializeField] private Vector3 openRotationEuler = new Vector3(0f, 90f, 0f);
@@ -48,6 +53,7 @@ public class DoorTriggerRotator : MonoBehaviour
 
     private void Awake()
     {
+        if (!StoryAccess.Allows(this, story)) return;
         ConfigureTrigger();
         CacheRotations();
         UpdateGeneratedDoorCollider();
@@ -55,6 +61,7 @@ public class DoorTriggerRotator : MonoBehaviour
 
     private void Update()
     {
+        if (!CanRunStory) return;
         if (!rotationsCached || doorTransform == null)
             return;
 
@@ -81,6 +88,7 @@ public class DoorTriggerRotator : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (!CanRunStory) return;
         if (!interactionEnabled)
             return;
 
@@ -93,6 +101,7 @@ public class DoorTriggerRotator : MonoBehaviour
 
     private void OnTriggerStay(Collider other)
     {
+        if (!CanRunStory) return;
         if (!interactionEnabled || !IsPlayerCollider(other))
             return;
 
@@ -104,6 +113,7 @@ public class DoorTriggerRotator : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
+        if (!CanRunStory) return;
         if (!IsPlayerCollider(other))
             return;
 
@@ -121,25 +131,29 @@ public class DoorTriggerRotator : MonoBehaviour
 
     public void OpenDoor()
     {
+        if (!CanRunStory) return;
         bool wasOpen = isOpen;
         isOpen = true;
 
-        if (!wasOpen)
+        if (!wasOpen && StoryAccess.Current(this) == StoryId.Arthur)
             GameplayMusicController.PlayKitchenDoorMusic();
     }
 
     public void CloseDoor()
     {
+        if (!CanRunStory) return;
         isOpen = false;
     }
 
     public void ToggleDoor()
     {
+        if (!CanRunStory) return;
         isOpen = !isOpen;
     }
 
     public void SetInteractionEnabled(bool enabled)
     {
+        if (!StoryAccess.Allows(this, story)) return;
         interactionEnabled = enabled;
 
         if (interactionEnabled)

@@ -5,6 +5,11 @@ using UnityEngine;
 [RequireComponent(typeof(Collider))]
 public class DoorDialogueTrigger : MonoBehaviour
 {
+    [Header("Story ownership")]
+    [Tooltip("Which story may run this interaction. All is for shared world interactions.")]
+    [SerializeField] private StoryId story = StoryId.Arthur;
+    private bool CanRunStory => isActiveAndEnabled && StoryAccess.Allows(this, story);
+
     [Header("Dialogue")]
     [SerializeField] private DialogueData dialogue;
     [SerializeField] private bool lockPlayerControlsDuringDialogue;
@@ -60,6 +65,7 @@ public class DoorDialogueTrigger : MonoBehaviour
 
     private void Awake()
     {
+        if (!StoryAccess.Allows(this, story)) return;
         ConfigureTrigger();
 
         if (doorTransform == null && transform.parent != null)
@@ -70,6 +76,7 @@ public class DoorDialogueTrigger : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (!CanRunStory) return;
         if (!IsPlayerCollider(other))
             return;
 
@@ -78,6 +85,7 @@ public class DoorDialogueTrigger : MonoBehaviour
 
     private void OnTriggerStay(Collider other)
     {
+        if (!CanRunStory) return;
         if (!IsPlayerCollider(other))
             return;
 
@@ -86,6 +94,7 @@ public class DoorDialogueTrigger : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
+        if (!CanRunStory) return;
         if (!IsPlayerCollider(other))
             return;
 
@@ -107,6 +116,7 @@ public class DoorDialogueTrigger : MonoBehaviour
 
     public void SetInteractionEnabled(bool enabled)
     {
+        if (!StoryAccess.Allows(this, story)) return;
         interactionEnabled = enabled;
 
         if (interactionEnabled)
@@ -128,7 +138,8 @@ public class DoorDialogueTrigger : MonoBehaviour
 
     private void TryStartWaitingForDialogue()
     {
-        if (!interactionEnabled || !HasPendingPlayerTrigger() || hasPlayed || waitForDoorRoutine != null || dialogue == null)
+        if (!CanRunStory) return;
+        if (!CanRunStory || !interactionEnabled || !HasPendingPlayerTrigger() || hasPlayed || waitForDoorRoutine != null || dialogue == null)
             return;
 
         waitForDoorRoutine = StartCoroutine(WaitForDoorAndPlayDialogue());
@@ -136,7 +147,7 @@ public class DoorDialogueTrigger : MonoBehaviour
 
     private IEnumerator WaitForDoorAndPlayDialogue()
     {
-        while (interactionEnabled && HasPendingPlayerTrigger() && !hasPlayed)
+        while (CanRunStory && interactionEnabled && HasPendingPlayerTrigger() && !hasPlayed)
         {
             if (DialogueUI.Instance == null || DialogueUI.Instance.IsDialogueOpen)
             {
@@ -153,7 +164,7 @@ public class DoorDialogueTrigger : MonoBehaviour
             if (startDelayAfterDoorOpens > 0f)
                 yield return new WaitForSeconds(startDelayAfterDoorOpens);
 
-            if (!HasPendingPlayerTrigger() || hasPlayed)
+            if (!CanRunStory || !interactionEnabled || !HasPendingPlayerTrigger() || hasPlayed)
                 break;
 
             if (DialogueUI.Instance == null || DialogueUI.Instance.IsDialogueOpen)
@@ -186,6 +197,7 @@ public class DoorDialogueTrigger : MonoBehaviour
 
     private void HandleDialogueCompleted()
     {
+        if (!CanRunStory) return;
         DialogueCompleted?.Invoke();
     }
 
@@ -234,6 +246,11 @@ public class DoorDialogueTrigger : MonoBehaviour
 
     private void RegisterPlayerDetection()
     {
+        if (!CanRunStory) return;
+        // Unity can deliver physics trigger callbacks to disabled MonoBehaviours.
+        if (!CanRunStory || !interactionEnabled)
+            return;
+
         playerInRange = true;
         hasPendingPlayerTrigger = true;
         lastPlayerDetectionTime = Time.time;

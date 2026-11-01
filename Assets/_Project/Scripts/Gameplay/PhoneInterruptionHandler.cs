@@ -4,6 +4,11 @@ using TMPro;
 
 public class PhoneInterruptionHandler : MonoBehaviour
 {
+    [Header("Story ownership")]
+    [Tooltip("Which story may run this interaction. All is for shared world interactions.")]
+    [SerializeField] private StoryId story = StoryId.Arthur;
+    private bool CanRunStory => isActiveAndEnabled && StoryAccess.Allows(this, story);
+
     [Header("References")]
     [SerializeField] private PuzzleEventDirector director;
     [SerializeField] private MeshRenderer screenRenderer;
@@ -32,6 +37,7 @@ public class PhoneInterruptionHandler : MonoBehaviour
 
     private void Update()
     {
+        if (!CanRunStory) return;
         // Scenario 1
         if (isCyclingActive && Input.GetKeyDown(KeyCode.S))
         {
@@ -53,6 +59,7 @@ public class PhoneInterruptionHandler : MonoBehaviour
 
     public void TriggerInterruption(int interruptionIndex)
     {
+        if (!CanRunStory) return;
         // Reset all states
         isCyclingActive = false;
         isTypingActive = false;
@@ -111,6 +118,7 @@ public class PhoneInterruptionHandler : MonoBehaviour
 
     private void HandleTyping()
     {
+        if (!CanRunStory) return;
         foreach (char c in Input.inputString)
         {
             if (c == '\b')
@@ -157,6 +165,7 @@ public class PhoneInterruptionHandler : MonoBehaviour
 
     private void HandleLikeScrollLogic()
     {
+        if (!CanRunStory) return;
         // State 1: Need to Like
         if (!isPostLiked)
         {

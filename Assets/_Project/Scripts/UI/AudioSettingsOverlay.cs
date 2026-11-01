@@ -4,6 +4,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
+[DefaultExecutionOrder(-200)]
 public sealed class AudioSettingsOverlay : MonoBehaviour
 {
     private const string MasterVolumeKey = "AudioSettings.MasterVolume";
@@ -106,6 +107,7 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
     {
         if (instance == this)
         {
+            StoryPlayerRig.Instance?.SetSettingsOpen(false);
             DialogueUI.Instance?.SetSettingsPaused(false);
             SceneManager.activeSceneChanged -= OnActiveSceneChanged;
             instance = null;
@@ -288,7 +290,7 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
 
     private bool IsSettingsAllowedInActiveScene()
     {
-        return AllowedSceneNames.Contains(SceneManager.GetActiveScene().name);
+        return StoryPlayerRig.Instance != null || AllowedSceneNames.Contains(SceneManager.GetActiveScene().name);
     }
 
     private bool ShouldBlockOpenForCurrentState()
@@ -330,6 +332,7 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
         if (opening && !isVisible && EventSystem.current != null)
             previousSelection = EventSystem.current.currentSelectedGameObject;
         isVisible = opening;
+        StoryPlayerRig.Instance?.SetSettingsOpen(isVisible);
         DialogueUI.Instance?.SetSettingsPaused(isVisible);
         canvas.enabled = true;
         canvasGroup.interactable = isVisible;
@@ -380,6 +383,12 @@ public sealed class AudioSettingsOverlay : MonoBehaviour
 
     private void UpdateCursorForCurrentState()
     {
+        if (StoryPlayerRig.Instance != null)
+        {
+            StoryPlayerRig.Instance.RefreshCursor();
+            return;
+        }
+
         string sceneName = SceneManager.GetActiveScene().name;
 
         if (isVisible || string.Equals(sceneName, "MainMenu") || string.Equals(sceneName, "Pipes"))

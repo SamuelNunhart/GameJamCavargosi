@@ -6,6 +6,11 @@ using UnityEngine.Serialization;
 
 public class PuzzleEventDirector : MonoBehaviour
 {
+    [Header("Story ownership")]
+    [Tooltip("Which story may run this interaction. All is for shared world interactions.")]
+    [SerializeField] private StoryId story = StoryId.Arthur;
+    private bool CanRunStory => isActiveAndEnabled && StoryAccess.Allows(this, story);
+
     [Header("Interruption Handler")]
     [FormerlySerializedAs("newPhoneHandler")]
     [SerializeField] private PhoneInterruptionHandler phoneHandler;
@@ -79,6 +84,7 @@ public class PuzzleEventDirector : MonoBehaviour
 
     public void UpdatePromptMessage(string newMessage)
     {
+        if (!CanRunStory) return;
         phonePromptMessage = newMessage;
 
         if (phonePromptRoot != null && phonePromptRoot.activeSelf && phonePromptText != null)
@@ -87,6 +93,7 @@ public class PuzzleEventDirector : MonoBehaviour
 
     private void Awake()
     {
+        if (!StoryAccess.Allows(this, story)) return;
         HideVictory();
         HideAllPhonePanels();
         HidePhonePrompt();
@@ -94,6 +101,7 @@ public class PuzzleEventDirector : MonoBehaviour
 
     private void OnEnable()
     {
+        if (!CanRunStory) return;
         if (puzzleManager != null)
         {
             puzzleManager.ProgressThresholdReached += HandleProgressThresholdReached;
@@ -118,17 +126,22 @@ public class PuzzleEventDirector : MonoBehaviour
 
     private void Update()
     {
+        if (!CanRunStory) return;
+#if UNITY_EDITOR // DEBUG-ONLY: remove before release; see docs/debug-skips.md
         if (phoneEventActive && waitingForPhoneCompletion && Input.GetKeyDown(completePhoneEventKey))
             CompleteCurrentPhoneEvent();
+#endif
     }
 
     private void HandlePuzzleOpened()
     {
+        if (!CanRunStory) return;
         PlayPuzzleIntroIfAssigned();
     }
 
     private void HandleProgressThresholdReached(int placedCount)
     {
+        if (!CanRunStory) return;
         if (phoneEventActive || solvedHandled)
             return;
 
@@ -137,6 +150,7 @@ public class PuzzleEventDirector : MonoBehaviour
 
     private void HandlePuzzleSolved()
     {
+        if (!CanRunStory) return;
         if (solvedHandled)
             return;
 
@@ -145,6 +159,7 @@ public class PuzzleEventDirector : MonoBehaviour
 
     public void PlayPuzzleIntroIfAssigned(System.Action onCompleted = null)
     {
+        if (!CanRunStory) return;
         if (onCompleted != null)
             PuzzleIntroCompletedCallbacks += onCompleted;
 
@@ -309,6 +324,7 @@ public class PuzzleEventDirector : MonoBehaviour
 
     public void CompleteCurrentPhoneEvent()
     {
+        if (!CanRunStory) return;
         if (!phoneEventActive)
             return;
 

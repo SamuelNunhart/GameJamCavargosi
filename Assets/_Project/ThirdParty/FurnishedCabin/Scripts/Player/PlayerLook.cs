@@ -20,6 +20,8 @@ public class PlayerLook : MonoBehaviour
     [SerializeField] private Transform playerBody;
     [SerializeField] private bool invertY = false;
 
+    [SerializeField] private bool externalCursorOwner;
+
     private float xRotation = 0f;
     private bool cursorIsLocked = true;
 
@@ -47,7 +49,7 @@ public class PlayerLook : MonoBehaviour
 
     private void Start()
     {
-        SetCursorState(true);
+        if (!externalCursorOwner) SetCursorState(true);
     }
 
     private void OnDestroy()
@@ -59,7 +61,7 @@ public class PlayerLook : MonoBehaviour
     {
         if (AudioSettingsOverlay.IsOpen)
         {
-            if (cursorIsLocked)
+            if (!externalCursorOwner && cursorIsLocked)
             {
                 SetCursorState(false);
             }
@@ -67,7 +69,7 @@ public class PlayerLook : MonoBehaviour
             return;
         }
 
-        HandleCursorLock();
+        if (!externalCursorOwner) HandleCursorLock();
         SyncCursorState();
 
         if (cursorIsLocked)

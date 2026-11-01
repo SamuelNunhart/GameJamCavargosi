@@ -356,6 +356,16 @@ public class DialogueUI : MonoBehaviour
         typingCoroutine = null;
     }
 
+#if UNITY_EDITOR // DEBUG-ONLY: remove before release; see docs/debug-skips.md
+    /// <summary>Completes this conversation through its normal callback and control-release path.</summary>
+    public bool DebugFinishConversation()
+    {
+        if (!IsDialogueOpen || IsAdvanceInputLocked || AudioSettingsOverlay.IsOpen) return false;
+        EndDialogue();
+        return true;
+    }
+#endif
+
     private void EndDialogue()
     {
         if (typingCoroutine != null)

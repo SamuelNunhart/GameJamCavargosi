@@ -11,6 +11,12 @@ using UnityEngine.UI;
 [RequireComponent(typeof(Collider))]
 public class FamilyMinigamePlaceholderController : MonoBehaviour
 {
+    [Header("Story ownership")]
+    [Tooltip("Which story may run this interaction. All is for shared world interactions.")]
+    [SerializeField] private StoryId story = StoryId.Arthur;
+    private bool storyInitialized;
+    private bool CanRunStory => isActiveAndEnabled && StoryAccess.Allows(this, story);
+
     [Header("Interaction")]
     [SerializeField] private KeyCode interactKey = KeyCode.E;
     [SerializeField] private KeyCode cancelKey = KeyCode.Escape;
@@ -94,6 +100,8 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
 
     private void Awake()
     {
+        if (!StoryAccess.Allows(this, story)) return;
+        storyInitialized = true;
         AutoAssignReferences();
         ConfigureTrigger();
         AutoAssignCompletionDialogue();
@@ -102,6 +110,7 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
 
     private void Update()
     {
+        if (!CanRunStory) return;
         UpdatePlayerRangeState();
 
         if (!completionHandled &&
@@ -126,18 +135,21 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
             return;
         }
 
+#if UNITY_EDITOR // DEBUG-ONLY: remove before release; see docs/debug-skips.md
         if (sequenceOpen && !isTransitioning && !completionHandled && Input.GetKeyDown(skipKey))
         {
             DebugLog("Skip key pressed. Completing family minigame placeholder.");
             CompleteSequence();
             return;
         }
+#endif
 
         RefreshPrompt();
     }
 
     private void OnTriggerEnter(Collider other)
     {
+        if (!CanRunStory) return;
         if (!IsPlayerCollider(other))
             return;
 
@@ -147,6 +159,7 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
+        if (!CanRunStory) return;
         if (!IsPlayerCollider(other))
             return;
 
@@ -156,6 +169,7 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
 
     private void OnTriggerStay(Collider other)
     {
+        if (!CanRunStory) return;
         if (playerInRange || !IsPlayerCollider(other))
             return;
 
@@ -165,6 +179,7 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
 
     private void OnDisable()
     {
+        if (!storyInitialized) return;
         if (!Application.isPlaying)
             return;
 
@@ -188,6 +203,7 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
 
     public void OpenSequence()
     {
+        if (!CanRunStory) return;
         if (!interactionEnabled || completionHandled || sequenceOpen || isTransitioning)
             return;
 
@@ -196,12 +212,14 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
 
     public void SetInteractionEnabled(bool enabled)
     {
+        if (!StoryAccess.Allows(this, story)) return;
         interactionEnabled = enabled;
         RefreshPrompt();
     }
 
     public void CloseSequence(bool completed)
     {
+        if (!CanRunStory) return;
         if (!sequenceOpen || isTransitioning)
             return;
 
@@ -210,6 +228,7 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
 
     public void CompleteSequence()
     {
+        if (!CanRunStory) return;
         if (completionHandled || !sequenceOpen || isTransitioning)
             return;
 
@@ -627,7 +646,7 @@ public class FamilyMinigamePlaceholderController : MonoBehaviour
 
     private bool CanInteractNow()
     {
-        return interactionEnabled && (DialogueUI.Instance == null || !DialogueUI.Instance.IsDialogueOpen);
+        return CanRunStory && interactionEnabled && (DialogueUI.Instance == null || !DialogueUI.Instance.IsDialogueOpen);
     }
 
     private void ShowPrompt(bool show)

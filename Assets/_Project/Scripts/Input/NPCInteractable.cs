@@ -3,6 +3,11 @@ using UnityEngine;
 [RequireComponent(typeof(Collider))]
 public class NPCInteractable : MonoBehaviour
 {
+    [Header("Story ownership")]
+    [Tooltip("Which story may run this interaction. All is for shared world interactions.")]
+    [SerializeField] private StoryId story = StoryId.Arthur;
+    private bool CanRunStory => isActiveAndEnabled && StoryAccess.Allows(this, story);
+
     [SerializeField] private DialogueData dialogue;
     [SerializeField] private string playerTag = "Player";
     [SerializeField] private string promptMessage = "Press E";
@@ -19,6 +24,7 @@ public class NPCInteractable : MonoBehaviour
 
     private void Update()
     {
+        if (!CanRunStory) return;
         RefreshPrompt();
 
         if (!playerInRange || hasPlayed)
@@ -38,6 +44,7 @@ public class NPCInteractable : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (!CanRunStory) return;
         if (!other.CompareTag(playerTag))
             return;
 
@@ -47,6 +54,7 @@ public class NPCInteractable : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
+        if (!CanRunStory) return;
         if (!other.CompareTag(playerTag))
             return;
 
@@ -76,7 +84,7 @@ public class NPCInteractable : MonoBehaviour
             return;
         }
 
-        bool shouldShowPrompt = playerInRange && !hasPlayed && !DialogueUI.Instance.IsDialogueOpen;
+        bool shouldShowPrompt = CanRunStory && playerInRange && !hasPlayed && !DialogueUI.Instance.IsDialogueOpen;
         bool promptNeedsRefresh = shouldShowPrompt && !DialogueUI.Instance.IsPromptActiveFor(this, promptMessage);
 
         if (promptVisible == shouldShowPrompt && !promptNeedsRefresh)

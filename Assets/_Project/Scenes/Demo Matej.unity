@@ -3069,6 +3069,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a543619dfa0942f1b58a56b2eb73a2d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  story: 1
   interactKey: 101
   cancelKey: 27
   skipKey: 96
@@ -3556,37 +3557,37 @@ PrefabInstance:
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: -0.076786146
+      value: 0.44962803
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0.16839457
+      value: -0.8751556
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.45048165
+      value: 0.08163515
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.873392
+      value: 0.15897489
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: 54.366
+      value: -54.385
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 171.931
+      value: 200.595
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: -178.27
+      value: -180.007
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
@@ -8152,6 +8153,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 02a9e5a1a843bc94dbc6a095aaa8fd9e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  story: 1
   puzzleCanvas: {fileID: 701693287}
   playerMovement: {fileID: 2271036429879105431}
   playerLook: {fileID: 2271036429879105430}
@@ -8217,6 +8219,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1761c7e85fb9bb8439dca794af92ac92, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  story: 0
   doorTransform: {fileID: 939795682}
   openRotationEuler: {x: 0, y: 0, z: -90}
   useLocalRotation: 1
@@ -9101,6 +9104,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f528fad882931b44ba15521d2d00bf8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  story: 1
   interactKey: 101
   cancelKey: 27
   promptMessage: Press E to look out the window
@@ -11930,6 +11934,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c1a4a4e90354804b82f607b95af8f79, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  story: 1
   dialogue: {fileID: 11400000, guid: 7f3bca80974c4f4d92cd5f1a6d8bba11, type: 2}
   lockPlayerControlsDuringDialogue: 0
   doorTransform: {fileID: 939795682}
@@ -11939,6 +11944,7 @@ MonoBehaviour:
   startDelayAfterDoorOpens: 0.1
   playerTag: Player
   interactionEnabled: 1
+  playerExitGracePeriod: 1.25
 --- !u!1 &1406508175
 GameObject:
   m_ObjectHideFlags: 0
@@ -12787,6 +12793,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 17103dadb5265fe4ca2fa54f5b6041ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  story: 1
   phoneHandler: {fileID: 2034226070}
   puzzleManager: {fileID: 210838833}
   puzzleOpener: {fileID: 939795681}
@@ -13073,37 +13080,37 @@ PrefabInstance:
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.015502779
+      value: -0.57434744
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0.01784989
+      value: 0.8183187
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.57432103
+      value: 0.014493404
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.8182887
+      value: -0.01641181
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: 69.946
+      value: -69.972
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 96.693
+      value: -172.702
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: -172.312
+      value: -187.141
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
@@ -13952,6 +13959,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fdfbf64540e223f47b5c9fed0b954acb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  story: 1
   introDialogueSegments:
   - {fileID: 11400000, guid: 2c4f9622bfd14622bf43b00cd4d4d44b, type: 2}
   - {fileID: 11400000, guid: 0db87327695c44cca11c062e40fe8d11, type: 2}
@@ -15851,6 +15859,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5416fe3075fbda4f8a86180712d77fb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  story: 1
   director: {fileID: 1463469170}
   screenRenderer: {fileID: 1471426232}
   scenario1Prompt: Press S to scroll
@@ -16040,37 +16049,37 @@ PrefabInstance:
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.052003317
+      value: -0.32455117
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.02443391
+      value: 0.94363177
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.32335892
+      value: 0.04395282
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.9445304
+      value: 0.04789486
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: 41.531
+      value: -38.077
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: -3.013
+      value: -184.507
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: -173.54
+      value: -183.778
       objectReference: {fileID: 0}
     - target: {fileID: 463835053371953216, guid: 9c993bdd1f0fb3e4da5b61dabec5fbb3,
         type: 3}

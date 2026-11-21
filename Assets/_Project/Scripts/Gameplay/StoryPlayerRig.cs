@@ -12,6 +12,9 @@ public sealed class StoryPlayerRig : MonoBehaviour
     [SerializeField] private Camera gameplayCamera;
     [SerializeField] private Transform spawnPoint;
     [SerializeField] private Camera[] managedCameras;
+    [Tooltip("Character mesh renderers hidden while this rig is playing. Keep props out of this list.")]
+    [SerializeField] private Renderer[] firstPersonHiddenRenderers;
+    private bool[] previousRenderingStates;
     private bool settingsLock;
     private bool cutsceneLock;
     public Camera ActiveCamera { get; private set; }
@@ -21,6 +24,17 @@ public sealed class StoryPlayerRig : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+        if (firstPersonHiddenRenderers != null)
+        {
+            previousRenderingStates = new bool[firstPersonHiddenRenderers.Length];
+            for (int i = 0; i < firstPersonHiddenRenderers.Length; i++)
+            {
+                Renderer characterRenderer = firstPersonHiddenRenderers[i];
+                if (characterRenderer == null) continue;
+                previousRenderingStates[i] = characterRenderer.forceRenderingOff;
+                characterRenderer.forceRenderingOff = true;
+            }
+        }
         if (spawnPoint != null)
         {
             CharacterController controller = GetComponent<CharacterController>();
@@ -38,6 +52,15 @@ public sealed class StoryPlayerRig : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (previousRenderingStates != null)
+        {
+            for (int i = 0; i < previousRenderingStates.Length; i++)
+            {
+                Renderer characterRenderer = firstPersonHiddenRenderers[i];
+                if (characterRenderer != null)
+                    characterRenderer.forceRenderingOff = previousRenderingStates[i];
+            }
+        }
         if (Instance == this) Instance = null;
     }
 

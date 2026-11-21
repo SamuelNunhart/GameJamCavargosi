@@ -123,6 +123,12 @@ public class PlayerLook : MonoBehaviour
         playerBody.Rotate(Vector3.up * mouseX);
     }
 
+    public void ResetPitch()
+    {
+        xRotation = 0f;
+        transform.localRotation = Quaternion.identity;
+    }
+
     public static void SetSensitivity(float value)
     {
         LoadSensitivityIfNeeded();

@@ -17,6 +17,7 @@ public sealed class StoryPlayerRig : MonoBehaviour
     private bool[] previousRenderingStates;
     private bool settingsLock;
     private bool cutsceneLock;
+    private Pose startingPose;
     public Camera ActiveCamera { get; private set; }
     public Camera GameplayCamera => gameplayCamera;
     public bool CanInteract => !controlLocker.IsLocked && !AudioSettingsOverlay.IsOpen;
@@ -35,20 +36,35 @@ public sealed class StoryPlayerRig : MonoBehaviour
                 characterRenderer.forceRenderingOff = true;
             }
         }
-        if (spawnPoint != null)
-        {
-            CharacterController controller = GetComponent<CharacterController>();
-            bool wasEnabled = controller != null && controller.enabled;
-            if (controller != null) controller.enabled = false;
-            transform.SetPositionAndRotation(spawnPoint.position, spawnPoint.rotation);
-            if (controller != null) controller.enabled = wasEnabled;
-        }
+        if (spawnPoint != null) PlacePlayer(new Pose(spawnPoint.position, spawnPoint.rotation));
+        startingPose = new Pose(transform.position, transform.rotation);
         SelectCamera(gameplayCamera);
         SetSettingsOpen(AudioSettingsOverlay.IsOpen);
         RefreshCursor();
     }
 
     private void LateUpdate() { RefreshCursor(); }
+
+    /// <summary>Returns the player to the pose used when this scene started.</summary>
+    public void ReturnToStart()
+    {
+        if (TryGetComponent(out Rigidbody body) && !body.isKinematic)
+        {
+            body.velocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+        }
+        PlacePlayer(startingPose);
+        if (gameplayCamera.TryGetComponent(out PlayerLook look)) look.ResetPitch();
+    }
+
+    private void PlacePlayer(Pose pose)
+    {
+        CharacterController controller = GetComponent<CharacterController>();
+        bool wasEnabled = controller != null && controller.enabled;
+        if (controller != null) controller.enabled = false;
+        transform.SetPositionAndRotation(pose.position, pose.rotation);
+        if (controller != null) controller.enabled = wasEnabled;
+    }
 
     private void OnDestroy()
     {

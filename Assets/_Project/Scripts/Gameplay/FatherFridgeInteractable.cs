@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
@@ -24,6 +25,7 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
     [SerializeField] private float doorOpenAngle = 85f;
     public bool HasTakenBeer { get; private set; }
     public int BeersDrunk { get; private set; }
+    public event Action<int> BeerDrunk;
     private float feedbackUntil;
     private Coroutine pickupSequence;
     private Quaternion doorClosedRotation;
@@ -158,6 +160,13 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
     {
         BeersDrunk++;
         feedbackUntil = Time.unscaledTime + 2.5f;
+        BeerDrunk?.Invoke(BeersDrunk);
+    }
+
+    public void ClearDrunkenness()
+    {
+        BeersDrunk = 0;
+        feedbackUntil = 0f;
     }
 
     private void OnDisable()

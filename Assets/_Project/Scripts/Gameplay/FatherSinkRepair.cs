@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -5,7 +6,7 @@ using UnityEngine.UI;
 /// <summary>Runs the father's placeholder sink repair and records its result for this scene visit.</summary>
 public sealed class FatherSinkRepair : MonoBehaviour
 {
-    public enum RepairResult { Unfinished, Fixed, SlowDrip, Leaking }
+    public enum RepairResult { Unfinished, Fixed, SlowDrip, Leaking, Skipped }
 
     [SerializeField] private StoryId story = StoryId.Father;
     [SerializeField] private StoryPlayerRig playerRig;
@@ -39,9 +40,20 @@ public sealed class FatherSinkRepair : MonoBehaviour
     private float sweepSpeed;
     private float feedbackTime;
     private bool isOpen;
+    private bool hasStarted;
 
     public RepairResult Result { get; private set; }
+    public event Action RepairCompleted;
     private int RoundLimit => TargetCenters.Length - difficulty;
+
+    public bool SkipStartedRepair()
+    {
+        if (!hasStarted || Result != RepairResult.Unfinished) return false;
+        Result = RepairResult.Skipped;
+        CloseRepair();
+        if (DialogueUI.Instance != null) DialogueUI.Instance.SetPromptVisible(this, false);
+        return true;
+    }
 
     private void LateUpdate()
     {
@@ -80,7 +92,8 @@ public sealed class FatherSinkRepair : MonoBehaviour
 
     private void BeginRepair()
     {
-        // Snapshot the modifier once per attempt. The fourth-beer behavior is still undecided.
+        // Snapshot the modifier once per attempt.
+        hasStarted = true;
         difficulty = Mathf.Min(fridge != null ? fridge.BeersDrunk : 0, SweepSpeeds.Length - 1);
         halfWindow = TargetHalfWidths[difficulty];
         sweepSpeed = SweepSpeeds[difficulty];
@@ -101,7 +114,11 @@ public sealed class FatherSinkRepair : MonoBehaviour
         if (Result != RepairResult.Unfinished)
         {
             feedbackTime -= deltaTime;
-            if (feedbackTime <= 0f) CloseRepair();
+            if (feedbackTime <= 0f)
+            {
+                CloseRepair();
+                RepairCompleted?.Invoke();
+            }
             return;
         }
 
@@ -178,6 +195,7 @@ public sealed class FatherSinkRepair : MonoBehaviour
         RepairResult.Fixed => "The sink drains properly.",
         RepairResult.SlowDrip => "The sink drains, but it drips.",
         RepairResult.Leaking => "The sink drains, but water leaks below.",
+        RepairResult.Skipped => "The sink was left unrepaired.",
         _ => string.Empty
     };
 
@@ -185,7 +203,7 @@ public sealed class FatherSinkRepair : MonoBehaviour
     {
         if (!isOpen) return;
         isOpen = false;
-        overlay.gameObject.SetActive(false);
+        if (overlay != null) overlay.gameObject.SetActive(false);
         if (controlLocker != null) controlLocker.ReleaseLock();
     }
 

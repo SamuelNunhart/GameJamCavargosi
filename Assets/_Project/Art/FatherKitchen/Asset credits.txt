@@ -6,3 +6,5 @@ Beer Bottle by Bouggles (CC BY 3.0 Unported)
 https://poly.pizza/m/XUSHrHnFaw
 https://creativecommons.org/licenses/by/3.0/
 The beer bottle FBX was converted from the supplied GLB.
+
+Brain outline traced from the project reference image.

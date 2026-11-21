@@ -23,6 +23,7 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
     [SerializeField] private Collider doorPickupTarget;
     [SerializeField] private float doorOpenAngle = 85f;
     public bool HasTakenBeer { get; private set; }
+    public int BeersDrunk { get; private set; }
     private float feedbackUntil;
     private Coroutine pickupSequence;
     private Quaternion doorClosedRotation;
@@ -103,7 +104,9 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
 
         feedbackUntil = 0f;
         if (fridgeDoor == null)
-            TakeBottle();
+        {
+            if (TakeBottle()) FinishDrink();
+        }
         else
             pickupSequence = StartCoroutine(OpenAndTakeBeer());
 
@@ -116,8 +119,13 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
         Quaternion openRotation = doorClosedRotation * Quaternion.AngleAxis(doorOpenAngle, Vector3.forward);
         yield return AnimateDoor(doorClosedRotation, openRotation, 0.55f);
         yield return new WaitForSeconds(0.3f);
-        TakeBottle();
-        yield return new WaitForSeconds(0.4f);
+
+        if (TakeBottle())
+        {
+            yield return new WaitForSeconds(0.4f);
+            FinishDrink();
+        }
+
         yield return AnimateDoor(openRotation, doorClosedRotation, 0.6f);
         pickupSequence = null;
     }
@@ -133,17 +141,23 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
         fridgeDoor.localRotation = to;
     }
 
-    private void TakeBottle()
+    private bool TakeBottle()
     {
         if (beerBottles != null)
         {
             Transform bottle = FindClosestAvailableBottle();
-            if (bottle == null) return;
+            if (bottle == null) return false;
             bottle.gameObject.SetActive(false);
         }
         HasTakenBeer = true;
-        feedbackUntil = Time.unscaledTime + 2.5f;
         onBeerTaken.Invoke();
+        return true;
+    }
+
+    private void FinishDrink()
+    {
+        BeersDrunk++;
+        feedbackUntil = Time.unscaledTime + 2.5f;
     }
 
     private void OnDisable()

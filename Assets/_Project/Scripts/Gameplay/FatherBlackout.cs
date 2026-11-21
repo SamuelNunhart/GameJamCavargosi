@@ -134,6 +134,7 @@ public sealed class FatherBlackout : MonoBehaviour
 
     private IEnumerator ReturnToMenu()
     {
+        StoryChapterProgress.MarkCompleted(StoryId.Father);
         EnsureOverlay();
         caption.text = string.Empty;
         overlay.gameObject.SetActive(true);

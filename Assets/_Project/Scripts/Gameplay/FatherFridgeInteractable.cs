@@ -75,11 +75,10 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
             ui.SetPromptVisible(this, lookingAtIdleFridge, emptyPrompt);
     }
 
-    private Transform FindClosestAvailableBottle()
+    private Transform FindClosestAvailableBottle(Vector3 pickupPosition)
     {
         if (beerBottles == null) return null;
 
-        Vector3 playerPosition = playerRig.transform.position;
         Transform closestBottle = null;
         float closestDistanceSquared = float.PositiveInfinity;
         for (int i = 0; i < beerBottles.childCount; i++)
@@ -87,7 +86,7 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
             Transform bottle = beerBottles.GetChild(i);
             if (!bottle.gameObject.activeInHierarchy) continue;
 
-            float distanceSquared = (bottle.position - playerPosition).sqrMagnitude;
+            float distanceSquared = (bottle.position - pickupPosition).sqrMagnitude;
             if (distanceSquared >= closestDistanceSquared) continue;
 
             closestBottle = bottle;
@@ -96,7 +95,7 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
         return closestBottle;
     }
 
-    private bool HasBeerInStock() => beerBottles == null ? !HasTakenBeer : FindClosestAvailableBottle() != null;
+    private bool HasBeerInStock() => beerBottles == null ? !HasTakenBeer : FindClosestAvailableBottle(playerRig.transform.position) != null;
 
     /// <summary>Starts a pickup if the player can reach the fridge and it has beer in stock.</summary>
     public bool TryTakeBeer()
@@ -104,37 +103,62 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
         if (pickupSequence != null || !CanInteract(DialogueUI.Instance) || !HasBeerInStock() || !IsLookingAtFridge())
             return false;
 
-        feedbackUntil = 0f;
-        if (fridgeDoor == null)
-        {
-            if (TakeBottle()) FinishDrink();
-        }
-        else
-            pickupSequence = StartCoroutine(OpenAndTakeBeer());
-
+        StartPickup(playerRig.transform);
         return true;
     }
 
-    private IEnumerator OpenAndTakeBeer()
+    /// <summary>Plays the bottle pickup, then lets the cutscene position the camera before drinking.</summary>
+    internal Coroutine DrinkForOpening(Transform pickupOrigin, Func<IEnumerator> beforeDrink)
     {
-        doorClosedRotation = fridgeDoor.localRotation;
-        Quaternion openRotation = doorClosedRotation * Quaternion.AngleAxis(doorOpenAngle, Vector3.forward);
-        yield return AnimateDoor(doorClosedRotation, openRotation, 0.55f);
-        yield return new WaitForSeconds(0.3f);
+        if (pickupSequence != null || !HasBeerInStock()) return pickupSequence;
+        return StartPickup(pickupOrigin, beforeDrink);
+    }
 
-        if (TakeBottle())
+    private Coroutine StartPickup(Transform pickupOrigin, Func<IEnumerator> beforeDrink = null)
+    {
+        feedbackUntil = 0f;
+        if (fridgeDoor == null && beforeDrink == null)
         {
-            yield return new WaitForSeconds(0.4f);
+            if (TakeBottle(pickupOrigin.position)) FinishDrink();
+            return null;
+        }
+
+        pickupSequence = StartCoroutine(OpenAndTakeBeer(pickupOrigin, beforeDrink));
+        return pickupSequence;
+    }
+
+    private IEnumerator OpenAndTakeBeer(Transform pickupOrigin, Func<IEnumerator> beforeDrink)
+    {
+        Quaternion openRotation = Quaternion.identity;
+        if (fridgeDoor != null)
+        {
+            doorClosedRotation = fridgeDoor.localRotation;
+            openRotation = doorClosedRotation * Quaternion.AngleAxis(doorOpenAngle, Vector3.forward);
+            yield return AnimateDoor(doorClosedRotation, openRotation, 0.55f);
+            yield return WaitForPickupBeat(0.3f);
+        }
+
+        bool tookBottle = TakeBottle(pickupOrigin.position);
+        if (tookBottle)
+        {
+            yield return WaitForPickupBeat(beforeDrink == null ? .4f : .65f);
+            if (beforeDrink == null) FinishDrink();
+        }
+
+        if (fridgeDoor != null) yield return AnimateDoor(openRotation, doorClosedRotation, 0.6f);
+
+        if (tookBottle && beforeDrink != null)
+        {
+            yield return beforeDrink();
             FinishDrink();
         }
 
-        yield return AnimateDoor(openRotation, doorClosedRotation, 0.6f);
         pickupSequence = null;
     }
 
     private IEnumerator AnimateDoor(Quaternion from, Quaternion to, float duration)
     {
-        for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
+        for (float elapsed = 0f; elapsed < duration; elapsed += PickupStepTime)
         {
             float blend = Mathf.SmoothStep(0f, 1f, elapsed / duration);
             fridgeDoor.localRotation = Quaternion.Slerp(from, to, blend);
@@ -143,11 +167,18 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
         fridgeDoor.localRotation = to;
     }
 
-    private bool TakeBottle()
+    private static float PickupStepTime => AudioSettingsOverlay.IsOpen ? 0f : Time.deltaTime;
+
+    private static IEnumerator WaitForPickupBeat(float seconds)
+    {
+        for (float elapsed = 0f; elapsed < seconds; elapsed += PickupStepTime) yield return null;
+    }
+
+    private bool TakeBottle(Vector3 pickupPosition)
     {
         if (beerBottles != null)
         {
-            Transform bottle = FindClosestAvailableBottle();
+            Transform bottle = FindClosestAvailableBottle(pickupPosition);
             if (bottle == null) return false;
             bottle.gameObject.SetActive(false);
         }
@@ -163,9 +194,9 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
         BeerDrunk?.Invoke(BeersDrunk);
     }
 
-    public void ClearDrunkenness()
+    internal void SetDrunkenness(int drinkCount)
     {
-        BeersDrunk = 0;
+        BeersDrunk = drinkCount;
         feedbackUntil = 0f;
     }
 

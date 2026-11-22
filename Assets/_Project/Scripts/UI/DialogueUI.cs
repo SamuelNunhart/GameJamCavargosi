@@ -36,6 +36,8 @@ public class DialogueUI : MonoBehaviour
     private int currentLineIndex;
     private Coroutine typingCoroutine;
     private bool isTyping;
+    private bool autoAdvance;
+    private float autoAdvanceHold;
     private bool settingsPaused;
     private bool voicePausedBySettings;
     private string fullCurrentText;
@@ -100,6 +102,14 @@ public class DialogueUI : MonoBehaviour
 
         if (advanceInputLockCount > 0)
             return;
+
+        if (autoAdvance)
+        {
+            if (isTyping || (voiceSource != null && voiceSource.isPlaying)) return;
+            autoAdvanceHold -= Time.unscaledDeltaTime;
+            if (autoAdvanceHold <= 0f) AdvanceDialogue();
+            return;
+        }
 
         if (Input.GetKeyDown(KeyCode.E))
         {
@@ -191,6 +201,7 @@ public class DialogueUI : MonoBehaviour
         currentDialogue = request.Dialogue;
         currentLineIndex = 0;
         onDialogueFinished = request.OnFinished;
+        autoAdvance = request.AutoAdvance;
         IsDialogueOpen = true;
 
         TryAcquirePlayerControlLock(request.LockPlayerControls);
@@ -294,6 +305,7 @@ public class DialogueUI : MonoBehaviour
 
     private void ShowLine(DialogueLine line)
     {
+        autoAdvanceHold = 2.6f;
         if (speakerNameText != null)
             speakerNameText.text = line.speakerName;
 
@@ -416,7 +428,7 @@ public class DialogueUI : MonoBehaviour
         }
 
         if (continueHintText != null)
-            continueHintText.text = visible ? "E - Continue" : "";
+            continueHintText.text = visible && !autoAdvance ? "E - Continue" : "";
     }
 
     private bool EnsureTransientCenterMessageUi()

@@ -13,6 +13,7 @@ public sealed class FatherAlcoholIndicator : MaskableGraphic
     private const int BubbleSegments = 10;
     private const float RiseTime = .42f;
     private const float RestingWave = .015f;
+    private const float PulseDuration = .85f;
 
     private float fill;
     private float target;
@@ -20,9 +21,30 @@ public sealed class FatherAlcoholIndicator : MaskableGraphic
     private float timeSinceChange;
     private float waveTime;
     private bool bubbling;
+    private Transform pulsingIcon;
+    private Vector3 iconScale;
+    private float pulseTime;
+
+    internal void EmphasizeDrink()
+    {
+        if (pulsingIcon == null)
+        {
+            pulsingIcon = transform.parent;
+            if (pulsingIcon == null) return;
+            iconScale = pulsingIcon.localScale;
+        }
+        pulseTime = 0f;
+    }
+
+    protected override void OnDisable()
+    {
+        RestoreIconScale();
+        base.OnDisable();
+    }
 
     private void Update()
     {
+        UpdatePulse();
         int beers = fridge != null ? fridge.BeersDrunk : 0;
         bubbling = beers >= FatherBlackout.BlackoutBeerCount;
         float newTarget = bubbling ? 1f : Mathf.Min(beers, 3) * .3f;
@@ -38,6 +60,26 @@ public sealed class FatherAlcoholIndicator : MaskableGraphic
         waveTime += Time.unscaledDeltaTime;
         fill = Mathf.SmoothStep(riseFrom, target, timeSinceChange / RiseTime);
         SetVerticesDirty();
+    }
+
+    private void UpdatePulse()
+    {
+        if (pulsingIcon == null || AudioSettingsOverlay.IsOpen) return;
+        pulseTime += Time.unscaledDeltaTime;
+        if (pulseTime >= PulseDuration)
+        {
+            RestoreIconScale();
+            return;
+        }
+
+        float bump = Mathf.Sin(Mathf.PI * pulseTime / PulseDuration);
+        pulsingIcon.localScale = iconScale * (1f + .22f * bump);
+    }
+
+    private void RestoreIconScale()
+    {
+        if (pulsingIcon != null) pulsingIcon.localScale = iconScale;
+        pulsingIcon = null;
     }
 
     protected override void OnPopulateMesh(VertexHelper mesh)

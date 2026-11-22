@@ -8499,6 +8499,16 @@ MonoBehaviour:
   controlLocker: {fileID: 2271036429879105434}
   wakeCameraDrop: 1.15
   dayCounter: {fileID: 1645434196}
+  fridgeShot: {fileID: 1064700907}
+  sinkShot: {fileID: 1665347474}
+  alcoholIndicator: {fileID: 2052193285}
+  openingAtStart: {fileID: 11400000, guid: 05afb5f0158979a408ca861a22966aa6, type: 2}
+  openingAtFridge: {fileID: 11400000, guid: ce0579034500263409be0287fbfeac9a, type: 2}
+  openingAtSink: {fileID: 11400000, guid: fd93defef9b55054ba960f8f97a144ea, type: 2}
+  openingBeforeBlackout: {fileID: 11400000, guid: 13cdbc7025f425d478a354069ddc6cfe,
+    type: 2}
+  firstMorningDialogue: {fileID: 11400000, guid: 913c69eaf43ce9e4a906446b62a780aa,
+    type: 2}
 --- !u!4 &904595302
 Transform:
   m_ObjectHideFlags: 0
@@ -10672,6 +10682,37 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -3542853335512389484, guid: 20ec74de6449d204588ffa089f41f1eb, type: 3}
+--- !u!1 &1064700906
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1064700907}
+  m_Layer: 0
+  m_Name: Fridge Shot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1064700907
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1064700906}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.102681085, y: -0.6996118, z: 0.102681085, w: 0.6996117}
+  m_LocalPosition: {x: -33.27722, y: 1.7769533, z: 19.292814}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1149229845}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1086787226
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11882,6 +11923,39 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d674c78dd8af8e844afb793f7635ba9d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &1149229844
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1149229845}
+  m_Layer: 0
+  m_Name: Father Day 1 Shots
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1149229845
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1149229844}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1064700907}
+  - {fileID: 1665347474}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1150380315
 GameObject:
   m_ObjectHideFlags: 0
@@ -16101,6 +16175,37 @@ Transform:
   - {fileID: 734967427}
   m_Father: {fileID: 412184489}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1665347473
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1665347474}
+  m_Layer: 0
+  m_Name: Sink Shot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1665347474
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1665347473}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.9689039, z: -0.24743742, w: 0}
+  m_LocalPosition: {x: -32.585598, y: 2.0789332, z: 17.683529}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1149229845}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1667946687
 GameObject:
   m_ObjectHideFlags: 0
@@ -19813,3 +19918,4 @@ SceneRoots:
   - {fileID: 1047953970}
   - {fileID: 860461555}
   - {fileID: 904595302}
+  - {fileID: 1149229845}

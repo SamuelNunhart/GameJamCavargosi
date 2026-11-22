@@ -6,7 +6,7 @@ using UnityEngine.UI;
 /// <summary>Runs the father's placeholder sink repair and records its result for this scene visit.</summary>
 public sealed class FatherSinkRepair : MonoBehaviour
 {
-    public enum RepairResult { Unfinished, Fixed, SlowDrip, Leaking, Skipped }
+    public enum RepairResult { Unfinished, Fixed, SlowDrip, Leaking }
 
     [SerializeField] private StoryId story = StoryId.Father;
     [SerializeField] private StoryPlayerRig playerRig;
@@ -40,19 +40,14 @@ public sealed class FatherSinkRepair : MonoBehaviour
     private float sweepSpeed;
     private float feedbackTime;
     private bool isOpen;
-    private bool hasStarted;
-
     public RepairResult Result { get; private set; }
     public event Action RepairCompleted;
     private int RoundLimit => TargetCenters.Length - difficulty;
 
-    public bool SkipStartedRepair()
+    public void InterruptRepair()
     {
-        if (!hasStarted || Result != RepairResult.Unfinished) return false;
-        Result = RepairResult.Skipped;
-        CloseRepair();
+        if (Result == RepairResult.Unfinished) CloseRepair();
         if (DialogueUI.Instance != null) DialogueUI.Instance.SetPromptVisible(this, false);
-        return true;
     }
 
     private void LateUpdate()
@@ -93,7 +88,6 @@ public sealed class FatherSinkRepair : MonoBehaviour
     private void BeginRepair()
     {
         // Snapshot the modifier once per attempt.
-        hasStarted = true;
         difficulty = Mathf.Min(fridge != null ? fridge.BeersDrunk : 0, SweepSpeeds.Length - 1);
         halfWindow = TargetHalfWidths[difficulty];
         sweepSpeed = SweepSpeeds[difficulty];
@@ -195,7 +189,6 @@ public sealed class FatherSinkRepair : MonoBehaviour
         RepairResult.Fixed => "The sink drains properly.",
         RepairResult.SlowDrip => "The sink drains, but it drips.",
         RepairResult.Leaking => "The sink drains, but water leaks below.",
-        RepairResult.Skipped => "The sink was left unrepaired.",
         _ => string.Empty
     };
 

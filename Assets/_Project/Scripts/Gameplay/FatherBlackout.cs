@@ -13,24 +13,44 @@ public sealed class FatherBlackout : MonoBehaviour
     [SerializeField] private PlayerControlLocker controlLocker;
     [SerializeField, Min(0f)] private float wakeCameraDrop = 1.15f;
     [SerializeField] private TMP_Text dayCounter;
+    [Header("Day 1 cutscene")]
+    [SerializeField] private Transform fridgeShot;
+    [SerializeField] private Transform sinkShot;
+    [SerializeField] private FatherAlcoholIndicator alcoholIndicator;
+    [SerializeField] private DialogueData openingAtStart;
+    [SerializeField] private DialogueData openingAtFridge;
+    [SerializeField] private DialogueData openingAtSink;
+    [SerializeField] private DialogueData openingBeforeBlackout;
+    [SerializeField] private DialogueData firstMorningDialogue;
 
     public const int BlackoutBeerCount = 4;
-    private const int FinalDay = 4;
+    private const int FinalDay = 5;
     private const string MainMenuScene = "MainMenu";
     private CanvasGroup overlay;
     private TextMeshProUGUI caption;
     private Coroutine sequence;
     private Transform view;
     private Vector3 standingCameraPosition;
+    private Quaternion standingCameraRotation;
+    private float standingCameraHeight;
+    private bool openingCameraMoved;
     private bool cameraLowered;
 
     public int Day { get; private set; } = 1;
 
     private void Start()
     {
-        if (playerRig != null && playerRig.GameplayCamera != null)
-            standingCameraPosition = playerRig.GameplayCamera.transform.localPosition;
         UpdateDayCounter();
+        if (fridge == null || playerRig == null || playerRig.GameplayCamera == null || controlLocker == null ||
+            !StoryAccess.Allows(this, StoryId.Father)) return;
+
+        view = playerRig.GameplayCamera.transform;
+        standingCameraPosition = view.localPosition;
+        standingCameraRotation = view.localRotation;
+        standingCameraHeight = view.position.y;
+        fridge.SetDrunkenness(2);
+        controlLocker.AcquireLock();
+        sequence = StartCoroutine(PlayOpening());
     }
 
     private void OnEnable()
@@ -55,11 +75,93 @@ public sealed class FatherBlackout : MonoBehaviour
 
     private void OnBeerDrunk(int count)
     {
-        if (count != BlackoutBeerCount || sequence != null || playerRig == null || controlLocker == null ||
+        if (count == BlackoutBeerCount) BeginBlackout();
+    }
+
+    private IEnumerator PlayOpening()
+    {
+        yield return WaitForBlackoutBeat(.65f);
+        yield return PlayOpeningDialogue(openingAtStart);
+
+        yield return CutTo(fridgeShot);
+        yield return DrinkAtFridge();
+        yield return PlayOpeningDialogue(openingAtFridge);
+
+        yield return CutTo(sinkShot);
+        if (sinkShot != null) yield return InspectSink();
+        yield return PlayOpeningDialogue(openingAtSink);
+
+        yield return CutTo(fridgeShot);
+        yield return DrinkAtFridge();
+        yield return PlayOpeningDialogue(openingBeforeBlackout);
+        yield return BlackOut(0f);
+    }
+
+    private static IEnumerator PlayOpeningDialogue(DialogueData dialogue)
+    {
+        DialogueUI ui = DialogueUI.Instance;
+        if (dialogue == null || ui == null || !ui.StartDialogue(new DialogueRequest(dialogue, autoAdvance: true)))
+            yield break;
+
+        while (ui.CurrentDialogue == dialogue && ui.IsDialogueOpen) yield return null;
+    }
+
+    private IEnumerator CutTo(Transform shot)
+    {
+        if (shot == null) yield break;
+        EnsureOverlay();
+        overlay.gameObject.SetActive(true);
+        yield return Fade(0f, 1f, .32f);
+        openingCameraMoved = true;
+        view.SetPositionAndRotation(shot.position, shot.rotation);
+        yield return Fade(1f, 0f, .35f);
+    }
+
+    private IEnumerator InspectSink()
+    {
+        Vector3 start = view.position;
+        Vector3 lean = view.forward * .12f + Vector3.down * .04f;
+        const float duration = 1.25f;
+        for (float elapsed = 0f; elapsed < duration; elapsed += StepTime)
+        {
+            view.position = start + lean * Mathf.Sin(Mathf.PI * elapsed / duration);
+            yield return null;
+        }
+        view.position = start;
+    }
+
+    private IEnumerator DrinkAtFridge()
+    {
+        int before = fridge.BeersDrunk;
+        yield return fridge.DrinkForOpening(view, RaiseCameraForDrink);
+        if (fridge.BeersDrunk <= before) yield break;
+
+        if (alcoholIndicator != null) alcoholIndicator.EmphasizeDrink();
+        yield return WaitForBlackoutBeat(1.1f);
+    }
+
+    private IEnumerator RaiseCameraForDrink()
+    {
+        Vector3 start = view.position;
+        Vector3 standing = new Vector3(start.x, standingCameraHeight, start.z);
+        const float duration = .75f;
+        for (float elapsed = 0f; elapsed < duration; elapsed += StepTime)
+        {
+            view.position = Vector3.Lerp(start, standing, Mathf.SmoothStep(0f, 1f, elapsed / duration));
+            yield return null;
+        }
+        view.position = standing;
+        yield return WaitForBlackoutBeat(.2f);
+    }
+
+    private void BeginBlackout()
+    {
+        if (sequence != null || playerRig == null || controlLocker == null ||
             playerRig.GameplayCamera == null || !StoryAccess.Allows(this, StoryId.Father)) return;
 
         controlLocker.AcquireLock();
-        sequence = StartCoroutine(BlackOut());
+        if (sinkRepair != null) sinkRepair.InterruptRepair();
+        sequence = StartCoroutine(BlackOut(1.8f));
     }
 
     private void OnWorkCompleted()
@@ -71,10 +173,9 @@ public sealed class FatherBlackout : MonoBehaviour
         sequence = StartCoroutine(ReturnToMenu());
     }
 
-    private IEnumerator BlackOut()
+    private IEnumerator BlackOut(float leadIn)
     {
-        // Give the fridge door time to close before fading out.
-        yield return WaitForBlackoutBeat(1.8f);
+        yield return WaitForBlackoutBeat(leadIn);
         EnsureOverlay();
         caption.text = string.Empty;
         overlay.alpha = 0f;
@@ -84,18 +185,14 @@ public sealed class FatherBlackout : MonoBehaviour
         caption.text = "I drank too much.";
         yield return WaitForBlackoutBeat(1.8f);
 
-        bool skippedRepair = sinkRepair != null && sinkRepair.SkipStartedRepair();
+        bool openingBlackout = Day == 1;
         if (!TryAdvanceDay())
         {
-            if (skippedRepair)
-            {
-                caption.text = "The sink is still broken.";
-                yield return WaitForBlackoutBeat(1.5f);
-            }
             yield return ReturnToMenu();
             yield break;
         }
 
+        RestoreOpeningCamera();
         playerRig.ReturnToStart();
         view = playerRig.GameplayCamera.transform;
         Vector3 drop = Vector3.down * wakeCameraDrop;
@@ -104,9 +201,7 @@ public sealed class FatherBlackout : MonoBehaviour
         view.localPosition = wakingPosition;
         cameraLowered = true;
 
-        caption.text = skippedRepair
-            ? $"Day {Day}\nI lost a day. The sink is still broken."
-            : $"Day {Day}\nI lost a day.";
+        caption.text = $"Day {Day}\nI lost a day.";
         yield return WaitForBlackoutBeat(2.3f);
         yield return Fade(1f, 0f, .7f);
         yield return WaitForBlackoutBeat(.45f);
@@ -119,6 +214,8 @@ public sealed class FatherBlackout : MonoBehaviour
             yield return null;
         }
 
+        if (openingBlackout && firstMorningDialogue != null)
+            DialogueUI.Instance?.StartDialogue(firstMorningDialogue, true);
         EndSequence();
     }
 
@@ -127,7 +224,7 @@ public sealed class FatherBlackout : MonoBehaviour
         if (Day >= FinalDay) return false;
 
         Day++;
-        if (fridge != null) fridge.ClearDrunkenness();
+        if (fridge != null) fridge.SetDrunkenness(0);
         UpdateDayCounter();
         return true;
     }
@@ -149,11 +246,20 @@ public sealed class FatherBlackout : MonoBehaviour
 
     private void EndSequence()
     {
+        RestoreOpeningCamera();
         if (cameraLowered && view != null) view.localPosition = standingCameraPosition;
         cameraLowered = false;
         if (overlay != null) overlay.gameObject.SetActive(false);
         if (controlLocker != null) controlLocker.ReleaseLock();
         sequence = null;
+    }
+
+    private void RestoreOpeningCamera()
+    {
+        if (!openingCameraMoved || view == null) return;
+        view.localPosition = standingCameraPosition;
+        view.localRotation = standingCameraRotation;
+        openingCameraMoved = false;
     }
 
     private static float StepTime => AudioSettingsOverlay.IsOpen ? 0f : Time.unscaledDeltaTime;

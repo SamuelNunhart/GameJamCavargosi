@@ -115,7 +115,7 @@ public sealed class GameplayMusicController : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
     {
-        if (scene.name == MainMenuSceneName || scene.name == GameSceneName)
+        if (scene.name == MainMenuSceneName || (scene.name == GameSceneName && StoryPlayerRig.Instance == null))
             PlayIntroSceneMusic();
     }
 

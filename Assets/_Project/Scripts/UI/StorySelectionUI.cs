@@ -15,8 +15,6 @@ public sealed class StorySelectionUI : MonoBehaviour
     [SerializeField] private ChapterResetDialog resetDialog;
     [SerializeField] private SceneLoader sceneLoader;
 
-    [SerializeField] private string fatherSceneName = "Demo Burzon";
-
     private void Start()
     {
         Cursor.lockState = CursorLockMode.None;
@@ -48,11 +46,11 @@ public sealed class StorySelectionUI : MonoBehaviour
         sceneLoader.LoadGameScene();
     }
 
-    /// <summary>Load the configured father prototype without changing Arthur's destination.</summary>
+    /// <summary>Load Father's chapter in the shared gameplay scene.</summary>
     public void PlayFather()
     {
         if (StoryChapterProgress.IsCompleted(StoryId.Father)) return;
-        sceneLoader.LoadScene(fatherSceneName);
+        sceneLoader.LoadStory(StoryId.Father);
     }
 
     public void ShowResetProgress()

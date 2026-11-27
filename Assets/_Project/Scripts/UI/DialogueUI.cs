@@ -61,6 +61,8 @@ public class DialogueUI : MonoBehaviour
     public event Action<DialogueData> DialogueStarted;
     public event Action<DialogueData> DialogueEnded;
 
+    internal void UsePlayerControlLocker(PlayerControlLocker locker) => playerControlLocker = locker;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)

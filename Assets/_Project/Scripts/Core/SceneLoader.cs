@@ -7,6 +7,12 @@ public class SceneLoader : MonoBehaviour
 
     public void LoadGameScene()
     {
+        LoadStory(StoryId.Arthur);
+    }
+
+    internal void LoadStory(StoryId story)
+    {
+        ChapterSceneSetup.SelectNextStory(story);
         LoadScene(gameSceneName);
     }
 

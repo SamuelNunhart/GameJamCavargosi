@@ -3228,7 +3228,6 @@ MonoBehaviour:
   resetProgressButton: {fileID: 549669085}
   resetDialog: {fileID: 253134789}
   sceneLoader: {fileID: 1190526482}
-  fatherSceneName: Demo Burzon
 --- !u!1 &1316422266
 GameObject:
   m_ObjectHideFlags: 0

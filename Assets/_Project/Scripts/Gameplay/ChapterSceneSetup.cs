@@ -1,11 +1,12 @@
 using UnityEngine;
 
-/// <summary>Selects the player and interactions for the chapter entering the shared Game scene.</summary>
+/// <summary>Selects the player and interactions when entering a chapter scene.</summary>
 [DefaultExecutionOrder(-300)]
 internal sealed class ChapterSceneSetup : MonoBehaviour
 {
     private static StoryId nextStory = StoryId.Arthur;
 
+    [SerializeField] private bool previewFatherOnPlay;
     [SerializeField] private GameObject arthurPlayer;
     [SerializeField] private StoryPlayerRig fatherPlayer;
     [SerializeField] private DialogueUI dialogue;
@@ -21,7 +22,7 @@ internal sealed class ChapterSceneSetup : MonoBehaviour
 
     private void Awake()
     {
-        bool playingFather = nextStory == StoryId.Father;
+        bool playingFather = previewFatherOnPlay || nextStory == StoryId.Father;
         nextStory = StoryId.Arthur;
         if (!playingFather) return;
 

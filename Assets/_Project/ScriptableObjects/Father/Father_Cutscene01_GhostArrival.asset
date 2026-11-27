@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2846490e87135c94c80c2665f6defa8e, type: 3}
+  m_Name: Father_Cutscene01_GhostArrival
+  m_EditorClassIdentifier: 
+  lines:
+  - speakerName: Ghost
+    text: "You never did get that sink to drain."
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Father
+    text: "What…? WHO ARE YOU?! GET OUT OF MY HOUSE!"
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: "I cannot leave. Not yet. I’m here to help you, Robert."
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Father
+    text: "HOW DO YOU KNOW MY NAME? No, I don’t care! You know what? I’m calling the police!"
+    side: 1
+    voiceClip: {fileID: 0}

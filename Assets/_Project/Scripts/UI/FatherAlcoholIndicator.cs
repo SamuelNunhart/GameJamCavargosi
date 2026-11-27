@@ -82,6 +82,16 @@ public sealed class FatherAlcoholIndicator : MaskableGraphic
         pulsingIcon = null;
     }
 
+#if UNITY_EDITOR // DEBUG-ONLY: remove before release; see docs/debug-skips.md
+    internal void DebugResetAfterOpening()
+    {
+        RestoreIconScale();
+        fill = target = riseFrom = 0f;
+        bubbling = false;
+        SetVerticesDirty();
+    }
+#endif
+
     protected override void OnPopulateMesh(VertexHelper mesh)
     {
         mesh.Clear();

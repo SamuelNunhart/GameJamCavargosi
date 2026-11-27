@@ -1,0 +1,111 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2846490e87135c94c80c2665f6defa8e, type: 3}
+  m_Name: Father_Cutscene01_GhostConfrontation
+  m_EditorClassIdentifier: 
+  lines:
+  - speakerName: Father
+    text: "Shit!"
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: "If I were a real threat, you and your family would be in danger because of you."
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Father
+    text: "I was trying to protect them. I just dropped the damn phone."
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: "You’d already gotten the PIN wrong twice, Robert. You’re too drunk to call for help."
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: "Why are you doing this to them? To yourself?"
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Father
+    text: "I’m not doing anything wrong!"
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: "So you don’t think drinking every day is wrong?"
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Father
+    text: "A few beers never hurt anybody."
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: "Is that what you tell yourself?"
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Father
+    text: "It’s just a few beers! Unlike what she is doing!"
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: "She? You mean your wife?"
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Father
+    text: "You see anyone else around here feeding the slot machines with our money? I sure as hell don’t!"
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: "I’m sorry to hear that. However, tonight, I’m here because of you."
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Father
+    text: "Are you bloody serious? She—"
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: "Don’t worry. She’s next on my list. I promise to pay her a visit as well."
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Father
+    text: "All right? What do you want from me?!"
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: "I want you to take care of your family just like you used to. Not right now. But tomorrow morning, you should take care of the house, without alcohol, of course."
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Father
+    text: "Wait, so I can’t drink?"
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: "You can. But once you start, you know you have a hard time stopping."
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Father
+    text: "Bullshit. I can stop whenever I like."
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: "I’ll let you sleep, but don’t forget what I have just told you. When you wake up, I’ll be around, watching."
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Father
+    text: "You’re a real weirdo, you know that?"
+    side: 1
+    voiceClip: {fileID: 0}
+  - speakerName: Ghost
+    text: "Sweet dreams, Robert."
+    side: 0
+    voiceClip: {fileID: 0}
+  - speakerName: Father
+    text: "Whatever…"
+    side: 1
+    voiceClip: {fileID: 0}

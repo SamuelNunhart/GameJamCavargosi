@@ -16,6 +16,7 @@ public class DialogueUI : MonoBehaviour
     [SerializeField] private TMP_Text speakerNameText;
     [SerializeField] private TMP_Text dialogueText;
     [SerializeField] private TMP_Text continueHintText;
+    [SerializeField] private bool useStableDialogueLayout;
 
     [Header("Typing")]
     [SerializeField] private float charactersPerSecond = 40f;
@@ -37,6 +38,7 @@ public class DialogueUI : MonoBehaviour
     private Coroutine typingCoroutine;
     private bool isTyping;
     private bool autoAdvance;
+    private bool allowManualAdvance;
     private float autoAdvanceHold;
     private bool settingsPaused;
     private bool voicePausedBySettings;
@@ -105,21 +107,23 @@ public class DialogueUI : MonoBehaviour
         if (advanceInputLockCount > 0)
             return;
 
-        if (autoAdvance)
-        {
-            if (isTyping || (voiceSource != null && voiceSource.isPlaying)) return;
-            autoAdvanceHold -= Time.unscaledDeltaTime;
-            if (autoAdvanceHold <= 0f) AdvanceDialogue();
-            return;
-        }
+        UpdateDialogueAdvance(Input.GetKeyDown(KeyCode.E));
+    }
 
-        if (Input.GetKeyDown(KeyCode.E))
+    private void UpdateDialogueAdvance(bool pressedContinue)
+    {
+        if (pressedContinue && (!autoAdvance || allowManualAdvance))
         {
             if (isTyping)
                 CompleteCurrentLineInstantly();
             else
                 AdvanceDialogue();
+            return;
         }
+
+        if (!autoAdvance || isTyping || (voiceSource != null && voiceSource.isPlaying)) return;
+        autoAdvanceHold -= Time.unscaledDeltaTime;
+        if (autoAdvanceHold <= 0f) AdvanceDialogue();
     }
 
     public bool IsPromptVisible => promptGroup != null && promptGroup.alpha > 0.001f;
@@ -204,6 +208,7 @@ public class DialogueUI : MonoBehaviour
         currentLineIndex = 0;
         onDialogueFinished = request.OnFinished;
         autoAdvance = request.AutoAdvance;
+        allowManualAdvance = request.AllowManualAdvance;
         IsDialogueOpen = true;
 
         TryAcquirePlayerControlLock(request.LockPlayerControls);
@@ -307,7 +312,7 @@ public class DialogueUI : MonoBehaviour
 
     private void ShowLine(DialogueLine line)
     {
-        autoAdvanceHold = 2.6f;
+        autoAdvanceHold = Mathf.Max(2.6f, line.minimumReadHold);
         if (speakerNameText != null)
             speakerNameText.text = line.speakerName;
 
@@ -334,17 +339,26 @@ public class DialogueUI : MonoBehaviour
     private IEnumerator TypeLine(string targetText)
     {
         isTyping = true;
-        fullCurrentText = targetText;
-        dialogueText.text = "";
+        fullCurrentText = targetText ?? string.Empty;
+        int characterCount = fullCurrentText.Length;
+        if (useStableDialogueLayout)
+        {
+            dialogueText.maxVisibleCharacters = 0;
+            dialogueText.text = fullCurrentText;
+            dialogueText.ForceMeshUpdate();
+            characterCount = dialogueText.textInfo.characterCount;
+        }
+        else dialogueText.text = "";
 
         float delay = charactersPerSecond <= 0f ? 0f : 1f / charactersPerSecond;
 
-        foreach (char c in targetText)
+        for (int i = 0; i < characterCount; i++)
         {
             while (settingsPaused || AudioSettingsOverlay.IsOpen)
                 yield return null;
 
-            dialogueText.text += c;
+            if (useStableDialogueLayout) dialogueText.maxVisibleCharacters = i + 1;
+            else dialogueText.text += fullCurrentText[i];
             float remainingDelay = delay;
             do
             {
@@ -355,7 +369,7 @@ public class DialogueUI : MonoBehaviour
             while (remainingDelay > 0f || settingsPaused || AudioSettingsOverlay.IsOpen);
         }
 
-        dialogueText.text = targetText;
+        RevealFullLine();
         isTyping = false;
         typingCoroutine = null;
     }
@@ -365,9 +379,15 @@ public class DialogueUI : MonoBehaviour
         if (typingCoroutine != null)
             StopCoroutine(typingCoroutine);
 
-        dialogueText.text = fullCurrentText;
+        RevealFullLine();
         isTyping = false;
         typingCoroutine = null;
+    }
+
+    private void RevealFullLine()
+    {
+        if (useStableDialogueLayout) dialogueText.maxVisibleCharacters = int.MaxValue;
+        else dialogueText.text = fullCurrentText;
     }
 
 #if UNITY_EDITOR // DEBUG-ONLY: remove before release; see docs/debug-skips.md
@@ -407,10 +427,8 @@ public class DialogueUI : MonoBehaviour
 
     private void ApplySide(DialogueSpeakerSide side)
     {
-        TextAlignmentOptions alignment =
-            side == DialogueSpeakerSide.Left
-                ? TextAlignmentOptions.Left
-                : TextAlignmentOptions.Right;
+        TextAlignmentOptions alignment = useStableDialogueLayout ? TextAlignmentOptions.TopLeft :
+            side == DialogueSpeakerSide.Left ? TextAlignmentOptions.Left : TextAlignmentOptions.Right;
 
         if (speakerNameText != null)
             speakerNameText.alignment = alignment;
@@ -430,7 +448,7 @@ public class DialogueUI : MonoBehaviour
         }
 
         if (continueHintText != null)
-            continueHintText.text = visible && !autoAdvance ? "E - Continue" : "";
+            continueHintText.text = visible && (!autoAdvance || allowManualAdvance) ? "E - Continue" : "";
     }
 
     private bool EnsureTransientCenterMessageUi()

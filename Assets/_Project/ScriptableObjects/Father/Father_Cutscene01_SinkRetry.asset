@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2846490e87135c94c80c2665f6defa8e, type: 3}
+  m_Name: Father_Cutscene01_SinkRetry
+  m_EditorClassIdentifier: 
+  lines:
+  - speakerName: Father
+    text: "Damned sink! Screw this! It’s late anyway. I should get some sleep. I’ll get a shot to sleep better."
+    side: 1
+    minimumReadHold: 4.75
+    voiceClip: {fileID: 0}

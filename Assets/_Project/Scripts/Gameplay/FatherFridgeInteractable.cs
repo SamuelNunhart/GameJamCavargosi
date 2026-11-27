@@ -30,6 +30,16 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
     private Coroutine pickupSequence;
     private Quaternion doorClosedRotation;
 
+#if UNITY_EDITOR // DEBUG-ONLY: remove before release; see docs/debug-skips.md
+    private int openingBottlesTaken;
+
+    internal void DebugFinishOpeningPickups(Vector3 pickupPosition, int expectedBottles)
+    {
+        CancelPickup();
+        while (openingBottlesTaken < expectedBottles && TakeBottle(pickupPosition)) openingBottlesTaken++;
+    }
+#endif
+
     private bool CanInteract(DialogueUI ui)
     {
         return isActiveAndEnabled && StoryAccess.Allows(this, story) && playerRig != null &&
@@ -108,13 +118,13 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
     }
 
     /// <summary>Plays the bottle pickup, then lets the cutscene position the camera before drinking.</summary>
-    internal Coroutine DrinkForOpening(Transform pickupOrigin, Func<IEnumerator> beforeDrink)
+    internal Coroutine DrinkForOpening(Transform pickupOrigin, Func<IEnumerator> beforeDrink, Action takeShotProps = null)
     {
-        if (pickupSequence != null || !HasBeerInStock()) return pickupSequence;
-        return StartPickup(pickupOrigin, beforeDrink);
+        if (pickupSequence != null || (takeShotProps == null && !HasBeerInStock())) return pickupSequence;
+        return StartPickup(pickupOrigin, beforeDrink, takeShotProps);
     }
 
-    private Coroutine StartPickup(Transform pickupOrigin, Func<IEnumerator> beforeDrink = null)
+    private Coroutine StartPickup(Transform pickupOrigin, Func<IEnumerator> beforeDrink = null, Action takeShotProps = null)
     {
         feedbackUntil = 0f;
         if (fridgeDoor == null && beforeDrink == null)
@@ -123,11 +133,11 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
             return null;
         }
 
-        pickupSequence = StartCoroutine(OpenAndTakeBeer(pickupOrigin, beforeDrink));
+        pickupSequence = StartCoroutine(OpenAndTakeDrink(pickupOrigin, beforeDrink, takeShotProps));
         return pickupSequence;
     }
 
-    private IEnumerator OpenAndTakeBeer(Transform pickupOrigin, Func<IEnumerator> beforeDrink)
+    private IEnumerator OpenAndTakeDrink(Transform pickupOrigin, Func<IEnumerator> beforeDrink, Action takeShotProps)
     {
         Quaternion openRotation = Quaternion.identity;
         if (fridgeDoor != null)
@@ -138,8 +148,13 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
             yield return WaitForPickupBeat(0.3f);
         }
 
-        bool tookBottle = TakeBottle(pickupOrigin.position);
-        if (tookBottle)
+        bool tookBeer = takeShotProps == null && TakeBottle(pickupOrigin.position);
+        takeShotProps?.Invoke();
+        bool tookDrink = tookBeer || takeShotProps != null;
+#if UNITY_EDITOR // DEBUG-ONLY: count bottles already taken before a skip
+        if (tookBeer && beforeDrink != null) openingBottlesTaken++;
+#endif
+        if (tookDrink)
         {
             yield return WaitForPickupBeat(beforeDrink == null ? .4f : .65f);
             if (beforeDrink == null) FinishDrink();
@@ -147,7 +162,7 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
 
         if (fridgeDoor != null) yield return AnimateDoor(openRotation, doorClosedRotation, 0.6f);
 
-        if (tookBottle && beforeDrink != null)
+        if (tookDrink && beforeDrink != null)
         {
             yield return beforeDrink();
             FinishDrink();
@@ -200,7 +215,7 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
         feedbackUntil = 0f;
     }
 
-    private void OnDisable()
+    private void CancelPickup()
     {
         if (pickupSequence != null)
         {
@@ -208,6 +223,11 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
             pickupSequence = null;
             if (fridgeDoor != null) fridgeDoor.localRotation = doorClosedRotation;
         }
+    }
+
+    private void OnDisable()
+    {
+        CancelPickup();
         if (DialogueUI.Instance != null) DialogueUI.Instance.SetPromptVisible(this, false);
     }
 }

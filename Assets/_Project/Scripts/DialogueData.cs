@@ -16,6 +16,9 @@ public class DialogueLine
 
     public DialogueSpeakerSide side;
 
+    [Min(0f), Tooltip("Minimum time in seconds to hold the fully revealed line before auto-advancing.")]
+    public float minimumReadHold;
+
     // Optional now, useful later for recorded voice or generated speech clips
     public AudioClip voiceClip;
 }

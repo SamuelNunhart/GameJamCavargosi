@@ -17,4 +17,13 @@ MonoBehaviour:
     text: "Damned sink! Screw this! It’s late anyway. I should get some sleep. I’ll get a shot to sleep better."
     side: 1
     minimumReadHold: 4.75
+    pauses:
+    - afterText: "Damned sink!"
+      seconds: 0.16
+    - afterText: "Screw this!"
+      seconds: 0.38
+    - afterText: "It’s late anyway."
+      seconds: 0.14
+    - afterText: "I should get some sleep."
+      seconds: 0.32
     voiceClip: {fileID: 0}

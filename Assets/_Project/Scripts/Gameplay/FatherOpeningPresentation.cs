@@ -11,7 +11,10 @@ internal sealed class FatherOpeningPresentation : MonoBehaviour
     [SerializeField] private Transform couchShot;
     [SerializeField] private Transform couchMark;
     [SerializeField] private Transform ghostMark;
+    [SerializeField] private Light[] houseLights = System.Array.Empty<Light>();
+    [SerializeField] private GameObject daytimeBackdrop;
     [SerializeField] private Transform waterMark;
+    [SerializeField] private Material sinkWaterMaterial;
     [SerializeField] private Transform sinkRepairShot;
     [SerializeField] private Transform leftSinkDoor;
     [SerializeField] private Transform rightSinkDoor;
@@ -19,6 +22,9 @@ internal sealed class FatherOpeningPresentation : MonoBehaviour
     [SerializeField] private Transform pipeFitting;
     [SerializeField] private Sprite ghostSprite;
     [SerializeField] private Material drinkPropMaterial;
+    [SerializeField] private Transform fridgeVodkaBottle;
+    [SerializeField] private Transform counterCup;
+    [SerializeField] private GameObject phonePrefab;
     [SerializeField] private DialogueData firstRepairReaction;
     [SerializeField] private DialogueData beforeShot;
     [SerializeField] private DialogueData ghostArrival;
@@ -32,8 +38,9 @@ internal sealed class FatherOpeningPresentation : MonoBehaviour
     internal DialogueData GhostArrival => ghostArrival;
     internal DialogueData FirstPinReply => firstPinReply;
     internal DialogueData GhostConfrontation => ghostConfrontation;
+    internal bool FastForward { get; set; }
 
-    private GameObject heldDrink;
+    private Transform heldBeer;
     private Transform bottle;
     private Transform cup;
     private Transform drinkLevel;
@@ -47,7 +54,7 @@ internal sealed class FatherOpeningPresentation : MonoBehaviour
     private Quaternion wrenchSideRotation;
     private bool wrenchLifted;
     private Canvas phoneCanvas;
-    private RectTransform phone;
+    private Transform phone;
     private TMP_Text phoneReadout;
     private Volume visionVolume;
     private VolumeProfile visionProfile;
@@ -56,35 +63,83 @@ internal sealed class FatherOpeningPresentation : MonoBehaviour
     private LayerMask originalVolumeMask;
     private Vignette vignette;
     private DepthOfField blur;
+    private LensDistortion distortion;
+    private float distortionStrength;
+    private float distortionTime;
+    private bool[] daytimeLightStates;
+    private bool daytimeBackdropActive;
+    private Camera nightCamera;
+    private CameraClearFlags daytimeClearFlags;
+    private Color daytimeBackground;
+    private Light moonlight;
 
     internal bool OwnsDialogue(DialogueData dialogue) =>
         dialogue == firstRepairReaction || dialogue == beforeShot || dialogue == ghostArrival ||
         dialogue == firstPinReply || dialogue == ghostConfrontation;
 
-    internal void ShowDrink(Transform view)
+    internal IEnumerator TakeVodka(Transform view)
     {
-        heldDrink = new GameObject("Opening Vodka and Cup");
-        heldDrink.transform.SetParent(view, false);
-        var bottleObject = new GameObject("Vodka Bottle");
-        bottle = bottleObject.transform;
-        bottle.SetParent(heldDrink.transform, false);
-        bottle.localPosition = new Vector3(.22f, -.13f, .61f);
-        Cylinder(bottle, "Bottle", Vector3.zero, new Vector3(.078f, .09f, .078f), new Color(.55f, .67f, .72f));
-        Cylinder(bottle, "Label", Vector3.up * .01f, new Vector3(.079f, .034f, .079f), new Color(.62f, .19f, .17f));
-        Cylinder(bottle, "Neck", Vector3.up * .106f, new Vector3(.034f, .025f, .034f), new Color(.55f, .67f, .72f));
-        cup = Cylinder(heldDrink.transform, "Cup", new Vector3(.08f, -.152f, .57f),
-            new Vector3(.082f, .046f, .082f), new Color(.34f, .45f, .50f));
-        drinkLevel = Cylinder(heldDrink.transform, "Vodka in Cup", cup.localPosition + Vector3.up * .05f,
-            new Vector3(.065f, .001f, .065f), new Color(.75f, .83f, .86f));
-        drinkLevel.gameObject.SetActive(false);
+        bottle = TakeSceneProp(fridgeVodkaBottle, "Opening Vodka Bottle");
+        yield return LiftToView(bottle, view, new Vector3(.22f, -.13f, .61f), Quaternion.identity);
     }
 
-    internal IEnumerator PourAndDrink()
+    internal IEnumerator TakeCup(Transform view)
     {
-        if (heldDrink == null) yield break;
+        cup = TakeSceneProp(counterCup, "Opening Cup");
+        yield return LiftToView(cup, view, new Vector3(.08f, -.152f, .57f), Quaternion.identity);
+    }
+
+    private static Transform TakeSceneProp(Transform source, string name)
+    {
+        if (source == null || !source.gameObject.activeInHierarchy) return null;
+        Transform copy = Instantiate(source, source.position, source.rotation);
+        copy.name = name;
+        copy.localScale = source.lossyScale;
+        source.gameObject.SetActive(false);
+        return copy;
+    }
+
+    internal IEnumerator TakeBeer(Transform source, Transform view)
+    {
+        heldBeer = Instantiate(source.gameObject, source.position, source.rotation).transform;
+        heldBeer.name = "Opening Beer in Hand";
+        heldBeer.localScale = source.lossyScale;
+        heldBeer.gameObject.SetActive(true);
+        yield return LiftToView(heldBeer, view, new Vector3(.24f, -.17f, .66f), Quaternion.Euler(-90f, 0f, 0f));
+    }
+
+    private IEnumerator LiftToView(Transform prop, Transform view, Vector3 targetPosition, Quaternion targetRotation)
+    {
+        if (prop == null) yield break;
+        prop.SetParent(view, true);
+        foreach (Collider collider in prop.GetComponentsInChildren<Collider>())
+            collider.enabled = false;
+        foreach (Renderer renderer in prop.GetComponentsInChildren<Renderer>())
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+
+        Vector3 start = prop.localPosition;
+        Quaternion rotation = prop.localRotation;
+        const float duration = .55f;
+        for (float elapsed = 0f; elapsed < duration && StepTime != float.MaxValue; elapsed += StepTime)
+        {
+            float progress = Mathf.SmoothStep(0f, 1f, elapsed / duration);
+            prop.SetLocalPositionAndRotation(Vector3.Lerp(start, targetPosition, progress),
+                Quaternion.Slerp(rotation, targetRotation, progress));
+            yield return null;
+        }
+        prop.SetLocalPositionAndRotation(targetPosition, targetRotation);
+    }
+
+    internal IEnumerator PourAndDrink(Transform view)
+    {
+        if (bottle == null || cup == null) yield break;
+        drinkLevel = Cylinder(view, "Vodka in Cup", cup.localPosition + Vector3.up * .05f,
+            new Vector3(.065f, .001f, .065f), new Color(.75f, .83f, .86f));
+        drinkLevel.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+        drinkLevel.gameObject.SetActive(false);
         Vector3 bottleRest = bottle.localPosition;
         Vector3 pouringPosition = new Vector3(.21f, -.03f, .57f);
-        for (float elapsed = 0f; elapsed < 1.7f; elapsed += StepTime)
+        for (float elapsed = 0f; elapsed < 1.7f && StepTime != float.MaxValue; elapsed += StepTime)
         {
             float tilt = Mathf.Clamp01(Mathf.Min(elapsed / .38f, (1.7f - elapsed) / .35f));
             bottle.localPosition = Vector3.Lerp(bottleRest, pouringPosition, tilt);
@@ -96,16 +151,51 @@ internal sealed class FatherOpeningPresentation : MonoBehaviour
         Vector3 rest = cup.localPosition;
         Vector3 raised = new Vector3(.01f, -.055f, .32f);
         Vector3 liquidOffset = drinkLevel.localPosition - rest;
-        for (float elapsed = 0f; elapsed < 1.1f; elapsed += StepTime)
+        Quaternion headRest = view.rotation;
+        for (float elapsed = 0f; elapsed < DrinkTiltDuration && StepTime != float.MaxValue; elapsed += StepTime)
         {
             float lift = Mathf.Clamp01(elapsed / .5f);
             cup.localPosition = Vector3.Lerp(rest, raised, Mathf.SmoothStep(0f, 1f, lift));
             drinkLevel.localPosition = cup.localPosition + liquidOffset;
             if (elapsed >= .65f) drinkLevel.gameObject.SetActive(false);
+            view.rotation = headRest * DrinkTilt(elapsed);
             yield return null;
         }
-        if (heldDrink != null) Destroy(heldDrink);
-        heldDrink = null;
+        view.rotation = headRest;
+        ClearDrinkProps();
+    }
+
+    private const float DrinkTiltDuration = 1.1f;
+
+    internal IEnumerator DrinkBeer(Transform view)
+    {
+        Quaternion rest = view.rotation;
+        Vector3 bottleRest = heldBeer != null ? heldBeer.localPosition : Vector3.zero;
+        Quaternion bottleRotation = heldBeer != null ? heldBeer.localRotation : Quaternion.identity;
+        for (float elapsed = 0f; elapsed < DrinkTiltDuration && StepTime != float.MaxValue; elapsed += StepTime)
+        {
+            view.rotation = rest * DrinkTilt(elapsed);
+            if (heldBeer != null)
+            {
+                float lift = Mathf.SmoothStep(0f, 1f,
+                    Mathf.Min(Mathf.InverseLerp(0f, .42f, elapsed),
+                        1f - Mathf.InverseLerp(.72f, DrinkTiltDuration, elapsed)));
+                heldBeer.SetLocalPositionAndRotation(
+                    Vector3.Lerp(bottleRest, new Vector3(.19f, -.12f, .57f), lift),
+                    Quaternion.Slerp(bottleRotation, Quaternion.Euler(-128f, -18f, 35f), lift));
+            }
+            yield return null;
+        }
+        view.rotation = rest;
+        if (heldBeer != null) Destroy(heldBeer.gameObject);
+        heldBeer = null;
+    }
+
+    private static Quaternion DrinkTilt(float elapsed)
+    {
+        float up = Mathf.InverseLerp(.12f, .48f, elapsed);
+        float down = 1f - Mathf.InverseLerp(.69f, DrinkTiltDuration, elapsed);
+        return Quaternion.Euler(-Mathf.SmoothStep(0f, 31f, Mathf.Min(up, down)), 0f, 0f);
     }
 
     private Transform Cylinder(Transform parent, string propName, Vector3 position, Vector3 scale, Color color) =>
@@ -126,8 +216,6 @@ internal sealed class FatherOpeningPresentation : MonoBehaviour
         }
         MeshRenderer renderer = prop.GetComponent<MeshRenderer>();
         renderer.sharedMaterial = drinkPropMaterial;
-        if (heldDrink != null && prop.transform.IsChildOf(heldDrink.transform))
-            renderer.shadowCastingMode = ShadowCastingMode.Off;
         var properties = new MaterialPropertyBlock();
         properties.SetColor("_BaseColor", color);
         renderer.SetPropertyBlock(properties);
@@ -139,6 +227,16 @@ internal sealed class FatherOpeningPresentation : MonoBehaviour
         if (waterMark == null || sinkWater != null) return;
         sinkWater = PlaceProp(PrimitiveType.Quad, waterMark, "Standing Sink Water", Vector3.zero, Vector3.one,
             new Color(.22f, .39f, .41f)).gameObject;
+        if (sinkWaterMaterial != null)
+            sinkWater.GetComponent<MeshRenderer>().sharedMaterial = sinkWaterMaterial;
+    }
+
+    internal void DrainSink()
+    {
+        if (sinkWater == null) return;
+        sinkWater.SetActive(false);
+        Destroy(sinkWater);
+        sinkWater = null;
     }
 
     internal IEnumerator OpenSinkDoors()
@@ -150,7 +248,7 @@ internal sealed class FatherOpeningPresentation : MonoBehaviour
         Vector3 leftHinge = leftSinkDoor.parent.InverseTransformDirection(Vector3.up);
         Vector3 rightHinge = rightSinkDoor.parent.InverseTransformDirection(Vector3.up);
         const float duration = .65f;
-        for (float elapsed = 0f; elapsed < duration; elapsed += StepTime)
+        for (float elapsed = 0f; elapsed < duration && StepTime != float.MaxValue; elapsed += StepTime)
         {
             float angle = Mathf.SmoothStep(0f, 98f, elapsed / duration);
             leftSinkDoor.localRotation = Quaternion.AngleAxis(-angle, leftHinge) * leftDoorClosed;
@@ -211,7 +309,7 @@ internal sealed class FatherOpeningPresentation : MonoBehaviour
     private IEnumerator MoveWrench(Pose target, float duration)
     {
         var start = new Pose(repairWrench.position, repairWrench.rotation);
-        for (float elapsed = 0f; elapsed < duration; elapsed += StepTime)
+        for (float elapsed = 0f; elapsed < duration && StepTime != float.MaxValue; elapsed += StepTime)
         {
             float progress = Mathf.SmoothStep(0f, 1f, elapsed / duration);
             repairWrench.SetPositionAndRotation(Vector3.Lerp(start.position, target.position, progress),
@@ -223,7 +321,7 @@ internal sealed class FatherOpeningPresentation : MonoBehaviour
 
     private IEnumerator TurnWrench(float from, float to, float duration)
     {
-        for (float elapsed = 0f; elapsed < duration; elapsed += StepTime)
+        for (float elapsed = 0f; elapsed < duration && StepTime != float.MaxValue; elapsed += StepTime)
         {
             Pose pose = WrenchAtFitting(Mathf.SmoothStep(from, to, elapsed / duration));
             repairWrench.SetPositionAndRotation(pose.position, pose.rotation);
@@ -292,30 +390,134 @@ internal sealed class FatherOpeningPresentation : MonoBehaviour
             vignette.smoothness.value = .65f;
             blur = visionProfile.Add<DepthOfField>(true);
             blur.mode.value = DepthOfFieldMode.Gaussian;
+            distortion = visionProfile.Add<LensDistortion>(true);
         }
-        vignette.intensity.value = drinkCount >= 4 ? .47f : drinkCount == 3 ? .33f : .22f;
-        blur.gaussianStart.value = drinkCount >= 4 ? .75f : drinkCount == 3 ? 1.8f : 3f;
-        blur.gaussianEnd.value = drinkCount >= 4 ? 3f : 6f;
-        blur.gaussianMaxRadius.value = drinkCount >= 4 ? .9f : drinkCount == 3 ? .55f : .35f;
+        var target = VisionForDrinks(drinkCount);
+        vignette.intensity.value = target.darkness;
+        blur.gaussianStart.value = target.blurStart;
+        blur.gaussianEnd.value = target.blurEnd;
+        blur.gaussianMaxRadius.value = target.blurRadius;
+        distortionStrength = DistortionForDrinks(drinkCount);
+        if (distortionStrength == 0f) distortion.intensity.value = 0f;
     }
 
-    internal void SetNight(Camera camera, int drinkCount)
+    internal IEnumerator EaseIntoVision(Camera camera, int drinkCount)
     {
-        SetVision(camera, drinkCount);
-        var nightColor = visionProfile.Add<ColorAdjustments>(true);
-        nightColor.postExposure.value = -.65f;
-        nightColor.colorFilter.value = new Color(.83f, .89f, 1f);
-    }
+        if (visionVolume == null) SetVision(camera, drinkCount - 1);
 
-    internal IEnumerator Sway(Transform view, float degrees = 2f)
-    {
-        Quaternion rest = view.rotation;
-        for (float elapsed = 0f; elapsed < 1.2f; elapsed += StepTime)
+        var target = VisionForDrinks(drinkCount);
+        float startingDarkness = vignette.intensity.value;
+        float startingBlurStart = blur.gaussianStart.value;
+        float startingBlurEnd = blur.gaussianEnd.value;
+        float startingBlurRadius = blur.gaussianMaxRadius.value;
+        float startingDistortion = distortionStrength;
+        float targetDistortion = DistortionForDrinks(drinkCount);
+        const float duration = 1.8f;
+        for (float elapsed = 0f; elapsed < duration && StepTime != float.MaxValue; elapsed += StepTime)
         {
-            view.rotation = rest * Quaternion.Euler(0f, 0f, Mathf.Sin(elapsed / 1.2f * Mathf.PI * 2f) * degrees);
+            float blend = Mathf.SmoothStep(0f, 1f, elapsed / duration);
+            vignette.intensity.value = Mathf.Lerp(startingDarkness, target.darkness, blend);
+            blur.gaussianStart.value = Mathf.Lerp(startingBlurStart, target.blurStart, blend);
+            blur.gaussianEnd.value = Mathf.Lerp(startingBlurEnd, target.blurEnd, blend);
+            blur.gaussianMaxRadius.value = Mathf.Lerp(startingBlurRadius, target.blurRadius, blend);
+            distortionStrength = Mathf.Lerp(startingDistortion, targetDistortion, blend);
             yield return null;
         }
-        view.rotation = rest;
+        SetVision(camera, drinkCount);
+    }
+
+    private void LateUpdate()
+    {
+        if (distortion == null || distortionStrength <= 0f || AudioSettingsOverlay.IsOpen) return;
+        distortionTime += Time.unscaledDeltaTime;
+        float drift = distortionTime * .48f;
+        distortion.center.value = new Vector2(
+            Mathf.Lerp(.28f, .72f, Mathf.PerlinNoise(drift, 1.3f)),
+            Mathf.Lerp(.28f, .72f, Mathf.PerlinNoise(4.1f, drift)));
+        float pulse = Mathf.SmoothStep(0f, 1f, Mathf.PingPong(distortionTime * .66f, 1f));
+        distortion.intensity.value = -distortionStrength * Mathf.Lerp(.6f, 1f, pulse);
+    }
+
+    private static float DistortionForDrinks(int drinkCount) =>
+        drinkCount >= FatherBlackout.BlackoutBeerCount ? .25f : drinkCount == 3 ? .17f : 0f;
+
+    internal void SetGameplayDistortion(Camera camera, int drinkCount)
+    {
+        if (DistortionForDrinks(drinkCount) == 0f)
+        {
+            ClearVision();
+            return;
+        }
+
+        SetVision(camera, drinkCount);
+        vignette.active = false;
+        blur.active = false;
+    }
+
+    private static (float darkness, float blurStart, float blurEnd, float blurRadius) VisionForDrinks(int drinkCount) =>
+        drinkCount switch
+        {
+            >= 4 => (.47f, .75f, 3f, .9f),
+            3 => (.33f, 1.8f, 6f, .55f),
+            _ => (.22f, 3f, 6f, .35f)
+        };
+
+    internal void SetNight(Camera camera)
+    {
+        if (visionVolume == null) SetVision(camera, FatherBlackout.BlackoutBeerCount);
+        distortionStrength = DistortionForDrinks(3);
+        daytimeLightStates = new bool[houseLights.Length];
+        for (int i = 0; i < houseLights.Length; i++)
+        {
+            Light houseLight = houseLights[i];
+            if (houseLight == null) continue;
+            daytimeLightStates[i] = houseLight.enabled;
+            houseLight.enabled = false;
+        }
+        if (daytimeBackdrop != null)
+        {
+            daytimeBackdropActive = daytimeBackdrop.activeSelf;
+            daytimeBackdrop.SetActive(false);
+        }
+        nightCamera = camera;
+        daytimeClearFlags = camera.clearFlags;
+        daytimeBackground = camera.backgroundColor;
+        camera.clearFlags = CameraClearFlags.SolidColor;
+        camera.backgroundColor = new Color(.018f, .025f, .05f);
+
+        moonlight = new GameObject("Opening Moonlight").AddComponent<Light>();
+        moonlight.transform.SetParent(transform, false);
+        moonlight.transform.position = ghostMark.position + new Vector3(-1f, 2.1f, 1.2f);
+        moonlight.type = LightType.Point;
+        moonlight.color = new Color(.51f, .64f, .9f);
+        moonlight.intensity = .85f;
+        moonlight.range = 8f;
+
+        var nightColor = visionProfile.Add<ColorAdjustments>(true);
+        nightColor.postExposure.value = -1.15f;
+        nightColor.colorFilter.value = new Color(.72f, .8f, 1f);
+    }
+
+    private void RestoreDaylight()
+    {
+        if (daytimeLightStates == null) return;
+        for (int i = 0; i < houseLights.Length; i++)
+        {
+            if (houseLights[i] != null) houseLights[i].enabled = daytimeLightStates[i];
+        }
+        daytimeLightStates = null;
+        if (daytimeBackdrop != null) daytimeBackdrop.SetActive(daytimeBackdropActive);
+        if (nightCamera != null)
+        {
+            nightCamera.clearFlags = daytimeClearFlags;
+            nightCamera.backgroundColor = daytimeBackground;
+            nightCamera = null;
+        }
+        if (moonlight != null)
+        {
+            moonlight.enabled = false;
+            Destroy(moonlight.gameObject);
+        }
     }
 
     internal void PositionForCollapse(Transform view)
@@ -327,33 +529,50 @@ internal sealed class FatherOpeningPresentation : MonoBehaviour
 
     internal IEnumerator CollapseOntoCouch(Transform view)
     {
-        Vector3 end = couchShot.position;
+        Vector3 end = couchShot.position + Vector3.down * .28f;
         Vector3 start = view.position;
         Quaternion approach = view.rotation;
-        Quaternion rest = couchShot.rotation;
-        for (float elapsed = 0f; elapsed < 1.7f; elapsed += StepTime)
+        Quaternion rest = couchShot.rotation * Quaternion.Euler(10f, 0f, 13f);
+        const float duration = 1.55f;
+        for (float elapsed = 0f; elapsed < duration && StepTime != float.MaxValue; elapsed += StepTime)
         {
-            float fall = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.45f, 1.45f, elapsed));
-            view.position = Vector3.Lerp(start, end, fall);
-            view.rotation = Quaternion.Slerp(approach, rest, fall) *
-                Quaternion.Euler(0f, 0f, Mathf.Sin(elapsed * 5f) * (1f - fall) * 9f);
+            float reach = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0f, .85f, elapsed));
+            float slump = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.4f, duration, elapsed));
+            Vector3 position = Vector3.Lerp(start, end, reach);
+            position.y = Mathf.Lerp(start.y, end.y, slump);
+            view.SetPositionAndRotation(position, Quaternion.Slerp(approach, rest, slump));
             yield return null;
         }
         view.SetPositionAndRotation(end, rest);
     }
 
-    internal IEnumerator RevealGhost(Transform view)
+    internal IEnumerator WakeOnCouch(Transform view)
+    {
+        Vector3 start = view.position;
+        Quaternion rest = view.rotation;
+        const float duration = .8f;
+        for (float elapsed = 0f; elapsed < duration && StepTime != float.MaxValue; elapsed += StepTime)
+        {
+            float rise = Mathf.SmoothStep(0f, 1f, elapsed / duration);
+            view.SetPositionAndRotation(Vector3.Lerp(start, couchShot.position, rise),
+                Quaternion.Slerp(rest, couchShot.rotation, rise));
+            yield return null;
+        }
+        view.SetPositionAndRotation(couchShot.position, couchShot.rotation);
+    }
+
+    internal IEnumerator RevealGhost()
     {
         if (ghostMark == null || ghostSprite == null) yield break;
         ghost = new GameObject("Father's Night Ghost");
         ghost.transform.SetParent(ghostMark, false);
-        ghost.transform.rotation = view.rotation;
+        ghost.transform.rotation = couchShot.rotation;
         SpriteRenderer sprite = ghost.AddComponent<SpriteRenderer>();
         sprite.sprite = ghostSprite;
         float scale = 1.55f / ghostSprite.bounds.size.y;
         ghost.transform.localScale = Vector3.one * scale;
-        Vector3 retreat = Vector3.ProjectOnPlane(view.forward, Vector3.up).normalized * .55f;
-        for (float elapsed = 0f; elapsed < .9f; elapsed += StepTime)
+        Vector3 retreat = Vector3.ProjectOnPlane(couchShot.forward, Vector3.up).normalized * .55f;
+        for (float elapsed = 0f; elapsed < .9f && StepTime != float.MaxValue; elapsed += StepTime)
         {
             float approach = Mathf.SmoothStep(0f, 1f, elapsed / .9f);
             ghost.transform.position = ghostMark.position + retreat * (1f - approach);
@@ -364,41 +583,49 @@ internal sealed class FatherOpeningPresentation : MonoBehaviour
         sprite.color = Color.white;
     }
 
-    internal void ShowPhone()
+    internal IEnumerator ShowPhone(Transform view)
     {
-        var panel = new GameObject("Father's Phone", typeof(Canvas), typeof(CanvasScaler));
-        panel.transform.SetParent(transform, false);
+        if (phonePrefab == null) yield break;
+        phone = Instantiate(phonePrefab, view, false).transform;
+        phone.name = "Father's Opening Phone";
+        phone.localScale = Vector3.one * 1.65f;
+        phone.SetLocalPositionAndRotation(new Vector3(.18f, -.40f, .62f), Quaternion.Euler(4f, 7f, -5f));
+        phone.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
+
+        var panel = new GameObject("Phone PIN Screen", typeof(RectTransform), typeof(Canvas), typeof(Image));
+        var panelRect = (RectTransform)panel.transform;
+        panelRect.SetParent(phone, false);
+        panelRect.localPosition = new Vector3(0f, 0f, -.0039f);
+        panelRect.localScale = Vector3.one * .000285f;
+        panelRect.sizeDelta = new Vector2(220f, 460f);
         phoneCanvas = panel.GetComponent<Canvas>();
-        phoneCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        phoneCanvas.sortingOrder = 90;
-        var scaler = panel.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1280f, 720f);
-        var backing = new GameObject("Phone Body", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
-        backing.transform.SetParent(panel.transform, false);
-        backing.color = new Color32(17, 18, 20, 255);
-        backing.raycastTarget = false;
-        phone = backing.rectTransform;
-        phone.sizeDelta = new Vector2(158f, 224f);
-        phone.anchoredPosition = new Vector2(0f, -48f);
-        phone.localRotation = Quaternion.Euler(0f, 0f, -6f);
-        var screen = new GameObject("Screen", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
-        screen.transform.SetParent(phone, false);
-        screen.rectTransform.sizeDelta = new Vector2(142f, 204f);
+        phoneCanvas.renderMode = RenderMode.WorldSpace;
+        var screen = panel.GetComponent<Image>();
         screen.color = new Color32(41, 52, 54, 255);
         screen.raycastTarget = false;
         phoneReadout = new GameObject("PIN Readout", typeof(RectTransform), typeof(TextMeshProUGUI))
             .GetComponent<TextMeshProUGUI>();
         phoneReadout.transform.SetParent(screen.transform, false);
-        phoneReadout.rectTransform.sizeDelta = screen.rectTransform.sizeDelta;
-        phoneReadout.fontSize = 18f;
+        phoneReadout.rectTransform.sizeDelta = panelRect.sizeDelta - new Vector2(12f, 18f);
+        phoneReadout.fontSize = 30f;
         phoneReadout.alignment = TextAlignmentOptions.Center;
         phoneReadout.raycastTarget = false;
+
+        Vector3 start = phone.localPosition;
+        Vector3 held = new Vector3(.145f, -.035f, .61f);
+        const float raiseTime = .32f;
+        for (float elapsed = 0f; elapsed < raiseTime && StepTime != float.MaxValue; elapsed += StepTime)
+        {
+            phone.localPosition = Vector3.Lerp(start, held, Mathf.SmoothStep(0f, 1f, elapsed / raiseTime));
+            yield return null;
+        }
+        phone.localPosition = held;
     }
 
-    internal IEnumerator FailPin()
+    internal IEnumerator FailPin(float delay = 0f)
     {
         if (phoneReadout == null) yield break;
+        if (delay > 0f) yield return Wait(delay);
         for (int digits = 0; digits <= 4; digits++)
         {
             phoneReadout.text = $"Enter PIN\n\n{new string('•', digits)}\n\n1    2    3\n4    5    6\n7    8    9\n0";
@@ -408,31 +635,93 @@ internal sealed class FatherOpeningPresentation : MonoBehaviour
         yield return Wait(.9f);
     }
 
-    internal IEnumerator DropPhone()
+    internal IEnumerator DropPhone(Transform view)
     {
         if (phone == null) yield break;
-        Vector2 start = phone.anchoredPosition;
-        for (float elapsed = 0f; elapsed < .48f; elapsed += StepTime)
+        Vector3 start = phone.position;
+        Quaternion rotation = phone.rotation;
+        Vector3 seatedPosition = view.position;
+        Quaternion ghostView = view.rotation;
+        Vector3 forward = Vector3.ProjectOnPlane(view.forward, Vector3.up).normalized;
+        Vector3 drift = forward * .65f + Vector3.Cross(Vector3.up, forward) * .15f;
+        phone.SetParent(transform, true);
+        Vector3 floorProbe = start + drift * .4f;
+        float floorHeight = Physics.Raycast(floorProbe, Vector3.down, out RaycastHit floor, 2f,
+            Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) ? floor.point.y : start.y - 1f;
+        Vector3 floorPosition = new Vector3(start.x, floorHeight + .008f, start.z);
+        const float gravity = 9.81f;
+        float fallTime = Mathf.Sqrt(2f * Mathf.Max(.02f, start.y - floorPosition.y) / gravity);
+        Vector3 landing = floorPosition + drift * fallTime;
+        // Lean over the couch so its seat does not hide the phone on the floor.
+        Vector3 leaningPosition = seatedPosition + forward * .34f + Vector3.up * .07f;
+        Quaternion floorView = Quaternion.LookRotation(landing - leaningPosition);
+
+        for (float elapsed = 0f; elapsed < fallTime && StepTime != float.MaxValue; elapsed += StepTime)
         {
-            float fall = elapsed / .48f;
-            phone.anchoredPosition = start + new Vector2(90f * fall, -520f * fall * fall);
-            phone.localRotation = Quaternion.Euler(0f, 0f, -6f - 32f * fall);
+            float progress = elapsed / fallTime;
+            Vector3 position = start + drift * elapsed + Vector3.down * (.5f * gravity * elapsed * elapsed);
+            phone.SetPositionAndRotation(position,
+                rotation * Quaternion.Euler(24f * elapsed, -18f * elapsed, 38f * elapsed));
+            float lean = Mathf.SmoothStep(0f, 1f, progress);
+            Vector3 eye = Vector3.Lerp(seatedPosition, leaningPosition, lean);
+            view.SetPositionAndRotation(eye,
+                Quaternion.Slerp(ghostView, Quaternion.LookRotation(position - eye), lean));
             yield return null;
         }
+        phone.SetPositionAndRotation(landing, Quaternion.LookRotation(Vector3.down, forward));
+        view.SetPositionAndRotation(leaningPosition, floorView);
+        yield return Wait(.65f);
         phoneCanvas.gameObject.SetActive(false);
+
+        const float lookBackTime = .48f;
+        for (float elapsed = 0f; elapsed < lookBackTime && StepTime != float.MaxValue; elapsed += StepTime)
+        {
+            float blend = Mathf.SmoothStep(0f, 1f, elapsed / lookBackTime);
+            view.SetPositionAndRotation(Vector3.Lerp(leaningPosition, seatedPosition, blend),
+                Quaternion.Slerp(floorView, ghostView, blend));
+            yield return null;
+        }
+        view.SetPositionAndRotation(seatedPosition, ghostView);
     }
 
     internal void Clear()
     {
+        RestoreDaylight();
         RestoreWrench();
         CloseSinkDoors();
-        if (heldDrink != null) Destroy(heldDrink);
-        if (sinkWater != null) { sinkWater.SetActive(false); Destroy(sinkWater); }
+        ClearDrinkProps();
         if (couch != null) { couch.SetActive(false); Destroy(couch); }
         if (ghost != null) { ghost.SetActive(false); Destroy(ghost); }
-        if (phoneCanvas != null) { phoneCanvas.gameObject.SetActive(false); Destroy(phoneCanvas.gameObject); }
+        if (phone != null) { phone.gameObject.SetActive(false); Destroy(phone.gameObject); }
+        ClearVision();
+    }
+
+    private void ClearDrinkProps()
+    {
+        if (heldBeer != null) Destroy(heldBeer.gameObject);
+        PutBackSceneProp(bottle, fridgeVodkaBottle);
+        PutBackSceneProp(cup, counterCup);
+        if (drinkLevel != null) Destroy(drinkLevel.gameObject);
+        heldBeer = bottle = cup = drinkLevel = null;
+    }
+
+    private static void PutBackSceneProp(Transform copy, Transform source)
+    {
+        if (copy == null) return;
+        copy.gameObject.SetActive(false);
+        Destroy(copy.gameObject);
+        if (source != null) source.gameObject.SetActive(true);
+    }
+
+    internal void ClearVision()
+    {
         if (visionVolume != null) { visionVolume.enabled = false; Destroy(visionVolume.gameObject); }
         if (visionProfile != null) Destroy(visionProfile);
+        visionVolume = null;
+        visionProfile = null;
+        distortion = null;
+        distortionStrength = 0f;
+        distortionTime = 0f;
         if (cameraData != null)
         {
             cameraData.renderPostProcessing = originalPostProcessing;
@@ -441,10 +730,10 @@ internal sealed class FatherOpeningPresentation : MonoBehaviour
         }
     }
 
-    private static float StepTime => AudioSettingsOverlay.IsOpen ? 0f : Time.unscaledDeltaTime;
+    private float StepTime => AudioSettingsOverlay.IsOpen ? 0f : FastForward ? float.MaxValue : Time.unscaledDeltaTime;
 
-    private static IEnumerator Wait(float seconds)
+    private IEnumerator Wait(float seconds)
     {
-        for (float elapsed = 0f; elapsed < seconds; elapsed += StepTime) yield return null;
+        for (float elapsed = 0f; elapsed < seconds && StepTime != float.MaxValue; elapsed += StepTime) yield return null;
     }
 }

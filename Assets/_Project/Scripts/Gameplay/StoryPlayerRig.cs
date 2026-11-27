@@ -10,6 +10,7 @@ public sealed class StoryPlayerRig : MonoBehaviour
     public static StoryPlayerRig Instance { get; private set; }
     [SerializeField] private PlayerControlLocker controlLocker;
     [SerializeField] private Camera gameplayCamera;
+    [SerializeField] private GameObject aimingDot;
     [SerializeField] private Transform spawnPoint;
     [SerializeField] private Camera[] managedCameras;
     [Tooltip("Character mesh renderers hidden while this rig is playing. Keep props out of this list.")]
@@ -43,7 +44,19 @@ public sealed class StoryPlayerRig : MonoBehaviour
         RefreshCursor();
     }
 
-    private void LateUpdate() { RefreshCursor(); }
+    private void LateUpdate()
+    {
+        RefreshCursor();
+        if (aimingDot == null) return;
+        bool visible = CanInteract && ActiveCamera == gameplayCamera &&
+            (DialogueUI.Instance == null || !DialogueUI.Instance.IsDialogueOpen);
+        if (aimingDot.activeSelf != visible) aimingDot.SetActive(visible);
+    }
+
+    private void OnDisable()
+    {
+        if (aimingDot != null) aimingDot.SetActive(false);
+    }
 
     /// <summary>Returns the player to the pose used when this scene started.</summary>
     public void ReturnToStart()

@@ -20,12 +20,29 @@ MonoBehaviour:
   - speakerName: Father
     text: "What…? WHO ARE YOU?! GET OUT OF MY HOUSE!"
     side: 1
+    pauses:
+    - afterText: "What…?"
+      seconds: 0.38
+    - afterText: "WHO ARE YOU?!"
+      seconds: 0.16
     voiceClip: {fileID: 0}
   - speakerName: Ghost
     text: "I cannot leave. Not yet. I’m here to help you, Robert."
     side: 0
+    pauses:
+    - afterText: "I cannot leave."
+      seconds: 0.27
+    - afterText: "Not yet."
+      seconds: 0.36
     voiceClip: {fileID: 0}
   - speakerName: Father
     text: "HOW DO YOU KNOW MY NAME? No, I don’t care! You know what? I’m calling the police!"
     side: 1
+    pauses:
+    - afterText: "HOW DO YOU KNOW MY NAME?"
+      seconds: 0.17
+    - afterText: "No, I don’t care!"
+      seconds: 0.16
+    - afterText: "You know what?"
+      seconds: 0.31
     voiceClip: {fileID: 0}

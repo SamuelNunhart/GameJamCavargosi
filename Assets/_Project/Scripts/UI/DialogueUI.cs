@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -62,6 +63,7 @@ public class DialogueUI : MonoBehaviour
 
     public event Action<DialogueData> DialogueStarted;
     public event Action<DialogueData> DialogueEnded;
+    internal event Action ContinuePressedWithoutDialogue;
 
     internal void UsePlayerControlLocker(PlayerControlLocker locker) => playerControlLocker = locker;
 
@@ -97,17 +99,21 @@ public class DialogueUI : MonoBehaviour
     {
         UpdatePromptAnchorPosition();
 
-        if (!IsDialogueOpen)
-            return;
-
         // Ignore the toggle frame too, regardless of component Update ordering.
         if (settingsPaused || AudioSettingsOverlay.IsOpen || Input.GetKeyDown(KeyCode.Escape))
             return;
 
+        bool pressedContinue = Input.GetKeyDown(KeyCode.E);
+        if (!IsDialogueOpen)
+        {
+            if (pressedContinue) ContinuePressedWithoutDialogue?.Invoke();
+            return;
+        }
+
         if (advanceInputLockCount > 0)
             return;
 
-        UpdateDialogueAdvance(Input.GetKeyDown(KeyCode.E));
+        UpdateDialogueAdvance(pressedContinue);
     }
 
     private void UpdateDialogueAdvance(bool pressedContinue)
@@ -333,13 +339,13 @@ public class DialogueUI : MonoBehaviour
             StopCoroutine(typingCoroutine);
 
         SetSettingsPaused(AudioSettingsOverlay.IsOpen);
-        typingCoroutine = StartCoroutine(TypeLine(line.text));
+        typingCoroutine = StartCoroutine(TypeLine(line));
     }
 
-    private IEnumerator TypeLine(string targetText)
+    private IEnumerator TypeLine(DialogueLine line)
     {
         isTyping = true;
-        fullCurrentText = targetText ?? string.Empty;
+        fullCurrentText = line.text ?? string.Empty;
         int characterCount = fullCurrentText.Length;
         if (useStableDialogueLayout)
         {
@@ -350,6 +356,7 @@ public class DialogueUI : MonoBehaviour
         }
         else dialogueText.text = "";
 
+        var pauses = useStableDialogueLayout ? FindLinePauses(line.pauses, fullCurrentText) : null;
         float delay = charactersPerSecond <= 0f ? 0f : 1f / charactersPerSecond;
 
         for (int i = 0; i < characterCount; i++)
@@ -360,6 +367,12 @@ public class DialogueUI : MonoBehaviour
             if (useStableDialogueLayout) dialogueText.maxVisibleCharacters = i + 1;
             else dialogueText.text += fullCurrentText[i];
             float remainingDelay = delay;
+            if (pauses != null && i + 1 < characterCount)
+            {
+                TMP_CharacterInfo character = dialogueText.textInfo.characterInfo[i];
+                if (pauses.TryGetValue(character.index + character.stringLength, out float pause))
+                    remainingDelay += pause;
+            }
             do
             {
                 yield return null;
@@ -372,6 +385,19 @@ public class DialogueUI : MonoBehaviour
         RevealFullLine();
         isTyping = false;
         typingCoroutine = null;
+    }
+
+    private static Dictionary<int, float> FindLinePauses(DialoguePause[] pauses, string text)
+    {
+        if (pauses == null || pauses.Length == 0) return null;
+        var result = new Dictionary<int, float>();
+        foreach (DialoguePause pause in pauses)
+        {
+            if (pause == null || string.IsNullOrEmpty(pause.afterText) || pause.seconds <= 0f) continue;
+            int start = text.IndexOf(pause.afterText, StringComparison.Ordinal);
+            if (start >= 0) result[start + pause.afterText.Length] = pause.seconds;
+        }
+        return result;
     }
 
     private void CompleteCurrentLineInstantly()

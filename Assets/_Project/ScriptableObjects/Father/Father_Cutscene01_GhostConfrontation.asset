@@ -20,18 +20,30 @@ MonoBehaviour:
   - speakerName: Ghost
     text: "If I were a real threat, you and your family would be in danger because of you."
     side: 0
+    pauses:
+    - afterText: "a real threat,"
+      seconds: 0.15
     voiceClip: {fileID: 0}
   - speakerName: Father
     text: "I was trying to protect them. I just dropped the damn phone."
     side: 1
+    pauses:
+    - afterText: "I was trying to protect them."
+      seconds: 0.24
     voiceClip: {fileID: 0}
   - speakerName: Ghost
     text: "You’d already gotten the PIN wrong twice, Robert. You’re too drunk to call for help."
     side: 0
+    pauses:
+    - afterText: "PIN wrong twice, Robert."
+      seconds: 0.32
     voiceClip: {fileID: 0}
   - speakerName: Ghost
     text: "Why are you doing this to them? To yourself?"
     side: 0
+    pauses:
+    - afterText: "Why are you doing this to them?"
+      seconds: 0.46
     voiceClip: {fileID: 0}
   - speakerName: Father
     text: "I’m not doing anything wrong!"
@@ -52,50 +64,98 @@ MonoBehaviour:
   - speakerName: Father
     text: "It’s just a few beers! Unlike what she is doing!"
     side: 1
+    pauses:
+    - afterText: "It’s just a few beers!"
+      seconds: 0.19
     voiceClip: {fileID: 0}
   - speakerName: Ghost
     text: "She? You mean your wife?"
     side: 0
+    pauses:
+    - afterText: "She?"
+      seconds: 0.2
     voiceClip: {fileID: 0}
   - speakerName: Father
     text: "You see anyone else around here feeding the slot machines with our money? I sure as hell don’t!"
     side: 1
+    pauses:
+    - afterText: "with our money?"
+      seconds: 0.18
     voiceClip: {fileID: 0}
   - speakerName: Ghost
     text: "I’m sorry to hear that. However, tonight, I’m here because of you."
     side: 0
+    pauses:
+    - afterText: "I’m sorry to hear that."
+      seconds: 0.38
+    - afterText: "However, tonight,"
+      seconds: 0.12
     voiceClip: {fileID: 0}
   - speakerName: Father
     text: "Are you bloody serious? She—"
     side: 1
+    pauses:
+    - afterText: "Are you bloody serious?"
+      seconds: 0.11
     voiceClip: {fileID: 0}
   - speakerName: Ghost
     text: "Don’t worry. She’s next on my list. I promise to pay her a visit as well."
     side: 0
+    pauses:
+    - afterText: "Don’t worry."
+      seconds: 0.19
+    - afterText: "She’s next on my list."
+      seconds: 0.28
     voiceClip: {fileID: 0}
   - speakerName: Father
     text: "All right? What do you want from me?!"
     side: 1
+    pauses:
+    - afterText: "All right?"
+      seconds: 0.27
     voiceClip: {fileID: 0}
   - speakerName: Ghost
     text: "I want you to take care of your family just like you used to. Not right now. But tomorrow morning, you should take care of the house, without alcohol, of course."
     side: 0
+    pauses:
+    - afterText: "just like you used to."
+      seconds: 0.32
+    - afterText: "Not right now."
+      seconds: 0.28
+    - afterText: "But tomorrow morning,"
+      seconds: 0.14
     voiceClip: {fileID: 0}
   - speakerName: Father
     text: "Wait, so I can’t drink?"
     side: 1
+    pauses:
+    - afterText: "Wait,"
+      seconds: 0.17
     voiceClip: {fileID: 0}
   - speakerName: Ghost
     text: "You can. But once you start, you know you have a hard time stopping."
     side: 0
+    pauses:
+    - afterText: "You can."
+      seconds: 0.39
+    - afterText: "But once you start,"
+      seconds: 0.15
     voiceClip: {fileID: 0}
   - speakerName: Father
     text: "Bullshit. I can stop whenever I like."
     side: 1
+    pauses:
+    - afterText: "Bullshit."
+      seconds: 0.17
     voiceClip: {fileID: 0}
   - speakerName: Ghost
     text: "I’ll let you sleep, but don’t forget what I have just told you. When you wake up, I’ll be around, watching."
     side: 0
+    pauses:
+    - afterText: "what I have just told you."
+      seconds: 0.32
+    - afterText: "When you wake up,"
+      seconds: 0.14
     voiceClip: {fileID: 0}
   - speakerName: Father
     text: "You’re a real weirdo, you know that?"

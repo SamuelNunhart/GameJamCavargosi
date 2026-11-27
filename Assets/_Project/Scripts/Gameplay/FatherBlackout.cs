@@ -37,8 +37,10 @@ public sealed class FatherBlackout : MonoBehaviour
     private float standingCameraHeight;
     private bool openingCameraMoved;
     private bool cameraLowered;
+    private DialogueUI openingDialogueUI;
 
     public int Day { get; private set; } = 1;
+    public int DaysRemaining => FinalDay - Day + 1;
 
     private void Start()
     {
@@ -51,6 +53,13 @@ public sealed class FatherBlackout : MonoBehaviour
         standingCameraRotation = view.localRotation;
         standingCameraHeight = view.position.y;
         fridge.SetDrunkenness(OpeningBeerCount);
+        if (scriptedOpening != null)
+        {
+            scriptedOpening.ShowCloggedSink();
+            openingDialogueUI = DialogueUI.Instance;
+            if (openingDialogueUI != null)
+                openingDialogueUI.ContinuePressedWithoutDialogue += FastForwardOpening;
+        }
         controlLocker.AcquireLock();
         sequence = StartCoroutine(PlayOpening());
     }
@@ -104,8 +113,12 @@ public sealed class FatherBlackout : MonoBehaviour
         if (overlay != null) Destroy(overlay.gameObject);
     }
 
+    private void FastForwardOpening() => scriptedOpening.FastForward = true;
+
     private void OnBeerDrunk(int count)
     {
+        if (sequence == null && scriptedOpening != null)
+            scriptedOpening.SetGameplayDistortion(playerRig.GameplayCamera, count);
         if (count == BlackoutBeerCount) BeginBlackout();
     }
 
@@ -137,12 +150,12 @@ public sealed class FatherBlackout : MonoBehaviour
 
     private IEnumerator PlayScriptedOpening()
     {
+        EnsureOverlay();
+        overlay.gameObject.SetActive(true);
+        overlay.alpha = 1f;
+        yield return ShowDayCard();
         yield return CutTo(sinkShot, startFromBlack: true,
-            onBlack: () =>
-            {
-                scriptedOpening.SetVision(playerRig.GameplayCamera, OpeningBeerCount);
-                scriptedOpening.ShowCloggedSink();
-            });
+            onBlack: () => scriptedOpening.SetVision(playerRig.GameplayCamera, OpeningBeerCount));
         yield return PlayOpeningDialogue(openingAtStart);
         yield return PlaySinkRepairShot(firstAttempt: true);
         yield return PlayOpeningDialogue(scriptedOpening.FirstRepairReaction);
@@ -150,40 +163,40 @@ public sealed class FatherBlackout : MonoBehaviour
 
         scriptedOpening.CloseSinkDoors();
         yield return WalkToFridge();
-        yield return DrinkAtFridge();
-        scriptedOpening.SetVision(playerRig.GameplayCamera, fridge.BeersDrunk);
-        yield return scriptedOpening.Sway(view);
+        yield return DrinkAtFridge(DrinkBeerOnCamera, showBeer: beer => scriptedOpening.TakeBeer(beer, view));
         yield return PlayOpeningDialogue(openingAtFridge);
 
         yield return PlaySinkRepairShot(firstAttempt: false);
         yield return PlayOpeningDialogue(openingAtSink);
 
         yield return CutTo(fridgeShot, onBlack: scriptedOpening.CloseSinkDoors);
-        yield return DrinkAtFridge(PourAndDrinkShot, () => scriptedOpening.ShowDrink(view));
-        scriptedOpening.SetVision(playerRig.GameplayCamera, BlackoutBeerCount);
+        yield return DrinkAtFridge(PourAndDrinkShot, () => scriptedOpening.TakeVodka(view));
         yield return PlayOpeningDialogue(openingBeforeBlackout);
-        yield return scriptedOpening.Sway(view, 7f);
         yield return CutTo(scriptedOpening.CouchShot, onBlack: () =>
         {
             scriptedOpening.ShowCouch();
             scriptedOpening.PositionForCollapse(view);
         });
         yield return scriptedOpening.CollapseOntoCouch(view);
-
-        yield return CutTo(scriptedOpening.CouchShot, onBlack: () =>
-        {
-            scriptedOpening.SetNight(playerRig.GameplayCamera, OpeningBeerCount);
-        });
-        yield return scriptedOpening.RevealGhost(view);
+        yield return WakeWithGhost();
         yield return PlayOpeningDialogue(scriptedOpening.GhostArrival);
-        scriptedOpening.ShowPhone();
+        yield return scriptedOpening.ShowPhone(view);
         yield return scriptedOpening.FailPin();
-        yield return PlayOpeningDialogue(scriptedOpening.FirstPinReply);
-        yield return scriptedOpening.FailPin();
-        yield return scriptedOpening.Sway(view, 3f);
-        yield return scriptedOpening.DropPhone();
+        yield return PlayOpeningDialogue(scriptedOpening.FirstPinReply, scriptedOpening.FailPin(.7f));
+        yield return scriptedOpening.DropPhone(view);
         yield return PlayOpeningDialogue(scriptedOpening.GhostConfrontation);
         yield return BlackOut(0f, scriptedNight: true);
+    }
+
+    private IEnumerator WakeWithGhost()
+    {
+        yield return Fade(0f, 1f, .45f);
+        yield return WaitForBlackoutBeat(4f);
+        scriptedOpening.SetNight(playerRig.GameplayCamera);
+        yield return Fade(1f, .28f, .55f);
+        yield return scriptedOpening.RevealGhost();
+        yield return scriptedOpening.WakeOnCouch(view);
+        yield return Fade(.28f, 0f, .35f);
     }
 
     private IEnumerator PlaySinkRepairShot(bool firstAttempt)
@@ -200,7 +213,7 @@ public sealed class FatherBlackout : MonoBehaviour
         Quaternion crouchingRotation = view.rotation;
         Vector3 standingPosition = new Vector3(sinkShot.position.x, standingCameraHeight, sinkShot.position.z);
         const float duration = .85f;
-        for (float elapsed = 0f; elapsed < duration; elapsed += StepTime)
+        for (float elapsed = 0f; elapsed < duration && StepTime != float.MaxValue; elapsed += StepTime)
         {
             float blend = Mathf.SmoothStep(0f, 1f, elapsed / duration);
             view.SetPositionAndRotation(Vector3.Lerp(crouchingPosition, standingPosition, blend),
@@ -217,35 +230,33 @@ public sealed class FatherBlackout : MonoBehaviour
 
         Vector3 start = view.position;
         Vector3 destination = new Vector3(fridgeShot.position.x, start.y, fridgeShot.position.z);
-        Vector3 path = destination - start;
         Quaternion fridgeFacing = Quaternion.LookRotation(Vector3.ProjectOnPlane(fridgeShot.forward, Vector3.up));
-        Quaternion walkFacing = path.sqrMagnitude > .0001f ? Quaternion.LookRotation(path) : fridgeFacing;
+        Vector3 fridgeRight = fridgeFacing * Vector3.right;
+        float sideOffset = Mathf.Clamp(Vector3.Dot(start - destination, fridgeRight), -.7f, .7f);
+        Vector3 approachPoint = destination + fridgeRight * sideOffset;
         Quaternion startRotation = view.rotation;
-        const float turnTime = .65f;
-        for (float elapsed = 0f; elapsed < turnTime; elapsed += StepTime)
+        float walkTime = Vector3.Distance(start, approachPoint) / .95f;
+        for (float elapsed = 0f; elapsed < walkTime && StepTime != float.MaxValue; elapsed += StepTime)
         {
-            view.rotation = Quaternion.Slerp(startRotation, walkFacing, Mathf.SmoothStep(0f, 1f, elapsed / turnTime));
+            float progress = elapsed / walkTime;
+            float turn = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0f, .8f, progress));
+            view.SetPositionAndRotation(
+                Vector3.Lerp(start, approachPoint, Mathf.SmoothStep(0f, 1f, progress)),
+                Quaternion.Slerp(startRotation, fridgeFacing, turn));
             yield return null;
         }
-        view.rotation = walkFacing;
+        view.SetPositionAndRotation(approachPoint, fridgeFacing);
 
-        float distance = path.magnitude;
-        float walkTime = distance / .95f;
-        const float stepsPerSecond = 1.45f;
-        for (float elapsed = 0f; elapsed < walkTime; elapsed += StepTime)
+        float slideTime = Mathf.Abs(sideOffset) / 1.05f;
+        for (float elapsed = 0f; elapsed < slideTime && StepTime != float.MaxValue; elapsed += StepTime)
         {
-            float time = elapsed / walkTime;
-            float progress = Mathf.SmoothStep(0f, 1f, time);
-            float bob = Mathf.Sin(elapsed * stepsPerSecond * 2f * Mathf.PI) * Mathf.Sin(time * Mathf.PI) * .022f;
-            view.position = start + path * progress + Vector3.up * bob;
-            float lookProgress = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.6f, 1f, progress));
-            view.rotation = Quaternion.Slerp(walkFacing, fridgeFacing, lookProgress);
+            view.position = Vector3.Lerp(approachPoint, destination, Mathf.SmoothStep(0f, 1f, elapsed / slideTime));
             yield return null;
         }
         view.SetPositionAndRotation(destination, fridgeFacing);
 
         const float lookDownTime = .65f;
-        for (float elapsed = 0f; elapsed < lookDownTime; elapsed += StepTime)
+        for (float elapsed = 0f; elapsed < lookDownTime && StepTime != float.MaxValue; elapsed += StepTime)
         {
             float blend = Mathf.SmoothStep(0f, 1f, elapsed / lookDownTime);
             view.SetPositionAndRotation(Vector3.Lerp(destination, fridgeShot.position, blend),
@@ -257,18 +268,27 @@ public sealed class FatherBlackout : MonoBehaviour
 
     private IEnumerator PourAndDrinkShot()
     {
+        yield return scriptedOpening.TakeCup(view);
         yield return RaiseCameraForDrink();
         yield return PlayOpeningDialogue(scriptedOpening.BeforeShot);
-        yield return scriptedOpening.PourAndDrink();
+        yield return scriptedOpening.PourAndDrink(view);
     }
 
-    private IEnumerator PlayOpeningDialogue(DialogueData dialogue)
+    private IEnumerator DrinkBeerOnCamera()
+    {
+        yield return RaiseCameraForDrink();
+        yield return scriptedOpening.DrinkBeer(view);
+    }
+
+    private IEnumerator PlayOpeningDialogue(DialogueData dialogue, IEnumerator duringDialogue = null)
     {
         DialogueUI ui = DialogueUI.Instance;
-        if (dialogue == null || ui == null ||
-            !ui.StartDialogue(new DialogueRequest(dialogue, autoAdvance: true, allowManualAdvance: scriptedOpening != null)))
-            yield break;
+        bool started = dialogue != null && ui != null &&
+            ui.StartDialogue(new DialogueRequest(dialogue, autoAdvance: true, allowManualAdvance: scriptedOpening != null));
 
+        if (started && scriptedOpening != null) scriptedOpening.FastForward = false;
+        if (duringDialogue != null) yield return duringDialogue;
+        if (!started) yield break;
         while (ui.CurrentDialogue == dialogue && ui.IsDialogueOpen) yield return null;
     }
 
@@ -295,7 +315,7 @@ public sealed class FatherBlackout : MonoBehaviour
         Vector3 start = view.position;
         Vector3 lean = view.forward * .12f + Vector3.down * .04f;
         const float duration = 1.25f;
-        for (float elapsed = 0f; elapsed < duration; elapsed += StepTime)
+        for (float elapsed = 0f; elapsed < duration && StepTime != float.MaxValue; elapsed += StepTime)
         {
             view.position = start + lean * Mathf.Sin(Mathf.PI * elapsed / duration);
             yield return null;
@@ -303,14 +323,19 @@ public sealed class FatherBlackout : MonoBehaviour
         view.position = start;
     }
 
-    private IEnumerator DrinkAtFridge(System.Func<IEnumerator> beforeDrink = null, System.Action takeShotProps = null)
+    private IEnumerator DrinkAtFridge(System.Func<IEnumerator> beforeDrink = null,
+        System.Func<IEnumerator> takeShotProps = null, System.Func<Transform, IEnumerator> showBeer = null)
     {
         int before = fridge.BeersDrunk;
-        yield return fridge.DrinkForOpening(view, beforeDrink ?? RaiseCameraForDrink, takeShotProps);
+        yield return fridge.DrinkForOpening(view, beforeDrink ?? RaiseCameraForDrink, takeShotProps, showBeer,
+            scriptedOpening != null ? () => StepTime : null);
         if (fridge.BeersDrunk <= before) yield break;
 
         if (alcoholIndicator != null) alcoholIndicator.EmphasizeDrink();
-        yield return WaitForBlackoutBeat(1.1f);
+        if (scriptedOpening != null)
+            yield return scriptedOpening.EaseIntoVision(playerRig.GameplayCamera, fridge.BeersDrunk);
+        else
+            yield return WaitForBlackoutBeat(1.1f);
     }
 
     private IEnumerator RaiseCameraForDrink()
@@ -318,7 +343,7 @@ public sealed class FatherBlackout : MonoBehaviour
         Vector3 start = view.position;
         Vector3 standing = new Vector3(start.x, standingCameraHeight, start.z);
         const float duration = .75f;
-        for (float elapsed = 0f; elapsed < duration; elapsed += StepTime)
+        for (float elapsed = 0f; elapsed < duration && StepTime != float.MaxValue; elapsed += StepTime)
         {
             view.position = Vector3.Lerp(start, standing, Mathf.SmoothStep(0f, 1f, elapsed / duration));
             yield return null;
@@ -340,7 +365,16 @@ public sealed class FatherBlackout : MonoBehaviour
     private void OnWorkCompleted()
     {
         if (sequence != null || controlLocker == null || !StoryAccess.Allows(this, StoryId.Father)) return;
-        if (TryAdvanceDay()) return;
+        if (scriptedOpening != null) scriptedOpening.DrainSink();
+        if (TryAdvanceDay())
+        {
+            if (scriptedOpening != null)
+            {
+                controlLocker.AcquireLock();
+                sequence = StartCoroutine(ShowNextDayAfterWork());
+            }
+            return;
+        }
 
         controlLocker.AcquireLock();
         sequence = StartCoroutine(ReturnToMenu());
@@ -355,8 +389,7 @@ public sealed class FatherBlackout : MonoBehaviour
         overlay.gameObject.SetActive(true);
         yield return Fade(0f, 1f, .65f);
 
-        if (scriptedNight) scriptedOpening.Clear();
-        else caption.text = "I drank too much.";
+        if (!scriptedNight) caption.text = "I drank too much.";
         yield return WaitForBlackoutBeat(1.8f);
 
         bool openingBlackout = Day == 1;
@@ -366,6 +399,7 @@ public sealed class FatherBlackout : MonoBehaviour
             yield break;
         }
 
+        if (scriptedNight) scriptedOpening.Clear();
         ReturnToStartingView();
         Vector3 drop = Vector3.down * wakeCameraDrop;
         if (view.parent != null) drop = view.parent.InverseTransformVector(drop);
@@ -373,13 +407,18 @@ public sealed class FatherBlackout : MonoBehaviour
         view.localPosition = wakingPosition;
         cameraLowered = true;
 
-        caption.text = $"Day {Day}\nI lost a day.";
-        yield return WaitForBlackoutBeat(2.3f);
+        if (scriptedOpening != null)
+            yield return ShowDayCard();
+        else
+        {
+            caption.text = $"Day {Day}\nI lost a day.";
+            yield return WaitForBlackoutBeat(2.3f);
+        }
         yield return Fade(1f, 0f, .7f);
         yield return WaitForBlackoutBeat(.45f);
 
         const float riseTime = 1.1f;
-        for (float elapsed = 0f; elapsed < riseTime; elapsed += StepTime)
+        for (float elapsed = 0f; elapsed < riseTime && StepTime != float.MaxValue; elapsed += StepTime)
         {
             view.localPosition = Vector3.Lerp(wakingPosition, standingCameraPosition,
                 Mathf.SmoothStep(0f, 1f, elapsed / riseTime));
@@ -387,6 +426,24 @@ public sealed class FatherBlackout : MonoBehaviour
         }
 
         FinishWakeup(openingBlackout);
+    }
+
+    private IEnumerator ShowNextDayAfterWork()
+    {
+        EnsureOverlay();
+        overlay.gameObject.SetActive(true);
+        yield return Fade(0f, 1f, .5f);
+        yield return ShowDayCard();
+        yield return Fade(1f, 0f, .7f);
+        EndSequence();
+    }
+
+    private IEnumerator ShowDayCard()
+    {
+        string remaining = Day == FinalDay ? "Last day" : $"{DaysRemaining} days remaining";
+        caption.text = $"Day {Day}\n<size=70%>{remaining}</size>";
+        yield return WaitForBlackoutBeat(2.3f);
+        caption.text = string.Empty;
     }
 
     private void ReturnToStartingView()
@@ -409,6 +466,7 @@ public sealed class FatherBlackout : MonoBehaviour
 
         Day++;
         if (fridge != null) fridge.SetDrunkenness(0);
+        if (scriptedOpening != null) scriptedOpening.ClearVision();
         UpdateDayCounter();
         return true;
     }
@@ -430,7 +488,14 @@ public sealed class FatherBlackout : MonoBehaviour
 
     private void EndSequence()
     {
-        if (scriptedOpening != null) scriptedOpening.Clear();
+        if (openingDialogueUI != null)
+            openingDialogueUI.ContinuePressedWithoutDialogue -= FastForwardOpening;
+        openingDialogueUI = null;
+        if (scriptedOpening != null)
+        {
+            scriptedOpening.FastForward = false;
+            scriptedOpening.Clear();
+        }
         RestoreOpeningCamera();
         if (cameraLowered && view != null) view.localPosition = standingCameraPosition;
         cameraLowered = false;
@@ -447,16 +512,17 @@ public sealed class FatherBlackout : MonoBehaviour
         openingCameraMoved = false;
     }
 
-    private static float StepTime => AudioSettingsOverlay.IsOpen ? 0f : Time.unscaledDeltaTime;
+    private float StepTime => AudioSettingsOverlay.IsOpen ? 0f :
+        scriptedOpening != null && scriptedOpening.FastForward ? float.MaxValue : Time.unscaledDeltaTime;
 
-    private static IEnumerator WaitForBlackoutBeat(float seconds)
+    private IEnumerator WaitForBlackoutBeat(float seconds)
     {
-        for (float elapsed = 0f; elapsed < seconds; elapsed += StepTime) yield return null;
+        for (float elapsed = 0f; elapsed < seconds && StepTime != float.MaxValue; elapsed += StepTime) yield return null;
     }
 
     private IEnumerator Fade(float from, float to, float duration)
     {
-        for (float elapsed = 0f; elapsed < duration; elapsed += StepTime)
+        for (float elapsed = 0f; elapsed < duration && StepTime != float.MaxValue; elapsed += StepTime)
         {
             overlay.alpha = Mathf.SmoothStep(from, to, elapsed / duration);
             yield return null;

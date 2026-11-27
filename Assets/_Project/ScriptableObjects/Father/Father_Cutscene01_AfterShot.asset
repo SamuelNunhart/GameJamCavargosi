@@ -16,4 +16,9 @@ MonoBehaviour:
   - speakerName: Father
     text: "That really… hit… the spot…"
     side: 1
+    pauses:
+    - afterText: "That really…"
+      seconds: 0.26
+    - afterText: "hit…"
+      seconds: 0.42
     voiceClip: {fileID: 0}

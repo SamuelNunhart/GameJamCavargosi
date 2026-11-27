@@ -26,6 +26,7 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
     public bool HasTakenBeer { get; private set; }
     public int BeersDrunk { get; private set; }
     public event Action<int> BeerDrunk;
+    internal bool IsPickingUpBeer => pickupSequence != null;
     private float feedbackUntil;
     private Coroutine pickupSequence;
     private Quaternion doorClosedRotation;
@@ -36,7 +37,7 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
     internal void DebugFinishOpeningPickups(Vector3 pickupPosition, int expectedBottles)
     {
         CancelPickup();
-        while (openingBottlesTaken < expectedBottles && TakeBottle(pickupPosition)) openingBottlesTaken++;
+        while (openingBottlesTaken < expectedBottles && TakeBottle(pickupPosition, out _)) openingBottlesTaken++;
     }
 #endif
 
@@ -118,49 +119,55 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
     }
 
     /// <summary>Plays the bottle pickup, then lets the cutscene position the camera before drinking.</summary>
-    internal Coroutine DrinkForOpening(Transform pickupOrigin, Func<IEnumerator> beforeDrink, Action takeShotProps = null)
+    internal Coroutine DrinkForOpening(Transform pickupOrigin, Func<IEnumerator> beforeDrink,
+        Func<IEnumerator> takeShotProps, Func<Transform, IEnumerator> showBeer, Func<float> stepTime)
     {
         if (pickupSequence != null || (takeShotProps == null && !HasBeerInStock())) return pickupSequence;
-        return StartPickup(pickupOrigin, beforeDrink, takeShotProps);
+        return StartPickup(pickupOrigin, beforeDrink, takeShotProps, showBeer, stepTime);
     }
 
-    private Coroutine StartPickup(Transform pickupOrigin, Func<IEnumerator> beforeDrink = null, Action takeShotProps = null)
+    private Coroutine StartPickup(Transform pickupOrigin, Func<IEnumerator> beforeDrink = null,
+        Func<IEnumerator> takeShotProps = null, Func<Transform, IEnumerator> showBeer = null, Func<float> stepTime = null)
     {
         feedbackUntil = 0f;
         if (fridgeDoor == null && beforeDrink == null)
         {
-            if (TakeBottle(pickupOrigin.position)) FinishDrink();
+            if (TakeBottle(pickupOrigin.position, out _)) FinishDrink();
             return null;
         }
 
-        pickupSequence = StartCoroutine(OpenAndTakeDrink(pickupOrigin, beforeDrink, takeShotProps));
+        pickupSequence = StartCoroutine(OpenAndTakeDrink(pickupOrigin, beforeDrink, takeShotProps, showBeer,
+            stepTime ?? PickupStepTime));
         return pickupSequence;
     }
 
-    private IEnumerator OpenAndTakeDrink(Transform pickupOrigin, Func<IEnumerator> beforeDrink, Action takeShotProps)
+    private IEnumerator OpenAndTakeDrink(Transform pickupOrigin, Func<IEnumerator> beforeDrink,
+        Func<IEnumerator> takeShotProps, Func<Transform, IEnumerator> showBeer, Func<float> stepTime)
     {
         Quaternion openRotation = Quaternion.identity;
         if (fridgeDoor != null)
         {
             doorClosedRotation = fridgeDoor.localRotation;
             openRotation = doorClosedRotation * Quaternion.AngleAxis(doorOpenAngle, Vector3.forward);
-            yield return AnimateDoor(doorClosedRotation, openRotation, 0.55f);
-            yield return WaitForPickupBeat(0.3f);
+            yield return AnimateDoor(doorClosedRotation, openRotation, 0.55f, stepTime);
+            yield return WaitForPickupBeat(0.3f, stepTime);
         }
 
-        bool tookBeer = takeShotProps == null && TakeBottle(pickupOrigin.position);
-        takeShotProps?.Invoke();
+        Transform bottle = null;
+        bool tookBeer = takeShotProps == null && TakeBottle(pickupOrigin.position, out bottle);
         bool tookDrink = tookBeer || takeShotProps != null;
 #if UNITY_EDITOR // DEBUG-ONLY: count bottles already taken before a skip
         if (tookBeer && beforeDrink != null) openingBottlesTaken++;
 #endif
+        if (takeShotProps != null) yield return takeShotProps();
+        else if (tookBeer && showBeer != null && bottle != null) yield return showBeer(bottle);
         if (tookDrink)
         {
-            yield return WaitForPickupBeat(beforeDrink == null ? .4f : .65f);
+            yield return WaitForPickupBeat(beforeDrink == null ? .4f : .65f, stepTime);
             if (beforeDrink == null) FinishDrink();
         }
 
-        if (fridgeDoor != null) yield return AnimateDoor(openRotation, doorClosedRotation, 0.6f);
+        if (fridgeDoor != null) yield return AnimateDoor(openRotation, doorClosedRotation, 0.6f, stepTime);
 
         if (tookDrink && beforeDrink != null)
         {
@@ -171,9 +178,9 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
         pickupSequence = null;
     }
 
-    private IEnumerator AnimateDoor(Quaternion from, Quaternion to, float duration)
+    private IEnumerator AnimateDoor(Quaternion from, Quaternion to, float duration, Func<float> stepTime)
     {
-        for (float elapsed = 0f; elapsed < duration; elapsed += PickupStepTime)
+        for (float elapsed = 0f; elapsed < duration && stepTime() != float.MaxValue; elapsed += stepTime())
         {
             float blend = Mathf.SmoothStep(0f, 1f, elapsed / duration);
             fridgeDoor.localRotation = Quaternion.Slerp(from, to, blend);
@@ -182,18 +189,19 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
         fridgeDoor.localRotation = to;
     }
 
-    private static float PickupStepTime => AudioSettingsOverlay.IsOpen ? 0f : Time.deltaTime;
+    private static float PickupStepTime() => AudioSettingsOverlay.IsOpen ? 0f : Time.deltaTime;
 
-    private static IEnumerator WaitForPickupBeat(float seconds)
+    private static IEnumerator WaitForPickupBeat(float seconds, Func<float> stepTime)
     {
-        for (float elapsed = 0f; elapsed < seconds; elapsed += PickupStepTime) yield return null;
+        for (float elapsed = 0f; elapsed < seconds && stepTime() != float.MaxValue; elapsed += stepTime()) yield return null;
     }
 
-    private bool TakeBottle(Vector3 pickupPosition)
+    private bool TakeBottle(Vector3 pickupPosition, out Transform bottle)
     {
+        bottle = null;
         if (beerBottles != null)
         {
-            Transform bottle = FindClosestAvailableBottle(pickupPosition);
+            bottle = FindClosestAvailableBottle(pickupPosition);
             if (bottle == null) return false;
             bottle.gameObject.SetActive(false);
         }

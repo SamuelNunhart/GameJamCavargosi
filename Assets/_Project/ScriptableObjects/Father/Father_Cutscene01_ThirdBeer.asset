@@ -16,4 +16,7 @@ MonoBehaviour:
   - speakerName: Father
     text: "Ahh, that’s better."
     side: 1
+    pauses:
+    - afterText: "Ahh,"
+      seconds: 0.16
     voiceClip: {fileID: 0}

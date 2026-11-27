@@ -7,6 +7,14 @@ public enum DialogueSpeakerSide
 }
 
 [System.Serializable]
+public class DialoguePause
+{
+    [Tooltip("The exact words or punctuation immediately before the pause.")]
+    public string afterText;
+    [Min(0f)] public float seconds;
+}
+
+[System.Serializable]
 public class DialogueLine
 {
     public string speakerName;
@@ -18,6 +26,7 @@ public class DialogueLine
 
     [Min(0f), Tooltip("Minimum time in seconds to hold the fully revealed line before auto-advancing.")]
     public float minimumReadHold;
+    public DialoguePause[] pauses;
 
     // Optional now, useful later for recorded voice or generated speech clips
     public AudioClip voiceClip;

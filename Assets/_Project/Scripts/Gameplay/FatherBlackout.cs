@@ -23,8 +23,13 @@ public sealed class FatherBlackout : MonoBehaviour
     [SerializeField] private DialogueData openingBeforeBlackout;
     [SerializeField] private DialogueData firstMorningDialogue;
     [SerializeField] private FatherOpeningPresentation scriptedOpening;
+    [Header("Demo power outage")]
+    [SerializeField] private Light[] outageLights = System.Array.Empty<Light>();
+    [SerializeField] private DialogueData powerOutageDialogue;
+    [SerializeField] private Renderer powerRoomDoor;
 
     public const int BlackoutBeerCount = 4;
+    internal const int PowerOutageDay = 4;
     private const int OpeningBeerCount = 2;
     private const int FinalDay = 5;
     private const string MainMenuScene = "MainMenu";
@@ -38,6 +43,9 @@ public sealed class FatherBlackout : MonoBehaviour
     private bool openingCameraMoved;
     private bool cameraLowered;
     private DialogueUI openingDialogueUI;
+    private bool[] lightsBeforeOutage;
+    private Light outageFill;
+    private bool powerRoomDoorOpened;
 
     public int Day { get; private set; } = 1;
     public int DaysRemaining => FinalDay - Day + 1;
@@ -103,6 +111,7 @@ public sealed class FatherBlackout : MonoBehaviour
     {
         if (fridge != null) fridge.BeerDrunk -= OnBeerDrunk;
         if (sinkRepair != null) sinkRepair.RepairCompleted -= OnWorkCompleted;
+        RestorePower();
         if (sequence == null) return;
         StopCoroutine(sequence);
         EndSequence();
@@ -365,7 +374,10 @@ public sealed class FatherBlackout : MonoBehaviour
     private void OnWorkCompleted()
     {
         if (sequence != null || controlLocker == null || !StoryAccess.Allows(this, StoryId.Father)) return;
-        if (scriptedOpening != null) scriptedOpening.DrainSink();
+        if (sinkRepair.ActiveJob == FatherSinkRepair.Job.Sink && scriptedOpening != null)
+            scriptedOpening.ApplySinkResult(sinkRepair.Result);
+        if (sinkRepair.ActiveJob == FatherSinkRepair.Job.Power)
+            RestorePower();
         if (TryAdvanceDay())
         {
             if (scriptedOpening != null)
@@ -425,6 +437,7 @@ public sealed class FatherBlackout : MonoBehaviour
             yield return null;
         }
 
+        if (Day == PowerOutageDay) yield return PlayOpeningDialogue(powerOutageDialogue);
         FinishWakeup(openingBlackout);
     }
 
@@ -435,6 +448,7 @@ public sealed class FatherBlackout : MonoBehaviour
         yield return Fade(0f, 1f, .5f);
         yield return ShowDayCard();
         yield return Fade(1f, 0f, .7f);
+        if (Day == PowerOutageDay) yield return PlayOpeningDialogue(powerOutageDialogue);
         EndSequence();
     }
 
@@ -467,6 +481,8 @@ public sealed class FatherBlackout : MonoBehaviour
         Day++;
         if (fridge != null) fridge.SetDrunkenness(0);
         if (scriptedOpening != null) scriptedOpening.ClearVision();
+        if (Day == PowerOutageDay && sinkRepair != null && sinkRepair.HasChapterJobs)
+            BeginPowerOutage();
         UpdateDayCounter();
         return true;
     }
@@ -478,7 +494,98 @@ public sealed class FatherBlackout : MonoBehaviour
         caption.text = string.Empty;
         overlay.gameObject.SetActive(true);
         if (overlay.alpha < 1f) yield return Fade(overlay.alpha, 1f, .55f);
+        if (sinkRepair != null && sinkRepair.HasChapterJobs)
+        {
+            int completed = sinkRepair.CompletedJobs;
+            string heading = completed == 4 ? "All four jobs done" : "The week is over";
+            caption.rectTransform.sizeDelta = new Vector2(1000f, 420f);
+            caption.text = $"{heading}\n<size=65%>{completed} of 4 jobs completed\n\n" +
+                $"{sinkRepair.BuildChecklist(showPower: true)}\n\nE - Return to menu</size>";
+            for (float elapsed = 0f; elapsed < 8f; elapsed += StepTime)
+            {
+                if (elapsed >= 1f && StepTime > 0f && Input.GetKeyDown(KeyCode.E)) break;
+                yield return null;
+            }
+        }
+        RestorePower();
         SceneManager.LoadScene(MainMenuScene);
+    }
+
+    private void BeginPowerOutage()
+    {
+        lightsBeforeOutage = new bool[outageLights.Length];
+        for (int i = 0; i < outageLights.Length; i++)
+        {
+            Light light = outageLights[i];
+            if (light == null) continue;
+            lightsBeforeOutage[i] = light.enabled;
+            light.enabled = false;
+        }
+
+        outageFill = new GameObject("Outage Ambient Fill").AddComponent<Light>();
+        outageFill.transform.SetParent(transform, false);
+        outageFill.transform.rotation = Quaternion.Euler(57f, 55f, 0f);
+        outageFill.type = LightType.Directional;
+        outageFill.color = new Color(.63f, .73f, .90f);
+        outageFill.intensity = .18f;
+        scriptedOpening?.SetSinkLighting(powered: false);
+    }
+
+    private void LateUpdate()
+    {
+        if (powerRoomDoor == null) return;
+        DialogueUI ui = DialogueUI.Instance;
+        if (ui == null) return;
+
+        bool canOpen = !powerRoomDoorOpened && playerRig.CanInteract && !ui.IsDialogueOpen &&
+            InteractionAim.TryCreate(playerRig, 2f, out InteractionAim aim) && aim.Sees(powerRoomDoor.transform);
+        ui.SetPromptVisible(this, canOpen, "E - Open the power room");
+        if (canOpen && Input.GetKeyDown(KeyCode.E) && !Input.GetKeyDown(KeyCode.Escape))
+        {
+            ui.SetPromptVisible(this, false);
+            StartCoroutine(OpenPowerRoomDoor());
+        }
+    }
+
+    private IEnumerator OpenPowerRoomDoor()
+    {
+        powerRoomDoorOpened = true;
+        Transform leaf = powerRoomDoor.transform;
+        Bounds closedBounds = powerRoomDoor.bounds;
+        // Door 1 faces the hallway across X. Its hinge is on the +Z edge.
+        Vector3 hinge = new Vector3(closedBounds.center.x, leaf.position.y, closedBounds.max.z);
+        Vector3 closedOffset = leaf.position - hinge;
+        Quaternion closedRotation = leaf.rotation;
+        const float duration = .7f;
+        const float swingIntoHouse = 88f;
+
+        for (float elapsed = 0f; elapsed < duration; elapsed += StepTime)
+        {
+            SetAngle(Mathf.SmoothStep(0f, swingIntoHouse, elapsed / duration));
+            yield return null;
+        }
+        SetAngle(swingIntoHouse);
+
+        void SetAngle(float angle)
+        {
+            Quaternion swing = Quaternion.AngleAxis(angle, Vector3.up);
+            leaf.SetPositionAndRotation(hinge + swing * closedOffset, swing * closedRotation);
+        }
+    }
+
+    private void RestorePower()
+    {
+        if (lightsBeforeOutage == null) return;
+        for (int i = 0; i < outageLights.Length; i++)
+            if (outageLights[i] != null) outageLights[i].enabled = lightsBeforeOutage[i];
+        lightsBeforeOutage = null;
+        if (outageFill != null)
+        {
+            outageFill.enabled = false;
+            Destroy(outageFill.gameObject);
+            outageFill = null;
+        }
+        scriptedOpening?.SetSinkLighting(powered: true);
     }
 
     private void UpdateDayCounter()

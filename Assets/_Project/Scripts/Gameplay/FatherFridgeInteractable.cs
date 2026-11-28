@@ -22,6 +22,8 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
     [SerializeField] private Transform fridgeDoor;
     [Tooltip("Optional trigger on the lower door used for aiming without blocking the player.")]
     [SerializeField] private Collider doorPickupTarget;
+    [SerializeField] private Collider freezerDoorTarget;
+    [SerializeField] private FatherTaskNote taskNote;
     [SerializeField] private float doorOpenAngle = 85f;
     public bool HasTakenBeer { get; private set; }
     public int BeersDrunk { get; private set; }
@@ -49,6 +51,12 @@ public sealed class FatherFridgeInteractable : MonoBehaviour
 
     private bool IsLookingAtFridge()
     {
+        if (playerRig.UsesCenteredInteractions)
+            return (taskNote == null || !taskNote.IsAimingAtNote()) &&
+                InteractionAim.TryCreate(playerRig, interactionReach, out InteractionAim centeredAim) &&
+                (centeredAim.HitsTrigger(doorPickupTarget) ||
+                 (freezerDoorTarget != null && centeredAim.Sees(freezerDoorTarget.transform)));
+
         Camera view = playerRig.ActiveCamera;
         if (view == null) return false;
         var aim = new Ray(view.transform.position, view.transform.forward);

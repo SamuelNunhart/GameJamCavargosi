@@ -1,12 +1,24 @@
 using System;
+#if UNITY_EDITOR
+using System.Collections;
+#endif
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-/// <summary>Runs the father's placeholder sink repair and records its result for this scene visit.</summary>
+/// <summary>Runs Father's timing minigame at each configured job station.</summary>
 public sealed class FatherSinkRepair : MonoBehaviour
 {
-    public enum RepairResult { Unfinished, Fixed, SlowDrip, Leaking }
+    public enum RepairResult { Unfinished, Fixed, SlowDrip, Leaking, FixedAndDishes, BarelyDrains }
+    internal enum Job { Sink, Dinner, Power, Bike }
+
+    [Serializable]
+    private sealed class JobStation
+    {
+        public Job job;
+        public Transform geometry;
+        public Collider target;
+    }
 
     [SerializeField] private StoryId story = StoryId.Father;
     [SerializeField] private StoryPlayerRig playerRig;
@@ -15,6 +27,8 @@ public sealed class FatherSinkRepair : MonoBehaviour
     [SerializeField] private Collider aimTarget;
     [SerializeField] private Transform sinkGeometry;
     [SerializeField, Min(0.1f)] private float interactionReach = 1.8f;
+    [SerializeField] private FatherBlackout chapter;
+    [SerializeField] private JobStation[] extraStations = Array.Empty<JobStation>();
 
     private const float HitFeedbackTime = 0.24f;
     private const float RestartFeedbackTime = 0.65f;
@@ -32,6 +46,8 @@ public sealed class FatherSinkRepair : MonoBehaviour
     private RectTransform targetZone;
     private RectTransform marker;
     private TextMeshProUGUI feedback;
+    private TextMeshProUGUI heading;
+    private readonly RepairResult[] results = new RepairResult[4];
     private int difficulty;
     private int hits;
     private int misses;
@@ -40,13 +56,60 @@ public sealed class FatherSinkRepair : MonoBehaviour
     private float sweepSpeed;
     private float feedbackTime;
     private bool isOpen;
-    public RepairResult Result { get; private set; }
+    public RepairResult Result => GetResult(Job.Sink);
+    internal Job ActiveJob { get; private set; }
+    internal bool HasChapterJobs => extraStations.Length > 0;
+    internal int CompletedJobs { get; private set; }
     public event Action RepairCompleted;
     private int RoundLimit => TargetCenters.Length - difficulty;
 
+#if UNITY_EDITOR // DEBUG-ONLY: remove before release; see docs/debug-skips.md
+    private void Update()
+    {
+        if (playerRig != null && playerRig.UsesCenteredInteractions && Input.GetKeyDown(KeyCode.F9))
+            StartCoroutine(CaptureAimAtEndOfFrame());
+    }
+
+    private IEnumerator CaptureAimAtEndOfFrame()
+    {
+        yield return new WaitForEndOfFrame();
+        Debug.Log(BuildAimReport(), this);
+    }
+
+    private string BuildAimReport()
+    {
+        if (!InteractionAim.TryCreate(playerRig, interactionReach, out InteractionAim aim))
+            return "[Sink aim] No active player camera.";
+
+        bool aimed = IsAimingAtSink();
+        RaycastHit solid = aim.DebugSolidHit;
+        string hit = solid.collider != null
+            ? $"{solid.collider.name} at {solid.distance:F2} m (belongs to sink: {aim.Sees(sinkGeometry)})"
+            : "none in reach";
+        if (solid.collider == null)
+        {
+            RaycastHit distantHit = aim.DebugFindDistantSolid(playerRig.transform, 6f);
+            if (distantHit.collider != null)
+                hit += $"; next is {distantHit.collider.name} at {distantHit.distance:F2} m";
+        }
+
+        string top = aimTarget != null && aimTarget.enabled && aimTarget.Raycast(aim.Ray, out RaycastHit candidate, 6f)
+            ? $"{candidate.distance:F2} m, usable={aim.Ray.direction.y < 0f && aim.HitsTrigger(aimTarget)}"
+            : "miss";
+        DialogueUI ui = DialogueUI.Instance;
+        Debug.DrawRay(aim.Ray.origin, aim.Ray.direction * interactionReach, aimed ? Color.green : Color.red, 8f, false);
+        return $"[Sink aim] {gameObject.scene.name}, eye={aim.Ray.origin:F3}, direction={aim.Ray.direction:F3}\n" +
+            $"Reach={interactionReach:F2} m, solid={hit}, top={top}, aimed={aimed}\n" +
+            $"Can interact={playerRig.CanInteract}, settings={AudioSettingsOverlay.IsOpen}, " +
+            $"dialogue={ui != null && ui.IsDialogueOpen}, correct story={StoryAccess.Allows(this, story)}, " +
+            $"repair open={isOpen}, result={Result}\n" +
+            $"Prompt: {ui?.DebugDescribePrompt() ?? "no dialogue UI"}";
+    }
+#endif
+
     public void InterruptRepair()
     {
-        if (Result == RepairResult.Unfinished) CloseRepair();
+        if (GetResult(ActiveJob) == RepairResult.Unfinished) CloseRepair();
         if (DialogueUI.Instance != null) DialogueUI.Instance.SetPromptVisible(this, false);
     }
 
@@ -60,17 +123,47 @@ public sealed class FatherSinkRepair : MonoBehaviour
 
         DialogueUI ui = DialogueUI.Instance;
         if (ui == null) return;
-        bool canReach = StoryAccess.Allows(this, story) && playerRig != null && playerRig.CanInteract &&
-            controlLocker != null && aimTarget != null && aimTarget.enabled && !ui.IsDialogueOpen && IsAimingAtSink();
-        ui.SetPromptVisible(this, canReach, Result == RepairResult.Unfinished ? "E - Fix the sink" : ResultText());
-        if (canReach && Result == RepairResult.Unfinished && Input.GetKeyDown(KeyCode.E) && !Input.GetKeyDown(KeyCode.Escape))
-            BeginRepair();
+        if (!StoryAccess.Allows(this, story) || playerRig == null || !playerRig.CanInteract ||
+            (HasChapterJobs && fridge != null && fridge.IsPickingUpBeer) ||
+            controlLocker == null || ui.IsDialogueOpen || !TryGetAimedJob(out Job job))
+        {
+            ui.SetPromptVisible(this, false);
+            return;
+        }
+
+        bool available = GetResult(job) == RepairResult.Unfinished;
+        ui.SetPromptVisible(this, true, available ? $"E - {JobName(job)}" : ResultText(job));
+        if (available && Input.GetKeyDown(KeyCode.E) && !Input.GetKeyDown(KeyCode.Escape))
+            BeginRepair(job);
     }
+
+    private bool TryGetAimedJob(out Job job)
+    {
+        job = Job.Sink;
+        if (!playerRig.UsesCenteredInteractions) return IsAimingAtSink();
+        if (!InteractionAim.TryCreate(playerRig, interactionReach, out InteractionAim aim)) return false;
+        if (AimHitsSink(aim)) return true;
+        foreach (JobStation station in extraStations)
+        {
+            if (station.job == Job.Power && (chapter == null || chapter.Day < FatherBlackout.PowerOutageDay)) continue;
+            if (!aim.Sees(station.geometry) && !aim.HitsTrigger(station.target)) continue;
+            job = station.job;
+            return true;
+        }
+        return false;
+    }
+
+    private bool AimHitsSink(InteractionAim aim) =>
+        aim.Sees(sinkGeometry) || (aim.Ray.direction.y < 0f && aim.HitsTrigger(aimTarget));
 
     private bool IsAimingAtSink()
     {
+        // The open basin has no solid surface at the rim for a downward ray to hit.
+        if (playerRig.UsesCenteredInteractions)
+            return InteractionAim.TryCreate(playerRig, interactionReach, out InteractionAim aim) && AimHitsSink(aim);
+
         Camera view = playerRig.ActiveCamera;
-        if (view == null) return false;
+        if (view == null || aimTarget == null || !aimTarget.enabled) return false;
         var ray = new Ray(view.transform.position, view.transform.forward);
 
         // Collider.Raycast misses when the camera has already moved inside the trigger.
@@ -85,14 +178,16 @@ public sealed class FatherSinkRepair : MonoBehaviour
                (sinkGeometry != null && obstacle.collider.transform.IsChildOf(sinkGeometry));
     }
 
-    private void BeginRepair()
+    private void BeginRepair(Job job)
     {
+        ActiveJob = job;
         // Snapshot the modifier once per attempt.
         difficulty = Mathf.Min(fridge != null ? fridge.BeersDrunk : 0, SweepSpeeds.Length - 1);
         halfWindow = TargetHalfWidths[difficulty];
         sweepSpeed = SweepSpeeds[difficulty];
         feedbackTime = 0f;
         EnsureOverlay();
+        heading.text = JobName(job);
         ResetRound();
         feedback.text = ProgressText();
         DialogueUI.Instance.SetPromptVisible(this, false);
@@ -105,7 +200,7 @@ public sealed class FatherSinkRepair : MonoBehaviour
     {
         // Settings owns Escape and its own control lock. Resume the same timing state after it closes.
         if (AudioSettingsOverlay.IsOpen || Input.GetKeyDown(KeyCode.Escape)) return;
-        if (Result != RepairResult.Unfinished)
+        if (GetResult(ActiveJob) != RepairResult.Unfinished)
         {
             feedbackTime -= deltaTime;
             if (feedbackTime <= 0f)
@@ -162,8 +257,9 @@ public sealed class FatherSinkRepair : MonoBehaviour
         hits++;
         if (hits == RoundLimit)
         {
-            Result = difficulty == 0 ? RepairResult.Fixed : difficulty == 1 ? RepairResult.SlowDrip : RepairResult.Leaking;
-            feedback.text = ResultText();
+            results[(int)ActiveJob] = FinishResult();
+            CompletedJobs++;
+            feedback.text = ResultText(ActiveJob);
             feedbackTime = 1.7f;
             return;
         }
@@ -184,11 +280,70 @@ public sealed class FatherSinkRepair : MonoBehaviour
         MoveMarker(0f);
     }
 
-    private string ResultText() => Result switch
+    internal RepairResult GetResult(Job job) => results[(int)job];
+
+    private RepairResult FinishResult()
     {
-        RepairResult.Fixed => "The sink drains properly.",
+        if (!HasChapterJobs)
+            return difficulty == 0 ? RepairResult.Fixed : difficulty == 1 ? RepairResult.SlowDrip : RepairResult.Leaking;
+
+        if (ActiveJob != Job.Sink) return RepairResult.Fixed;
+        return difficulty switch
+        {
+            0 => RepairResult.FixedAndDishes,
+            1 => RepairResult.Fixed,
+            2 => RepairResult.Leaking,
+            _ => RepairResult.BarelyDrains
+        };
+    }
+
+    internal static string JobName(Job job) => job switch
+    {
+        Job.Sink => "Fix the sink",
+        Job.Dinner => "Cook dinner",
+        Job.Power => "Restore the power",
+        Job.Bike => "Repair the bike",
+        _ => string.Empty
+    };
+
+    internal string ResultText(Job job)
+    {
+        if (GetResult(job) == RepairResult.Unfinished) return string.Empty;
+        return job switch
+        {
+            Job.Dinner => "Dinner is ready.",
+            Job.Power => "The lights are back on.",
+            Job.Bike => "The bike is working again.",
+            _ => SinkResultText()
+        };
+    }
+
+    internal string BuildChecklist(bool showPower)
+    {
+        string sink = Result switch
+        {
+            RepairResult.FixedAndDishes => "<s>Fix the sink</s>\n<size=72%>Dishes washed.</size>",
+            RepairResult.Fixed => "<s>Fix the sink</s>\n<size=72%>Dishes still dirty.</size>",
+            RepairResult.Leaking or RepairResult.BarelyDrains or RepairResult.SlowDrip =>
+                $"Fix the sink\n<size=72%>{SinkResultText()}</size>",
+            _ => JobName(Job.Sink)
+        };
+        string power = showPower ? $"\n{ChecklistLine(Job.Power)}" : string.Empty;
+        if (showPower && GetResult(Job.Power) == RepairResult.Unfinished)
+            power += "\n<size=72%>Fuse box out back.</size>";
+        return $"{sink}\n{ChecklistLine(Job.Dinner)}{power}\n{ChecklistLine(Job.Bike)}";
+    }
+
+    private string ChecklistLine(Job job) =>
+        GetResult(job) == RepairResult.Unfinished ? JobName(job) : $"<s>{JobName(job)}</s>";
+
+    private string SinkResultText() => Result switch
+    {
+        RepairResult.FixedAndDishes => "The sink drains. The dishes are clean.",
+        RepairResult.Fixed => HasChapterJobs ? "The sink drains. The dishes are still dirty." : "The sink drains properly.",
         RepairResult.SlowDrip => "The sink drains, but it drips.",
         RepairResult.Leaking => "The sink drains, but water leaks below.",
+        RepairResult.BarelyDrains => "The sink barely drains and still leaks.",
         _ => string.Empty
     };
 
@@ -227,7 +382,7 @@ public sealed class FatherSinkRepair : MonoBehaviour
     private void EnsureOverlay()
     {
         if (overlay != null) return;
-        var root = new GameObject("Sink Repair Overlay", typeof(Canvas), typeof(CanvasScaler));
+        var root = new GameObject("Father Timing Minigame", typeof(Canvas), typeof(CanvasScaler));
         UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(root, gameObject.scene);
         overlay = root.GetComponent<Canvas>();
         overlay.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -239,7 +394,7 @@ public sealed class FatherSinkRepair : MonoBehaviour
 
         RectTransform panel = MakeImage(root.transform, "Panel", new Color32(29, 24, 20, 244));
         panel.sizeDelta = new Vector2(540f, 176f);
-        MakeLabel(panel, "Fix the sink", 29f, 58f);
+        heading = MakeLabel(panel, string.Empty, 29f, 58f);
         RectTransform track = MakeImage(panel, "Timing track", new Color32(65, 57, 48, 255));
         track.sizeDelta = new Vector2(442f, 20f);
         track.anchoredPosition = new Vector2(0f, 17f);

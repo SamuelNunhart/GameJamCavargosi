@@ -134,6 +134,12 @@ public class DialogueUI : MonoBehaviour
 
     public bool IsPromptVisible => promptGroup != null && promptGroup.alpha > 0.001f;
 
+#if UNITY_EDITOR // DEBUG-ONLY: remove before release; see docs/debug-skips.md
+    internal string DebugDescribePrompt() =>
+        $"owner={promptOwner?.name ?? "none"}, text=\"{currentPromptMessage}\", " +
+        $"active={promptGroup != null && promptGroup.gameObject.activeInHierarchy}, alpha={(promptGroup != null ? promptGroup.alpha : 0f):F2}";
+#endif
+
     public bool IsPromptActiveFor(UnityEngine.Object owner, string message)
     {
         return owner != null &&

@@ -6,6 +6,7 @@ These controls are for Unity Editor Play Mode only. They are excluded from all p
 
 - **F7**: finish the current conversation (all remaining lines). Uses normal completion callbacks and releases dialogue-owned controls/audio. Repeat for separate conversations. A scripted input lock or open settings blocks this action; wait for the animation or close settings.
 - **F8**: unlock all active interactions belonging to the current story, including shared doors.
+- **F9**: capture a sink aim report in Demo Burzon. With the Game view focused, aim where the prompt fails and press F9 before pausing. Read the `[Sink aim]` entry in the Console. The Scene view also shows the aim ray in green if the sink accepted it or red if it missed.
 - **Tools > The Visitor > Debug**: choose a specific unlock: window, puzzle, door, or family minigame. Use the menu if the keyboard layout or laptop intercepts F7/F8.
 - **Backtick (`)**: skip Father's Day 1 cutscene to the Day 2 conversation. The skip uses one beer in Demo Burzon's revised cutscene and two in the shared Game scene's current opening. In Arthur's story, the same key completes the open window or family minigame or finishes the current phone interruption. Inspect Arthur's corresponding component for its serialized key override.
 
@@ -22,6 +23,7 @@ Open Demo Burzon directly in Play Mode to test Father’s revised opening. The c
 - [ ] Remove the marked block containing `DebugIsIntroRunning` in `OpeningGhostIntroController.cs`.
 - [ ] Remove the marked keyboard skip blocks in `WindowSequenceController.cs`, `FamilyMinigamePlaceholderController.cs`, and `PuzzleEventDirector.cs`.
 - [ ] Remove the marked opening-skip blocks and bottle count from `FatherBlackout.cs`, `FatherFridgeInteractable.cs`, and `FatherAlcoholIndicator.cs`. Keep Father's normal wake-up and fridge pickup paths.
+- [ ] Remove the marked F9 sink diagnostics and their debug accessors in `FatherSinkRepair.cs`, `InteractionAim.cs`, and `DialogueUI.cs`.
 - [ ] Remove their unused debug fields: `enableSkipShortcut`, `skipSequenceKey`, `skipKey`, `completePhoneEventKey`; remove `WindowSequenceController.SkipSequenceForTesting`. Clean stale serialized fields through normal Unity serialization as needed.
 - [ ] Keep real completion paths: `CompleteCurrentPhoneEvent`, `CompleteSequence`, dialogue callbacks and puzzle/door progression are also used by actual gameplay.
 - [ ] Search for `DEBUG-ONLY`, `DebugFinishConversation`, `DebugIsIntroRunning`, `DebugSkipOpening`, `SkipSequenceForTesting`, and `KeyCode.BackQuote` to find leftovers.

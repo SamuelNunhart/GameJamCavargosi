@@ -23,7 +23,7 @@ internal sealed class FatherTaskNote : MonoBehaviour
     private Canvas closeUp;
     private RectTransform closePaper;
     private int shownDay;
-    private FatherSinkRepair.RepairResult shownResult;
+    private int shownCompletedJobs;
     private bool inspecting;
     private float zoomTime;
 
@@ -65,38 +65,28 @@ internal sealed class FatherTaskNote : MonoBehaviour
             Open(ui);
     }
 
-    private bool IsAimingAtNote()
+    internal bool IsAimingAtNote()
     {
-        Camera camera = player.ActiveCamera;
-        if (camera == null) return false;
+        if (!isActiveAndEnabled || worldTasks == null ||
+            !InteractionAim.TryCreate(player, Reach, out InteractionAim aim)) return false;
 
-        var ray = new Ray(camera.transform.position, camera.transform.forward);
+        Ray ray = aim.Ray;
         if (Vector3.Dot(transform.forward, ray.direction) <= 0f ||
-            !new Plane(-transform.forward, transform.position).Raycast(ray, out float distance) || distance > Reach)
+            !new Plane(-transform.forward, transform.position).Raycast(ray, out float distance) ||
+            !aim.Reaches(distance, transform.parent))
             return false;
 
         Transform surface = worldTasks.transform.parent;
         Vector3 local = surface.InverseTransformPoint(ray.GetPoint(distance));
-        if (Mathf.Abs(local.x) > PaperSize.x / 2f + 24f || Mathf.Abs(local.y) > PaperSize.y / 2f + 24f)
-            return false;
-
-        return !Physics.Raycast(ray, distance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+        return Mathf.Abs(local.x) <= PaperSize.x / 2f && Mathf.Abs(local.y) <= PaperSize.y / 2f;
     }
 
     private void RefreshTasks()
     {
-        if (shownDay == chapter.Day && shownResult == sink.Result) return;
+        if (shownDay == chapter.Day && shownCompletedJobs == sink.CompletedJobs) return;
         shownDay = chapter.Day;
-        shownResult = sink.Result;
-        string sinkTask = shownResult switch
-        {
-            FatherSinkRepair.RepairResult.Fixed => "<s>Fix the sink</s>",
-            FatherSinkRepair.RepairResult.SlowDrip => "Fix the sink\n<size=72%>It drains, but it drips.</size>",
-            FatherSinkRepair.RepairResult.Leaking => "Fix the sink\n<size=72%>It drains, but leaks below.</size>",
-            _ => "Fix the sink"
-        };
-        string electricity = shownDay >= 3 ? "\nRestore the power" : string.Empty;
-        worldTasks.text = $"{sinkTask}\nCook a meal{electricity}\nFourth task (TBD)";
+        shownCompletedJobs = sink.CompletedJobs;
+        worldTasks.text = sink.BuildChecklist(shownDay >= FatherBlackout.PowerOutageDay);
         if (closeTasks != null) closeTasks.text = worldTasks.text;
     }
 

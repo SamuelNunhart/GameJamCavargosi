@@ -10,6 +10,7 @@ public sealed class FatherReflectionInteractable : MonoBehaviour
 
     [SerializeField] private StoryPlayerRig playerRig;
     [SerializeField] private Transform focusPoint;
+    [SerializeField] private Collider paintingSurface;
     [SerializeField] private DialogueData dialogue;
     [SerializeField] private float interactionDistance = 2.8f;
     [SerializeField] private string prompt = "E - Look at the painting";
@@ -20,11 +21,17 @@ public sealed class FatherReflectionInteractable : MonoBehaviour
     {
         if (!CanRunStory) return false;
         DialogueUI ui = DialogueUI.Instance;
-        if (ui == null || playerRig == null || Time.frameCount == lastFinishedFrame) return false;
+        if (ui == null || playerRig == null || !playerRig.CanInteract || ui.IsDialogueOpen ||
+            Time.frameCount == lastFinishedFrame) return false;
+        if (playerRig.UsesCenteredInteractions)
+            return paintingSurface != null &&
+                InteractionAim.TryCreate(playerRig, interactionDistance, out InteractionAim aim) &&
+                aim.Sees(paintingSurface.transform);
+
         Camera view = playerRig.ActiveCamera;
         Vector3 target = focusPoint != null ? focusPoint.position : transform.position;
         Vector3 delta = view != null ? target - view.transform.position : Vector3.zero;
-        bool available = view != null && playerRig.CanInteract && !ui.IsDialogueOpen &&
+        bool available = view != null &&
             delta.sqrMagnitude < interactionDistance * interactionDistance &&
             Vector3.Dot(view.transform.forward, delta.normalized) > 0.5f;
         if (available && Physics.Raycast(view.transform.position, delta.normalized, out RaycastHit hit,

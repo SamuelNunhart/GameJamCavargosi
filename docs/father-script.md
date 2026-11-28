@@ -132,10 +132,12 @@
 
 > [Father can still drink. A blackout costs a day, and any unfinished task remains available to retry.]
 
-## Cutscene 04 – Day 03
+## Cutscene 04 – Day 04
 
-*The lights go out at the start of the third day.*
+*The lights go out at the start of the fourth day.*
 
-> Gameplay note · Planned · The outage makes the power repair minigame available. The affected room stays dark if the power is left unrepaired. The outage happens on Day 3 even if Father lost an earlier day to a blackout. With one main task per day, a lost day leaves too little time to finish every task by Sunday.
+**FATHER:** The lights are out. I should check the fuse box.
+
+> Gameplay note · The outage makes the power repair minigame available. The house lights stay off until Father restores the power. The outage happens on Day 4 even if Father lost an earlier day to a blackout. With one main task per day, a lost day leaves too little time to finish every task by Sunday.
 
 # TP: Mother’s story

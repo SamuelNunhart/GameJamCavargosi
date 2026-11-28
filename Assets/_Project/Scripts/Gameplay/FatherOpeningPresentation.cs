@@ -47,6 +47,8 @@ internal sealed class FatherOpeningPresentation : MonoBehaviour
     private GameObject ghost;
     private GameObject couch;
     private GameObject sinkWater;
+    private Renderer sinkPuddle;
+    private bool sinkPowered = true;
     private Quaternion leftDoorClosed;
     private Quaternion rightDoorClosed;
     private bool sinkDoorsMoved;
@@ -237,6 +239,54 @@ internal sealed class FatherOpeningPresentation : MonoBehaviour
         sinkWater.SetActive(false);
         Destroy(sinkWater);
         sinkWater = null;
+    }
+
+    internal void ApplySinkResult(FatherSinkRepair.RepairResult result)
+    {
+        if (result == FatherSinkRepair.RepairResult.BarelyDrains && sinkWater != null)
+        {
+            sinkWater.transform.localPosition = Vector3.forward * .13f;
+            sinkWater.transform.localScale = new Vector3(.85f, .77f, 1f);
+        }
+        else
+        {
+            DrainSink();
+        }
+
+        if (waterMark == null || (result != FatherSinkRepair.RepairResult.Leaking &&
+            result != FatherSinkRepair.RepairResult.BarelyDrains)) return;
+
+        Vector3 inFront = waterMark.position + waterMark.up * .74f;
+        if (!Physics.Raycast(inFront, Vector3.down, out RaycastHit floor, 2f,
+                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)) return;
+
+        float width = result == FatherSinkRepair.RepairResult.Leaking ? .36f : .54f;
+        Transform puddle = PlaceProp(PrimitiveType.Quad, waterMark, "Sink Leak Puddle", Vector3.zero,
+            Vector3.one, new Color(.22f, .39f, .41f));
+        puddle.SetPositionAndRotation(floor.point + floor.normal * .006f,
+            Quaternion.FromToRotation(Vector3.back, floor.normal));
+        puddle.localScale = new Vector3(width / waterMark.lossyScale.x, .24f / waterMark.lossyScale.y, 1f);
+        sinkPuddle = puddle.GetComponent<Renderer>();
+        if (sinkWaterMaterial != null) sinkPuddle.sharedMaterial = sinkWaterMaterial;
+        ApplyWaterLighting(sinkPuddle);
+    }
+
+    internal void SetSinkLighting(bool powered)
+    {
+        sinkPowered = powered;
+        if (sinkWater != null) ApplyWaterLighting(sinkWater.GetComponent<Renderer>());
+        if (sinkPuddle != null) ApplyWaterLighting(sinkPuddle);
+    }
+
+    private void ApplyWaterLighting(Renderer water)
+    {
+        if (sinkWaterMaterial == null) return;
+        var properties = new MaterialPropertyBlock();
+        water.GetPropertyBlock(properties);
+        Color multiplier = sinkPowered ? Color.white : new Color(.25f, .31f, .4f, 1f);
+        properties.SetColor("_Tint", sinkWaterMaterial.GetColor("_Tint") * multiplier);
+        properties.SetColor("_Reflection", sinkWaterMaterial.GetColor("_Reflection") * multiplier);
+        water.SetPropertyBlock(properties);
     }
 
     internal IEnumerator OpenSinkDoors()

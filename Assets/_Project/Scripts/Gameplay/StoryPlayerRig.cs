@@ -22,6 +22,7 @@ public sealed class StoryPlayerRig : MonoBehaviour
     public Camera ActiveCamera { get; private set; }
     public Camera GameplayCamera => gameplayCamera;
     public bool CanInteract => !controlLocker.IsLocked && !AudioSettingsOverlay.IsOpen;
+    internal bool UsesCenteredInteractions => aimingDot != null;
 
     private void Awake()
     {
